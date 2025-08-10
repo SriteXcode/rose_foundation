@@ -1,0 +1,88 @@
+{
+
+   "name": "blackrose-foundation",
+
+   "version": "1.0.0",
+
+   "description": "Black Rose Foundation - MERN Stack Application for NGO Management",
+
+   "main": "server.js",
+
+   "scripts": {
+
+      "test": "echo \"Error: no test specified\" && exit 1",
+
+      "start": "node server.js"
+
+   },
+
+   "type": "commonjs",
+
+   "keywords": [
+
+      "ngo",
+
+      "foundation",
+
+      "mern",
+
+      "react",
+
+      "nodejs",
+
+      "mongodb",
+
+      "express",
+
+      "social-welfare",
+
+      "community-development"
+
+   ],
+
+   "author": "Black Rose Foundation",
+
+   "license": "MIT",
+
+   "dependencies": {
+
+      "bcryptjs": "^2.4.3",
+
+      "cloudinary": "^1.40.0",
+
+      "cors": "^2.8.5",
+
+      "dotenv": "^16.6.1",
+
+      "express": "^4.21.2",
+
+      "express-rate-limit": "^6.10.0",
+
+      "helmet": "^7.0.0",
+
+      "joi": "^17.9.2",
+
+      "jsonwebtoken": "^9.0.2",
+
+      "moment": "^2.29.4",
+
+      "mongoose": "^7.8.7",
+
+      "multer": "^1.4.5-lts.1",
+
+      "nodemailer": "^6.9.4",
+
+      "uuid": "^9.0.0"
+
+   },
+
+   "devDependencies": {
+
+      "concurrently": "^8.2.0",
+
+      "nodemon": "^3.0.1"
+
+   }
+
+}
+
