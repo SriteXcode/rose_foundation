@@ -10,20 +10,30 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
-# ===== Build Output =====
-dist/
-build/
-
-# ===== Vite =====
-.vite/
+# ===== Logs =====
+logs/
+*.log
 
 # ===== OS files =====
 .DS_Store
 Thumbs.db
 
+# ===== Build / Cache =====
+dist/
+build/
+.cache/
+
+# ===== Coverage =====
+coverage/
+
 # ===== IDE =====
 .vscode/
 .idea/
 
-# ===== Cache =====
-.cache/
+# ===== Temporary =====
+tmp/
+temp/
+
+# ===== Mongo =====
+*.bson
+dump/
