@@ -1,12 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Navigation from './components/Navigation';
-import HomePage from './pages/HomePage';
-import AdminPage from './pages/AdminPage';
-import ProfilePage from './pages/ProfilePage';
-import ProjectsPage from './pages/ProjectsPage';
-import GalleryPage from './pages/GalleryPage';
-import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
 import LoginModal from './components/modals/LoginModal';
 import RegisterModal from './components/modals/RegisterModal';
 import { useAuth } from './hooks/useAuth';
@@ -14,6 +8,14 @@ import { useScrollDetection } from './hooks/useScrollDetection';
 import { Toaster } from 'react-hot-toast';
 import { LoaderProvider } from './context/LoaderContext';
 import Loader from './components/Loader';
+
+// Lazy loading pages
+const HomePage = lazy(() => import('./pages/HomePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
+const GalleryPage = lazy(() => import('./pages/GalleryPage'));
+const NewsletterHistoryPage = lazy(() => import('./pages/NewsletterHistoryPage'));
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -91,39 +93,41 @@ const AppContent = () => {
         } />
       </Routes>
 
-      <Routes>
-        <Route path="/" element={
-          <HomePage 
-            scrollToSection={scrollToSection}
-            donationAmount={donationAmount}
-            setDonationAmount={setDonationAmount}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            user={user}
-            contactForm={contactForm}
-            setContactForm={setContactForm}
-            newsletter={newsletter}
-            setNewsletter={setNewsletter}
-          />
-        } />
-        
-        <Route path="/admin" element={
-          <AdminPage 
-            user={user} 
-            adminData={adminData} 
-            loadAdminData={loadAdminData}
-            authLoading={authLoading}
-          />
-        } />
-        
-        <Route path="/profile" element={
-          <ProfilePage user={user} setUser={setUser} authLoading={authLoading} />
-        } />
-        
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/gallery" element={<GalleryPage />} />
-        <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
-      </Routes>
+      <Suspense fallback={<Loader forceShow={true} text="Loading Page..." type="spinner" />}>
+        <Routes>
+          <Route path="/" element={
+            <HomePage 
+              scrollToSection={scrollToSection}
+              donationAmount={donationAmount}
+              setDonationAmount={setDonationAmount}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              user={user}
+              contactForm={contactForm}
+              setContactForm={setContactForm}
+              newsletter={newsletter}
+              setNewsletter={setNewsletter}
+            />
+          } />
+          
+          <Route path="/admin" element={
+            <AdminPage 
+              user={user} 
+              adminData={adminData} 
+              loadAdminData={loadAdminData}
+              authLoading={authLoading}
+            />
+          } />
+          
+          <Route path="/profile" element={
+            <ProfilePage user={user} setUser={setUser} authLoading={authLoading} />
+          } />
+          
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
+        </Routes>
+      </Suspense>
 
       {/* Modals are available globally (except maybe admin page depending on design, but keeping them here is safe) */}
       <LoginModal 

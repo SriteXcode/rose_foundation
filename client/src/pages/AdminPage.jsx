@@ -590,8 +590,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
+      {/* Header - Made Sticky */}
+      <div className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-30">
         <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
         <button 
           onClick={() => navigate('/')} 
@@ -601,9 +601,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 bg-white border-r shadow-sm p-4 space-y-2 hidden md:block">
+      <div className="flex flex-1">
+        {/* Sidebar - Made Sticky */}
+        <div className="w-64 bg-white border-r shadow-sm p-4 space-y-2 hidden md:block sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
           {[
             { id: 'dashboard', icon: '📊', label: 'Overview' },
             { id: 'users', icon: '👥', label: 'Users' },

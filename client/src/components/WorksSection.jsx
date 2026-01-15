@@ -65,6 +65,7 @@ const WorksSection = ({ limit }) => {
                       <img 
                         src={work.images?.[0] || work.icon} 
                         alt={work.title} 
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                     ) : (

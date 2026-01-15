@@ -80,6 +80,7 @@ const ProjectsPage = () => {
                     <img 
                       src={work.images?.[0] || work.icon} 
                       alt={work.title} 
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   ) : (

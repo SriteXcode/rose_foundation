@@ -1,31 +1,34 @@
 import React from 'react';
 import { useLoader } from '../context/LoaderContext';
 
-const Loader = () => {
-  const { isLoading, progress } = useLoader();
+const Loader = ({ forceShow = false, text = '', type = 'bar' }) => {
+  const context = useLoader();
+  
+  const isLoading = forceShow || context?.isLoading || false;
+  const progress = context?.progress || 0;
 
   if (!isLoading) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300">
-      <div className="flex flex-col items-center justify-center">
-        {/* Spinner */}
-        <div className="relative w-24 h-24">
-          <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full opacity-20"></div>
-          <div 
-            className="absolute top-0 left-0 w-full h-full border-4 border-t-rose-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"
-            style={{ borderTopColor: '#e11d48' }} // Rose-600
-          ></div>
-          
-          {/* Percentage Text in Center */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">{progress}%</span>
-          </div>
+  if (type === 'spinner') {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div className="flex flex-col items-center">
+           <div className="w-12 h-12 border-4 border-gray-200 border-t-rose-600 rounded-full animate-spin"></div>
+           {text && <p className="mt-4 text-gray-600 font-medium animate-pulse">{text}</p>}
         </div>
-        
-        <h3 className="mt-4 text-white text-xl font-semibold tracking-wider animate-pulse">
-          Loading...
-        </h3>
+      </div>
+    );
+  }
+
+  // Default: Top Progress Bar (NProgress style)
+  return (
+    <div className="fixed top-0 left-0 w-full z-[9999] pointer-events-none">
+      <div 
+        className="h-1 bg-rose-600 shadow-[0_0_10px_#e11d48] transition-all duration-200 ease-out"
+        style={{ width: `${progress}%` }}
+      >
+        {/* Peg (shiny end) */}
+        <div className="absolute right-0 top-0 h-full w-20 translate-x-10 rotate-3 bg-rose-600 opacity-100 shadow-[0_0_10px_#e11d48]"></div>
       </div>
     </div>
   );

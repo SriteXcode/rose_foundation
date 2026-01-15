@@ -57,7 +57,7 @@ const GallerySection = ({ limit }) => {
                 >
                   {/* Check if it's a real image URL or an emoji icon fallback */}
                   {item.imageUrl && item.imageUrl.startsWith('http') ? (
-                    <img src={item.imageUrl} alt={item.title || 'Gallery Item'} className="w-full h-full object-cover" />
+                    <img src={item.imageUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <span>{item.imageUrl}</span>
                   )}

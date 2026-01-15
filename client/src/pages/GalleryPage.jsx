@@ -75,7 +75,7 @@ const GalleryPage = () => {
                 onClick={() => setSelectedImage(item)}
               >
                 {item.imageUrl?.startsWith('http') ? (
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-auto object-cover" />
+                  <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full h-auto object-cover" />
                 ) : (
                   <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-6xl">{item.imageUrl}</div>
                 )}
