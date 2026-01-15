@@ -2,15 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
+    <link rel="icon" type="image/png" href="/blackrose_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="Black Rose Foundation PWA" />
     <title>Rose Foundation</title>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      .splash-logo {
+        width: 120px;
+        height: 120px;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      /* Hide splash when app is loaded */
+      body.loaded #splash-screen {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
   </head>
   <body>
+    <div id="splash-screen">
+      <img src="/blackrose_logo.png" alt="Black Rose Foundation" class="splash-logo" />
+      <h2 style="font-family: sans-serif; color: #e11d48; margin-top: 20px;">Black Rose Foundation</h2>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Simple logic to hide splash screen after main.jsx runs/mounts
+      // We can also dispatch a custom event from React to be more precise
+      window.onload = () => {
+        setTimeout(() => {
+          document.body.classList.add('loaded');
+        }, 1500); // Minimum 1.5s splash
+      };
+    </script>
   </body>
 </html>

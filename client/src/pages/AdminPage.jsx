@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import ImageUpload from '../components/ImageUpload';
+import NewsletterProgress from '../components/NewsletterProgress';
 import toast from 'react-hot-toast';
 
 const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const navigate = useNavigate();
+  // ... existing states ...
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [works, setWorks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
   
+  // Newsletter Progress State
+  const [newsletterProgress, setNewsletterProgress] = useState({ isSending: false, total: 0, current: 0 });
+
   // Edit/Add States
   const [editingUser, setEditingUser] = useState(null);
   const [editingWork, setEditingWork] = useState(null); 
@@ -281,15 +286,37 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // --- Newsletter & Settings ---
   const handleSendNewsletter = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    // Start background simulation
+    const totalSubscribers = adminData.stats?.totalNewsletters || 100; // Fallback estimate
+    setNewsletterProgress({ isSending: true, total: totalSubscribers, current: 0 });
+    
+    // Simulate progress while waiting for API (or in parallel)
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 5) + 1;
+      if (progress > totalSubscribers) progress = totalSubscribers;
+      setNewsletterProgress(prev => ({ ...prev, current: progress }));
+    }, 200);
+
     try {
       const response = await axiosInstance.post('/newsletter/send', newsletterForm);
+      
+      clearInterval(interval);
+      setNewsletterProgress({ isSending: true, total: totalSubscribers, current: totalSubscribers });
+      
       toast.success(response.data.message);
       setNewsletterForm({ subject: '', message: '' });
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        setNewsletterProgress({ isSending: false, total: 0, current: 0 });
+      }, 3000);
+
     } catch (error) {
+      clearInterval(interval);
+      setNewsletterProgress({ isSending: false, total: 0, current: 0 });
       toast.error(error.response?.data?.error || 'Failed to send newsletter');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -875,6 +902,13 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           </div>
         </div>
       )}
+      {/* Newsletter Progress Widget */}
+      <NewsletterProgress 
+        isSending={newsletterProgress.isSending}
+        total={newsletterProgress.total}
+        current={newsletterProgress.current}
+        onClose={() => setNewsletterProgress({ ...newsletterProgress, isSending: false })}
+      />
     </div>
   );
 };
