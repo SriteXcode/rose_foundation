@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 
 const NewsletterHistoryPage = () => {
   const [newsletters, setNewsletters] = useState([]);
@@ -9,11 +9,8 @@ const NewsletterHistoryPage = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/newsletter/history`);
-        if (response.ok) {
-          const data = await response.json();
-          setNewsletters(data);
-        }
+        const response = await axiosInstance.get('/newsletter/history');
+        setNewsletters(response.data);
       } catch (error) {
         console.error('Failed to fetch newsletter history:', error);
       } finally {

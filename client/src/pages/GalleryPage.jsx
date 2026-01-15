@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 
 const GalleryPage = () => {
   const [galleryItems, setGalleryItems] = useState([]);
@@ -11,12 +11,9 @@ const GalleryPage = () => {
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/gallery`);
-        if (response.ok) {
-          const data = await response.json();
-          setGalleryItems(data);
-          setFilteredItems(data);
-        }
+        const response = await axiosInstance.get('/gallery');
+        setGalleryItems(response.data);
+        setFilteredItems(response.data);
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
       } finally {

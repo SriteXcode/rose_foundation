@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
 
 const ProfilePage = ({ user, setUser, authLoading }) => {
@@ -23,13 +23,8 @@ const ProfilePage = ({ user, setUser, authLoading }) => {
 
   const fetchDonations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/user/donations`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setDonations(await response.json());
-      }
+      const response = await axiosInstance.get('/user/donations');
+      setDonations(response.data);
     } catch (error) {
       console.error('Failed to fetch donations', error);
     }
@@ -39,26 +34,15 @@ const ProfilePage = ({ user, setUser, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(profileForm)
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data);
-        localStorage.setItem('user', JSON.stringify(data));
-        toast.success('Profile updated successfully');
-      } else {
-        toast.error(data.error || 'Failed to update profile');
-      }
+      const response = await axiosInstance.put('/user/profile', profileForm);
+      const data = response.data;
+      
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      toast.success('Profile updated successfully');
     } catch (error) {
-      toast.error('Error updating profile');
+      const msg = error.response?.data?.error || 'Failed to update profile';
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

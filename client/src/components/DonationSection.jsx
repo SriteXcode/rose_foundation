@@ -18,11 +18,11 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
           <div className="space-y-4 mb-8">
             {[
               { label: 'Account Name', value: 'Black Rose Foundation' },
-              { label: 'Account Number', value: '1234567890123456' },
-              { label: 'Bank Name', value: 'State Bank of India' },
-              { label: 'Branch', value: 'Lucknow Main Branch' },
-              { label: 'IFSC Code', value: 'SBIN0001234' },
-              { label: 'SWIFT Code', value: 'SBININBB123' }
+              { label: 'Account Number', value: '251908200515' },
+              { label: 'Bank Name', value: 'IndusInd Bank' },
+              { label: 'Branch', value: 'Ratan lal Nagar Kanpur' },
+              { label: 'IFSC Code', value: 'INDB0002088' },
+              // { label: 'SWIFT Code', value: 'SBININBB123' }
             ].map((item, index) => (
               <div key={index} className="flex justify-between items-center py-3 border-b border-white/20">
                 <span className="font-semibold">{item.label}:</span>

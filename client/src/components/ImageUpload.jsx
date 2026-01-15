@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
 
 const ImageUpload = ({ onUpload, currentImage }) => {
@@ -67,28 +67,18 @@ const ImageUpload = ({ onUpload, currentImage }) => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
+      const response = await axiosInstance.post('/upload', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        onUpload(data.imageUrl);
-        toast.success('Image uploaded successfully');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Upload failed');
-        // Revert preview if failed
-        setPreview(currentImage || '');
-      }
+      onUpload(response.data.imageUrl);
+      toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Upload failed');
+      const msg = error.response?.data?.error || 'Upload failed';
+      toast.error(msg);
       setPreview(currentImage || '');
     } finally {
       setIsUploading(false);

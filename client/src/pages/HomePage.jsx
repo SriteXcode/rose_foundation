@@ -2,6 +2,7 @@ import React from 'react';
 import HeroSection from '../components/HeroSection';
 import AboutSection from '../components/AboutSection';
 import VisionMissionSection from '../components/VisionMissionSection';
+import TeamSection from '../components/TeamSection';
 import WorksSection from '../components/WorksSection';
 import DifferenceSection from '../components/DifferenceSection';
 import DonationSection from '../components/DonationSection';
@@ -26,6 +27,7 @@ const HomePage = ({
       <HeroSection scrollToSection={scrollToSection} />
       <AboutSection />
       <VisionMissionSection />
+      <TeamSection />
       <WorksSection limit={6} />
       <DifferenceSection />
       

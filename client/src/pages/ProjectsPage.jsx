@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import ProjectDetailsModal from '../components/modals/ProjectDetailsModal';
 
 const ProjectsPage = () => {
@@ -12,12 +12,9 @@ const ProjectsPage = () => {
   useEffect(() => {
     const fetchWorks = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/works`);
-        if (response.ok) {
-          const data = await response.json();
-          setWorks(data);
-          setFilteredWorks(data);
-        }
+        const response = await axiosInstance.get('/works');
+        setWorks(response.data);
+        setFilteredWorks(response.data);
       } catch (error) {
         console.error('Failed to fetch works:', error);
       } finally {

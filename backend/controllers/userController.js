@@ -45,16 +45,22 @@ exports.updateUserProfile = async (req, res) => {
 // Get user donations
 exports.getUserDonations = async (req, res) => {
   try {
+    // req.user from token only has id and role. We need to fetch the user to get the email.
+    const user = await User.findById(req.user.id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
     const donations = await Donation.find({ 
       $or: [
-        { donorEmail: req.user.email }, // Match by email (legacy/guest)
-        // Ideally we should link by userId in the Donation model too, 
-        // but for now email match is a good fallback if userId wasn't populated in older records
+        { donorId: req.user.id },
+        { donorEmail: user.email }
       ]
     }).sort({ createdAt: -1 });
     
     res.json(donations);
   } catch (error) {
+    console.error('Get User Donations Error:', error);
     res.status(500).json({ error: 'Failed to fetch donations' });
   }
 };

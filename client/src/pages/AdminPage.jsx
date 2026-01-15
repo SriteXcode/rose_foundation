@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import ImageUpload from '../components/ImageUpload';
 import toast from 'react-hot-toast';
 
@@ -9,12 +9,15 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [works, setWorks] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
   
   // Edit/Add States
   const [editingUser, setEditingUser] = useState(null);
   const [editingWork, setEditingWork] = useState(null); 
+  const [editingVolunteer, setEditingVolunteer] = useState(null);
   const [showWorkModal, setShowWorkModal] = useState(false);
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
   const [tagType, setTagType] = useState('none'); // 'project', 'custom', 'none'
@@ -49,23 +52,31 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
+    if (activeTab === 'volunteers') fetchVolunteers();
     if (activeTab === 'gallery') fetchGallery();
     if (activeTab === 'settings') fetchSettings();
   }, [activeTab, user, authLoading]);
 
   // --- API Fetch Functions ---
+  const fetchVolunteers = async () => {
+    try {
+      const response = await axiosInstance.get('/volunteers');
+      setVolunteers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch volunteers', error);
+    }
+  };
+
   const fetchSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`);
-      if (response.ok) {
-        const data = await response.json();
-        setSettingsForm({
-          siteName: data.siteName || '',
-          contactEmail: data.contactEmail || '',
-          contactPhone: data.contactPhone || '',
-          address: data.address || ''
-        });
-      }
+      const response = await axiosInstance.get('/settings');
+      const data = response.data;
+      setSettingsForm({
+        siteName: data.siteName || '',
+        contactEmail: data.contactEmail || '',
+        contactPhone: data.contactPhone || '',
+        address: data.address || ''
+      });
     } catch (error) {
       console.error('Failed to fetch settings', error);
     }
@@ -73,13 +84,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setUsers(await response.json());
-      }
+      const response = await axiosInstance.get('/admin/users');
+      setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users', error);
     }
@@ -87,10 +93,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const fetchWorks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/works`);
-      if (response.ok) {
-        setWorks(await response.json());
-      }
+      const response = await axiosInstance.get('/works');
+      setWorks(response.data);
     } catch (error) {
       console.error('Failed to fetch works', error);
     }
@@ -98,10 +102,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const fetchGallery = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/gallery`);
-      if (response.ok) {
-        setGalleryItems(await response.json());
-      }
+      const response = await axiosInstance.get('/gallery');
+      setGalleryItems(response.data);
     } catch (error) {
       console.error('Failed to fetch gallery', error);
     }
@@ -111,15 +113,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        toast.success('User deleted');
-        fetchUsers();
-      }
+      await axiosInstance.delete(`/admin/users/${userId}`);
+      toast.success('User deleted');
+      fetchUsers();
     } catch (error) {
       toast.error('Failed to delete user');
     }
@@ -129,31 +125,19 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/users/${editingUser._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: editingUser.name,
-          email: editingUser.email,
-          phone: editingUser.phone,
-          role: editingUser.role
-        })
+      await axiosInstance.put(`/admin/users/${editingUser._id}`, {
+        name: editingUser.name,
+        email: editingUser.email,
+        phone: editingUser.phone,
+        role: editingUser.role
       });
 
-      if (response.ok) {
-        toast.success('User updated successfully');
-        setEditingUser(null);
-        fetchUsers();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to update user');
-      }
+      toast.success('User updated successfully');
+      setEditingUser(null);
+      fetchUsers();
     } catch (error) {
-      toast.error('Failed to update user');
+      const msg = error.response?.data?.error || 'Failed to update user';
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -164,30 +148,22 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const url = editingWork?._id 
-        ? `${API_BASE_URL}/works/${editingWork._id}`
-        : `${API_BASE_URL}/works`;
+        ? `/works/${editingWork._id}`
+        : '/works';
       
-      const method = editingWork?._id ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(editingWork || {})
-      });
-
-      if (response.ok) {
-        toast.success(`Project ${editingWork?._id ? 'updated' : 'added'} successfully`);
-        setShowWorkModal(false);
-        setEditingWork(null);
-        fetchWorks();
+      const payload = editingWork || {};
+      
+      if (editingWork?._id) {
+        await axiosInstance.put(url, payload);
       } else {
-        toast.error('Failed to save project');
+        await axiosInstance.post(url, payload);
       }
+
+      toast.success(`Project ${editingWork?._id ? 'updated' : 'added'} successfully`);
+      setShowWorkModal(false);
+      setEditingWork(null);
+      fetchWorks();
     } catch (error) {
       toast.error('Error saving project');
     } finally {
@@ -198,14 +174,48 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const handleDeleteWork = async (id) => {
     if (!window.confirm('Delete this project?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/works/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) fetchWorks();
+      await axiosInstance.delete(`/works/${id}`);
+      fetchWorks();
     } catch (error) {
       toast.error('Failed to delete project');
+    }
+  };
+
+  // --- Volunteer Management ---
+  const handleVolunteerSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const url = editingVolunteer?._id 
+        ? `/volunteers/${editingVolunteer._id}`
+        : '/volunteers';
+      
+      const payload = editingVolunteer || {};
+
+      if (editingVolunteer?._id) {
+        await axiosInstance.put(url, payload);
+      } else {
+        await axiosInstance.post(url, payload);
+      }
+
+      toast.success(`Volunteer ${editingVolunteer?._id ? 'updated' : 'added'} successfully`);
+      setShowVolunteerModal(false);
+      setEditingVolunteer(null);
+      fetchVolunteers();
+    } catch (error) {
+      toast.error('Error saving volunteer');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteVolunteer = async (id) => {
+    if (!window.confirm('Delete this volunteer?')) return;
+    try {
+      await axiosInstance.delete(`/volunteers/${id}`);
+      fetchVolunteers();
+    } catch (error) {
+      toast.error('Failed to delete volunteer');
     }
   };
 
@@ -217,14 +227,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     // Prepare payload based on tagType
     const payload = { ...newGalleryItem };
     if (tagType === 'project') {
-      // Keep project ID, maybe fetch project name for category or keep 'General'
-      // Ideally, the backend populates category if we want, but for now let's keep user category or default
       if (!payload.project) {
         toast.error('Please select a project');
         setIsLoading(false);
         return;
       }
-      // Set category to 'Project' or keep it as is if we want
       payload.category = 'Project'; 
     } else if (tagType === 'custom') {
       payload.project = ''; // Clear project
@@ -240,25 +247,13 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/gallery`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      await axiosInstance.post('/gallery', payload);
 
-      if (response.ok) {
-        toast.success('Image added successfully');
-        setShowGalleryModal(false);
-        setNewGalleryItem({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
-        setTagType('none');
-        fetchGallery();
-      } else {
-        toast.error('Failed to add image');
-      }
+      toast.success('Image added successfully');
+      setShowGalleryModal(false);
+      setNewGalleryItem({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
+      setTagType('none');
+      fetchGallery();
     } catch (error) {
       toast.error('Error adding image');
     } finally {
@@ -269,12 +264,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const handleDeleteGallery = async (id) => {
     if (!window.confirm('Delete this image?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/gallery/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) fetchGallery();
+      await axiosInstance.delete(`/gallery/${id}`);
+      fetchGallery();
     } catch (error) {
       toast.error('Failed to delete image');
     }
@@ -285,24 +276,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/newsletter/send`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify(newsletterForm)
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success(data.message);
-        setNewsletterForm({ subject: '', message: '' });
-      } else {
-        toast.error(data.error);
-      }
+      const response = await axiosInstance.post('/newsletter/send', newsletterForm);
+      toast.success(response.data.message);
+      setNewsletterForm({ subject: '', message: '' });
     } catch (error) {
-      toast.error('Failed to send newsletter');
+      toast.error(error.response?.data?.error || 'Failed to send newsletter');
     } finally {
       setIsLoading(false);
     }
@@ -312,21 +290,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/settings`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(settingsForm)
-      });
-
-      if (response.ok) {
-        toast.success('Settings saved successfully!');
-      } else {
-        toast.error('Failed to save settings');
-      }
+      await axiosInstance.put('/settings', settingsForm);
+      toast.success('Settings saved successfully!');
     } catch (error) {
       toast.error('Error saving settings');
     } finally {
@@ -492,6 +457,52 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     </div>
   );
 
+  const renderVolunteers = () => (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">Volunteers</h3>
+        <button 
+          onClick={() => { setEditingVolunteer({}); setShowVolunteerModal(true); }}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+        >
+          + Add Volunteer
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {volunteers.map((volunteer) => (
+          <div key={volunteer._id} className="bg-white p-4 rounded-xl border shadow-sm text-center group relative">
+             <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-red-100">
+               {volunteer.image?.startsWith('http') ? (
+                 <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-2xl">👤</div>
+               )}
+             </div>
+             <h4 className="font-bold text-lg text-gray-800">{volunteer.name}</h4>
+             <p className="text-sm text-gray-500 mb-4">{volunteer.designation}</p>
+             
+             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded-lg backdrop-blur-sm">
+               <button 
+                 onClick={() => { setEditingVolunteer(volunteer); setShowVolunteerModal(true); }}
+                 className="text-blue-600 p-1 hover:bg-blue-50 rounded"
+                 title="Edit"
+               >
+                 ✏️
+               </button>
+               <button 
+                 onClick={() => handleDeleteVolunteer(volunteer._id)}
+                 className="text-red-600 p-1 hover:bg-red-50 rounded"
+                 title="Delete"
+               >
+                 🗑️
+               </button>
+             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderGallery = () => (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -596,6 +607,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           {[
             { id: 'dashboard', icon: '📊', label: 'Overview' },
             { id: 'users', icon: '👥', label: 'Users' },
+            { id: 'volunteers', icon: '🤝', label: 'Volunteers' },
             { id: 'projects', icon: '🏗️', label: 'Projects' },
             { id: 'gallery', icon: '🖼️', label: 'Gallery' },
             { id: 'newsletter', icon: '📧', label: 'Newsletter' },
@@ -615,6 +627,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         <div className="flex-1 p-8 overflow-y-auto">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'users' && renderUsers()}
+          {activeTab === 'volunteers' && renderVolunteers()}
           {activeTab === 'projects' && renderProjects()}
           {activeTab === 'gallery' && renderGallery()}
           {activeTab === 'newsletter' && renderNewsletter()}
@@ -639,6 +652,33 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               <div className="flex gap-3 mt-6">
                 <button type="button" onClick={() => setEditingUser(null)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
                 <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Volunteer Modal */}
+      {showVolunteerModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">{editingVolunteer?._id ? 'Edit Volunteer' : 'Add Volunteer'}</h3>
+            <form onSubmit={handleVolunteerSubmit} className="space-y-4">
+              <input type="text" placeholder="Name" value={editingVolunteer?.name||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
+              <input type="text" placeholder="Designation" value={editingVolunteer?.designation||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, designation: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
+              
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Photo</label>
+                <ImageUpload 
+                  currentImage={editingVolunteer?.image}
+                  onUpload={(url) => setEditingVolunteer({ ...editingVolunteer, image: url })}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button type="button" onClick={() => { setShowVolunteerModal(false); setEditingVolunteer(null); }} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Save</button>
               </div>
             </form>
           </div>

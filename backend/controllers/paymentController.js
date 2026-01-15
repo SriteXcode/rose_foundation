@@ -69,6 +69,7 @@ exports.verifyPayment = async (req, res) => {
         donorName: donorName || 'Anonymous',
         donorEmail: donorEmail || 'anonymous@example.com',
         donorPhone,
+        donorId: donorId || null,
         transactionId: razorpay_payment_id,
         paymentMethod: 'Razorpay',
         status: 'completed',

@@ -18,15 +18,22 @@ const ContactSection = ({ contactForm, setContactForm, isLoading, setIsLoading }
             <div className="space-y-4 mb-8">
               <div className="flex items-center space-x-3">
                 <span className="text-red-400">📧</span>
-                <span>info@blackrosefoundation.org.in</span>
+                <span>blackrosefoundation111@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <span className="text-red-400">📞</span>
-                <span>+91 9876543210</span>
+                <span>+91 6394107475, +91 93052 71187</span>
               </div>
               <div className="flex items-center space-x-3">
                 <span className="text-red-400">📍</span>
-                <span>123 Foundation Street, Lucknow, UP 226001</span>
+                <a 
+                  href="https://maps.google.com/maps/place//data=!4m2!3m1!1s0x399c4195602a6f0d:0x92304ffba0a77df7?entry=s&sa=X&ved=2ahUKEwjf7cLXuoaSAxVDslYBHUVAEEEQ4kB6BAgWEAA&hl=en" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-red-400 transition-colors"
+                >
+                  Lal Bangla Jk puri Kanpur 208010
+                </a>
               </div>
               <div className="flex items-center space-x-3">
                 <span className="text-red-400">🌐</span>
@@ -34,10 +41,18 @@ const ContactSection = ({ contactForm, setContactForm, isLoading, setIsLoading }
               </div>
             </div>
 
-            <div className="bg-gray-700 rounded-xl p-6 text-center">
-              <div className="text-4xl mb-2">🗺️</div>
-              <p className="text-gray-300">Interactive Map</p>
-              <p className="text-sm text-gray-400">Lucknow, Uttar Pradesh</p>
+            <div className="bg-gray-700 rounded-xl overflow-hidden h-[300px] shadow-lg border border-gray-600">
+              <iframe
+                title="Black Rose Foundation Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3572.170192345062!2d80.40228727453472!3d26.450493079815415!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399c4195602a6f0d%3A0x92304ffba0a77df7!2sBlack%20Rose%20Foundation!5e0!3m2!1sen!2sin!4v1736952000000!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="opacity-80 hover:opacity-100 transition-all duration-500"
+              ></iframe>
             </div>
           </div>
 

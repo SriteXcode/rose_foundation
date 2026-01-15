@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import { handleNewsletterSubmit } from '../utils/apiHandlers';
 
 const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLoading }) => {
@@ -14,8 +15,8 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <span className="text-2xl">🌹</span>
-              <span className="text-xl font-bold text-red-500">Black Rose Foundation</span>
+              <img src={logo} alt="Black Rose Foundation Logo" className="h-20 w-20 invert" />
+              <span className="text-xl font-bold text-red-500">BlackRose Foundation</span>
             </div>
             <p className="text-gray-400">
               Empowering communities and transforming lives through sustainable development and social welfare initiatives.

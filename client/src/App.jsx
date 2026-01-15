@@ -12,6 +12,8 @@ import RegisterModal from './components/modals/RegisterModal';
 import { useAuth } from './hooks/useAuth';
 import { useScrollDetection } from './hooks/useScrollDetection';
 import { Toaster } from 'react-hot-toast';
+import { LoaderProvider } from './context/LoaderContext';
+import Loader from './components/Loader';
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -70,6 +72,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <Loader />
       {/* Navigation is visible on all pages, but we might want to hide it on Admin page or customize it */}
       <Routes>
         <Route path="/admin" element={null} /> {/* Hide main Nav on Admin page */}
@@ -150,7 +153,9 @@ const AppContent = () => {
 const BlackRoseFoundation = () => {
   return (
     <Router>
-      <AppContent />
+      <LoaderProvider>
+        <AppContent />
+      </LoaderProvider>
     </Router>
   );
 };

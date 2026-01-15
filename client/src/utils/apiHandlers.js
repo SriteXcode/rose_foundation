@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './constants';
+import axiosInstance from './api';
 import toast from 'react-hot-toast';
 
 // Contact form submission
@@ -13,29 +13,13 @@ export const handleContactSubmit = async (e, contactForm, setContactForm, setIsL
   setIsLoading(true);
 
   try {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-
-    // Note: Authorization would need to be handled differently without localStorage
-
-    const response = await fetch(`${API_BASE_URL}/contact`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(contactForm),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      toast.success('Thank you for your message! We will get back to you soon.');
-      setContactForm({ name: '', email: '', message: '' });
-    } else {
-      throw new Error(data.error || 'Failed to send message');
-    }
+    await axiosInstance.post('/contact', contactForm);
+    toast.success('Thank you for your message! We will get back to you soon.');
+    setContactForm({ name: '', email: '', message: '' });
   } catch (error) {
     console.error('Contact form error:', error);
-    toast.error(`Error: ${error.message}. Please try again.`);
+    const msg = error.response?.data?.error || error.message || 'Failed to send message';
+    toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);
   }
@@ -59,25 +43,13 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
   setIsLoading(true);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/newsletter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email: newsletter }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      toast.success('Successfully subscribed to our newsletter!');
-      setNewsletter('');
-    } else {
-      throw new Error(data.error || 'Failed to subscribe');
-    }
+    await axiosInstance.post('/newsletter', { email: newsletter });
+    toast.success('Successfully subscribed to our newsletter!');
+    setNewsletter('');
   } catch (error) {
     console.error('Newsletter error:', error);
-    toast.error(`Error: ${error.message}. Please try again.`);
+    const msg = error.response?.data?.error || error.message || 'Failed to subscribe';
+    toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);
   }
@@ -94,15 +66,11 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
   try {
     // 1. Create Order
-    const orderResponse = await fetch(`${API_BASE_URL}/payment/create-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: parseFloat(donationAmount) })
+    const orderResponse = await axiosInstance.post('/payment/create-order', {
+      amount: parseFloat(donationAmount)
     });
 
-    if (!orderResponse.ok) throw new Error('Failed to create payment order');
-    
-    const orderData = await orderResponse.json();
+    const orderData = orderResponse.data;
 
     // 2. Initialize Razorpay options
     const options = {
@@ -111,36 +79,30 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
       currency: orderData.currency,
       name: "Black Rose Foundation",
       description: "Donation",
-      // image: "https://your-logo-url.com/logo.png", // Optional
       order_id: orderData.orderId,
       handler: async function (response) {
         // 3. Verify Payment on success
         try {
-          const verifyResponse = await fetch(`${API_BASE_URL}/payment/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              amount: parseFloat(donationAmount),
-              donorName: user?.name || 'Anonymous',
-              donorEmail: user?.email || 'anonymous@example.com',
-              donorPhone: user?.phone,
-              donorId: user?._id
-            })
+          // Manually trigger global loading if needed, or just let axios handle it
+          // Note: Since this is a callback, the previous 'finally' block has already executed.
+          // The global loader will pop up again for this request.
+          
+          await axiosInstance.post('/payment/verify', {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            amount: parseFloat(donationAmount),
+            donorName: user?.name || 'Anonymous',
+            donorEmail: user?.email || 'anonymous@example.com',
+            donorPhone: user?.phone,
+            donorId: user?._id
           });
 
-          const verifyData = await verifyResponse.json();
-
-          if (verifyResponse.ok) {
-            toast.success('Thank you for your generous donation! You will receive a confirmation email shortly.');
-          } else {
-            toast.error('Payment verification failed: ' + verifyData.error);
-          }
+          toast.success('Thank you for your generous donation! You will receive a confirmation email shortly.');
         } catch (error) {
           console.error('Payment verification error:', error);
-          toast.error('Error verifying payment. Please contact support.');
+          const msg = error.response?.data?.error || 'Payment verification failed';
+          toast.error(`Error: ${msg}`);
         }
       },
       prefill: {
@@ -163,7 +125,8 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
   } catch (error) {
     console.error('Donation error:', error);
-    toast.error(`Error: ${error.message}. Please try again.`);
+    const msg = error.response?.data?.error || error.message || 'Payment initiation failed';
+    toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);
   }

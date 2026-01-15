@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 
 const GallerySection = ({ limit }) => {
   const navigate = useNavigate();
@@ -11,20 +11,18 @@ const GallerySection = ({ limit }) => {
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/gallery`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.length > 0) {
-            setGalleryItems(data);
-          } else {
-             // Fallback
-             setGalleryItems([
-               { imageUrl: '📚', type: 'icon' }, { imageUrl: '🏥', type: 'icon' }, 
-               { imageUrl: '👩‍🏫', type: 'icon' }, { imageUrl: '🌱', type: 'icon' },
-               { imageUrl: '🤝', type: 'icon' }, { imageUrl: '🎓', type: 'icon' },
-               { imageUrl: '💊', type: 'icon' }, { imageUrl: '🏘️', type: 'icon' }
-             ]);
-          }
+        const response = await axiosInstance.get('/gallery');
+        const data = response.data;
+        if (data.length > 0) {
+          setGalleryItems(data);
+        } else {
+            // Fallback
+            setGalleryItems([
+              { imageUrl: '📚', type: 'icon' }, { imageUrl: '🏥', type: 'icon' }, 
+              { imageUrl: '👩‍🏫', type: 'icon' }, { imageUrl: '🌱', type: 'icon' },
+              { imageUrl: '🤝', type: 'icon' }, { imageUrl: '🎓', type: 'icon' },
+              { imageUrl: '💊', type: 'icon' }, { imageUrl: '🏘️', type: 'icon' }
+            ]);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);

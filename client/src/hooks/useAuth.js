@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
 
 export const useAuth = () => {
@@ -32,21 +32,9 @@ export const useAuth = () => {
   // Test backend connection
   const testBackendConnection = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Backend connected:', data);
-        return true;
-      } else {
-        console.log('❌ Backend connection failed:', response.status);
-        return false;
-      }
+      const response = await axiosInstance.get('/health');
+      console.log('✅ Backend connected:', response.data);
+      return true;
     } catch (error) {
       console.log('❌ Backend connection error:', error.message);
       return false;
@@ -63,34 +51,24 @@ export const useAuth = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginForm),
-      });
+      const response = await axiosInstance.post('/auth/login', loginForm);
+      const data = response.data;
 
-      const data = await response.json();
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setShowLogin(false);
+      setLoginForm({ email: '', password: '' });
+      toast.success('Login successful!');
 
-      if (response.ok) {
-        setUser(data.user);
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        setShowLogin(false);
-        setLoginForm({ email: '', password: '' });
-        toast.success('Login successful!');
-
-        // If admin, load admin data
-        if (data.user.role === 'admin') {
-          loadAdminData();
-        }
-      } else {
-        throw new Error(data.error || 'Login failed');
+      // If admin, load admin data
+      if (data.user.role === 'admin') {
+        loadAdminData();
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(`Error: ${error.message}`);
+      const msg = error.response?.data?.error || error.message || 'Login failed';
+      toast.error(`Error: ${msg}`);
     }
   };
 
@@ -113,30 +91,21 @@ export const useAuth = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: registerForm.name,
-          email: registerForm.email,
-          phone: registerForm.phone,
-          password: registerForm.password
-        })
+      const response = await axiosInstance.post('/auth/register', {
+        name: registerForm.name,
+        email: registerForm.email,
+        phone: registerForm.phone,
+        password: registerForm.password
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Registration successful! Please login.");
-        setShowRegister(false);
-        setShowLogin(true);
-        setRegisterForm({ name: "", email: "", password: "", confirmPassword: "", phone: "" });
-      } else {
-        throw new Error(data.error || "Registration failed");
-      }
+      toast.success("Registration successful! Please login.");
+      setShowRegister(false);
+      setShowLogin(true);
+      setRegisterForm({ name: "", email: "", password: "", confirmPassword: "", phone: "" });
     } catch (err) {
       console.error("Registration error:", err);
-      toast.error(`Error: ${err.message}`);
+      const msg = err.response?.data?.error || err.message || "Registration failed";
+      toast.error(`Error: ${msg}`);
     }
   };
 
@@ -152,21 +121,12 @@ export const useAuth = () => {
   // Load admin data
   const loadAdminData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAdminData({ ...data, isLoaded: true });
-      }
+      // Authorization header is handled by axios interceptor in utils/api.js
+      const response = await axiosInstance.get('/admin/dashboard');
+      setAdminData({ ...response.data, isLoaded: true });
     } catch (error) {
       console.error('Admin data error:', error);
+      // Optional: Handle 401/403 by logging out or showing error
     }
   };
 

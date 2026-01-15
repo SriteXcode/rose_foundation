@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../utils/constants';
+import axiosInstance from '../utils/api';
 import ProjectDetailsModal from './modals/ProjectDetailsModal';
 
 const WorksSection = ({ limit }) => {
@@ -12,24 +12,22 @@ const WorksSection = ({ limit }) => {
   useEffect(() => {
     const fetchWorks = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/works`);
-        if (response.ok) {
-          const data = await response.json();
-          // If no data from API, fall back to initial static data for demonstration if needed, 
-          // or just show empty. For now, we'll assume if API works we use it.
-          if (data.length > 0) {
-            setWorks(data);
-          } else {
-            // Fallback content if DB is empty
-             setWorks([
-              { icon: '📚', title: 'Education Programs', description: 'Quality education, scholarships, and learning resources for underprivileged children.' },
-              { icon: '🏥', title: 'Healthcare Initiatives', description: 'Mobile health camps, free medical checkups, and health awareness programs.' },
-              { icon: '👩‍💼', title: 'Women Empowerment', description: 'Skills training, microfinance support, and leadership development programs.' },
-              { icon: '🌱', title: 'Environmental Conservation', description: 'Tree plantation drives, waste management, and environmental awareness campaigns.' },
-              { icon: '🏘️', title: 'Community Development', description: 'Infrastructure development, clean water projects, and sustainable livelihood programs.' },
-              { icon: '🍽️', title: 'Food Security', description: 'Mid-day meals, nutrition supplements, and emergency food distribution during crises.' }
-            ]);
-          }
+        const response = await axiosInstance.get('/works');
+        const data = response.data;
+        // If no data from API, fall back to initial static data for demonstration if needed, 
+        // or just show empty. For now, we'll assume if API works we use it.
+        if (data.length > 0) {
+          setWorks(data);
+        } else {
+          // Fallback content if DB is empty
+            setWorks([
+            { icon: '📚', title: 'Education Programs', description: 'Quality education, scholarships, and learning resources for underprivileged children.' },
+            { icon: '🏥', title: 'Healthcare Initiatives', description: 'Mobile health camps, free medical checkups, and health awareness programs.' },
+            { icon: '👩‍💼', title: 'Women Empowerment', description: 'Skills training, microfinance support, and leadership development programs.' },
+            { icon: '🌱', title: 'Environmental Conservation', description: 'Tree plantation drives, waste management, and environmental awareness campaigns.' },
+            { icon: '🏘️', title: 'Community Development', description: 'Infrastructure development, clean water projects, and sustainable livelihood programs.' },
+            { icon: '🍽️', title: 'Food Security', description: 'Mid-day meals, nutrition supplements, and emergency food distribution during crises.' }
+          ]);
         }
       } catch (error) {
         console.error('Failed to fetch works:', error);

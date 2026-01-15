@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from "../assets/logo.png";
 
 const Navigation = ({ 
   activeSection, 
@@ -34,8 +35,8 @@ const Navigation = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-            <span className="text-2xl">🌹</span>
-            <span className="text-xl font-bold text-red-500">Black Rose Foundation</span>
+            <img src={logo} alt="Black Rose Foundation Logo" className="h-15 w-15 invert" />
+            <span className="text-xl font-bold text-red-500">BlackRose Foundation</span>
           </div>
 
           {/* Desktop Navigation */}
