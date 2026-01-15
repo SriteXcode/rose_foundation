@@ -144,6 +144,7 @@ const ProfilePage = ({ user, setUser, authLoading }) => {
                           <th className="px-6 py-3 font-semibold text-gray-600">Amount</th>
                           <th className="px-6 py-3 font-semibold text-gray-600">Transaction ID</th>
                           <th className="px-6 py-3 font-semibold text-gray-600">Status</th>
+                          <th className="px-6 py-3 font-semibold text-gray-600">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -164,6 +165,16 @@ const ProfilePage = ({ user, setUser, authLoading }) => {
                               }`}>
                                 {donation.status.toUpperCase()}
                               </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {donation.status === 'completed' && (
+                                <button
+                                  onClick={() => navigate(`/certificate/${donation._id}`)}
+                                  className="text-blue-600 hover:text-blue-800 font-semibold text-sm hover:underline flex items-center gap-1"
+                                >
+                                  <span>📜</span> Certificate
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}

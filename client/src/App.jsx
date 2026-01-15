@@ -16,6 +16,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 const GalleryPage = lazy(() => import('./pages/GalleryPage'));
 const NewsletterHistoryPage = lazy(() => import('./pages/NewsletterHistoryPage'));
+const CertificatePage = lazy(() => import('./pages/CertificatePage'));
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -124,10 +125,10 @@ const AppContent = () => {
           } />
           
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
-        </Routes>
-      </Suspense>
+                  <Route path="/gallery" element={<GalleryPage />} />
+                  <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
+                  <Route path="/certificate/:id" element={<CertificatePage />} />
+                </Routes>      </Suspense>
 
       {/* Modals are available globally (except maybe admin page depending on design, but keeping them here is safe) */}
       <LoginModal 
