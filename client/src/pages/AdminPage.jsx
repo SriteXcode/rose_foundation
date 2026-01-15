@@ -21,6 +21,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
   const [tagType, setTagType] = useState('none'); // 'project', 'custom', 'none'
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const [newsletterForm, setNewsletterForm] = useState({ subject: '', message: '' });
   const [settingsForm, setSettingsForm] = useState({
@@ -56,6 +57,12 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (activeTab === 'gallery') fetchGallery();
     if (activeTab === 'settings') fetchSettings();
   }, [activeTab, user, authLoading]);
+
+  // Close sidebar on tab change (mobile)
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setShowSidebar(false);
+  };
 
   // --- API Fetch Functions ---
   const fetchVolunteers = async () => {
@@ -392,8 +399,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const renderUsers = () => (
     <div>
       <h3 className="text-2xl font-bold mb-6 text-gray-800">User Management</h3>
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-xl border overflow-hidden overflow-x-auto">
+        <table className="w-full text-left whitespace-nowrap">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-4 font-semibold text-gray-600">Name</th>
@@ -591,19 +598,40 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header - Made Sticky */}
-      <div className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-30">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+      <div className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+        <div className="flex items-center gap-4">
+          <button 
+            className="md:hidden text-2xl text-gray-600 focus:outline-none"
+            onClick={() => setShowSidebar(!showSidebar)}
+          >
+            ☰
+          </button>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+        </div>
         <button 
           onClick={() => navigate('/')} 
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+          className="px-3 py-2 md:px-4 md:py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm md:text-base rounded-lg font-semibold transition-colors"
         >
           Exit to Home
         </button>
       </div>
 
-      <div className="flex flex-1">
-        {/* Sidebar - Made Sticky */}
-        <div className="w-64 bg-white border-r shadow-sm p-4 space-y-2 hidden md:block sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
+      <div className="flex flex-1 relative">
+        {/* Mobile Sidebar Overlay */}
+        {showSidebar && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={() => setShowSidebar(false)}
+          ></div>
+        )}
+
+        {/* Sidebar - Responsive */}
+        <div className={`
+          fixed md:sticky top-[73px] left-0 h-[calc(100vh-73px)] w-64 bg-white border-r shadow-lg md:shadow-sm p-4 space-y-2 z-40
+          transition-transform duration-300 ease-in-out
+          ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          overflow-y-auto
+        `}>
           {[
             { id: 'dashboard', icon: '📊', label: 'Overview' },
             { id: 'users', icon: '👥', label: 'Users' },
@@ -615,7 +643,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleTabChange(item.id)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-gray-100 text-purple-700 font-bold border-l-4 border-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}
             >
               <span className="text-xl">{item.icon}</span><span>{item.label}</span>
@@ -624,7 +652,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-4 md:p-8 w-full max-w-full overflow-hidden">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'volunteers' && renderVolunteers()}
@@ -635,7 +663,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         </div>
       </div>
 
-      {/* --- Modals (Keep existing modal code) --- */}
+      {/* --- Modals --- */}
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">

@@ -50,18 +50,18 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
               ))}
             </div>
 
-            <div className="flex gap-4 max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="number"
                 placeholder="Custom amount"
                 value={donationAmount}
                 onChange={(e) => setDonationAmount(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-full bg-white/20 border border-white/30 placeholder-white/70 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full sm:flex-1 px-4 py-3 rounded-full bg-white/20 border border-white/30 placeholder-white/70 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
               />
               <button
                 onClick={onDonationClick}
                 disabled={isLoading}
-                className="bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
+                className="w-full sm:w-auto bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50"
               >
                 {isLoading ? 'Processing...' : 'Donate'}
               </button>

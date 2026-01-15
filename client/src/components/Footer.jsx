@@ -23,33 +23,35 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
             </p>
           </div>
 
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-red-400">Quick Links</h4>
-            <ul className="space-y-2">
-              {quickLinks.map((link) => (
-                <li key={link}>
-                  <button
-                    onClick={() => scrollToSection(link.toLowerCase())}
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    {link}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <div className="grid grid-cols-2 gap-8 col-span-1 md:col-span-2">
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-red-400">Quick Links</h4>
+              <ul className="space-y-2">
+                {quickLinks.map((link) => (
+                  <li key={link}>
+                    <button
+                      onClick={() => scrollToSection(link.toLowerCase())}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {link}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-red-400">Follow Us</h4>
-            <ul className="space-y-2">
-              {socialLinks.map((social) => (
-                <li key={social}>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                    {social}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-red-400">Follow Us</h4>
+              <ul className="space-y-2">
+                {socialLinks.map((social) => (
+                  <li key={social}>
+                    <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                      {social}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div>

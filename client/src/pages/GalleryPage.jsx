@@ -92,8 +92,8 @@ const GalleryPage = () => {
 
       {/* Lightbox Modal */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-6 right-6 text-white text-4xl hover:text-red-500 transition-colors z-50">✕</button>
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-4 right-4 text-white text-4xl hover:text-red-500 transition-colors z-[70] p-2 bg-black/50 rounded-full">✕</button>
           
           <div className="max-w-5xl w-full flex flex-col items-center" onClick={e => e.stopPropagation()}>
             <div className="relative group w-full flex justify-center">

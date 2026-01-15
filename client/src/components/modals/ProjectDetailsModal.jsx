@@ -86,12 +86,12 @@ const ProjectDetailsModal = ({ project, onClose }) => {
                   }`}>
                     {project.status}
                   </span>
-                  {/* <button 
+                  <button 
                     onClick={onClose}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-300"
                   >
                     <span className="text-2xl block leading-none">✕</span>
-                  </button> */}
+                  </button>
                 </div>
                 
                 {/* Category specifically below Status */}

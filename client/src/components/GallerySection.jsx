@@ -81,8 +81,8 @@ const GallerySection = ({ limit }) => {
 
       {/* Lightbox Modal */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors">✕</button>
+        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-4 right-4 text-white text-4xl hover:text-red-500 transition-colors z-[70] p-2 bg-black/50 rounded-full">✕</button>
           <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
             <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
               {selectedImage.imageUrl?.startsWith('http') ? (
