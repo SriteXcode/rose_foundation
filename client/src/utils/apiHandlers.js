@@ -18,7 +18,7 @@ export const handleContactSubmit = async (e, contactForm, setContactForm, setIsL
     setContactForm({ name: '', email: '', message: '' });
   } catch (error) {
     console.error('Contact form error:', error);
-    const msg = error.response?.data?.error || error.message || 'Failed to send message';
+    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to send message';
     toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);
@@ -48,7 +48,7 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
     setNewsletter('');
   } catch (error) {
     console.error('Newsletter error:', error);
-    const msg = error.response?.data?.error || error.message || 'Failed to subscribe';
+    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to subscribe';
     toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);
@@ -101,7 +101,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
           toast.success('Thank you for your generous donation! You will receive a confirmation email shortly.');
         } catch (error) {
           console.error('Payment verification error:', error);
-          const msg = error.response?.data?.error || 'Payment verification failed';
+          const msg = error.response?.data?.message || error.response?.data?.error || 'Payment verification failed';
           toast.error(`Error: ${msg}`);
         }
       },
@@ -125,7 +125,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
   } catch (error) {
     console.error('Donation error:', error);
-    const msg = error.response?.data?.error || error.message || 'Payment initiation failed';
+    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Payment initiation failed';
     toast.error(`Error: ${msg}. Please try again.`);
   } finally {
     setIsLoading(false);

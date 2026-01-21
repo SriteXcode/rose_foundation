@@ -67,7 +67,7 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      const msg = error.response?.data?.error || error.message || 'Login failed';
+      const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
       toast.error(`Error: ${msg}`);
     }
   };
@@ -104,7 +104,7 @@ export const useAuth = () => {
       setRegisterForm({ name: "", email: "", password: "", confirmPassword: "", phone: "" });
     } catch (err) {
       console.error("Registration error:", err);
-      const msg = err.response?.data?.error || err.message || "Registration failed";
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || "Registration failed";
       toast.error(`Error: ${msg}`);
     }
   };
