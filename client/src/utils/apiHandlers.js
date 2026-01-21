@@ -74,8 +74,8 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
     // 2. Initialize Razorpay options
     const options = {
-      key: response.data.key,
-      amount: response.data.amount,
+      key: orderData.keyId,
+      amount: orderData.amount,
       currency: "INR",
       name: "Blackrose Foundation",
       description: "Donation for social cause",
