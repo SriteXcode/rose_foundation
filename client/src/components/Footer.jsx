@@ -14,10 +14,10 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <img src={logo} alt="Black Rose Foundation Logo" className="h-20 w-20 invert" />
-              <span className="text-xl font-bold text-red-500">BlackRose Foundation</span>
-            </div>
+          <div className="flex items-center space-x-3 mb-6">
+            <img src={logo} alt="Blackrose Foundation Logo" className="h-20 w-20 invert" />
+            <span className="text-xl font-bold text-red-500">Blackrose Foundation</span>
+          </div>
             <p className="text-gray-400">
               Empowering communities and transforming lives through sustainable development and social welfare initiatives.
             </p>
@@ -81,10 +81,8 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-8 text-center">
-          <p className="text-gray-400">
-            © 2024 Black Rose Foundation. All rights reserved. | Designed with ❤️ for the community
-          </p>
+        <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
+          <p>© 2024 Blackrose Foundation. All rights reserved. | Designed with ❤️ for the community</p>
         </div>
       </div>
     </footer>

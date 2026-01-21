@@ -11,9 +11,11 @@ const GalleryPage = () => {
   useEffect(() => {
     const fetchGallery = async () => {
       try {
-        const response = await axiosInstance.get('/gallery');
-        setGalleryItems(response.data);
-        setFilteredItems(response.data);
+        const response = await axiosInstance.get('/gallery?limit=1000');
+        // Handle both possible response structures (array or object with items array)
+        const data = Array.isArray(response.data) ? response.data : (response.data.items || []);
+        setGalleryItems(data);
+        setFilteredItems(data);
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
       } finally {

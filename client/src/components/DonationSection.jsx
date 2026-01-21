@@ -17,7 +17,7 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
 
           <div className="space-y-4 mb-8">
             {[
-              { label: 'Account Name', value: 'Black Rose Foundation' },
+              { label: 'Account Name', value: 'Blackrose Foundation' },
               { label: 'Account Number', value: '251908200515' },
               { label: 'Bank Name', value: 'IndusInd Bank' },
               { label: 'Branch', value: 'Ratan lal Nagar Kanpur' },

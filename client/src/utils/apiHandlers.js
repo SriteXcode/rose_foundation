@@ -74,11 +74,11 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
     // 2. Initialize Razorpay options
     const options = {
-      key: orderData.keyId, // Enter the Key ID generated from the Dashboard
-      amount: orderData.amount,
-      currency: orderData.currency,
-      name: "Black Rose Foundation",
-      description: "Donation",
+      key: response.data.key,
+      amount: response.data.amount,
+      currency: "INR",
+      name: "Blackrose Foundation",
+      description: "Donation for social cause",
       order_id: orderData.orderId,
       handler: async function (response) {
         // 3. Verify Payment on success

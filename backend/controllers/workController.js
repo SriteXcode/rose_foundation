@@ -24,13 +24,24 @@ exports.addWork = async (req, res) => {
 // Get works/projects
 exports.getWorks = async (req, res) => {
   try {
-    const { category, status } = req.query;
+    const { category, status, page = 1, limit = 10 } = req.query;
     const filter = {};
     if (category) filter.category = category;
     if (status) filter.status = status;
 
-    const works = await Work.find(filter).sort({ createdAt: -1 });
-    res.json(works);
+    const works = await Work.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const count = await Work.countDocuments(filter);
+
+    res.json({
+      works,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalWorks: count
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch works' });
   }

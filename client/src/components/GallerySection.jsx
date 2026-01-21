@@ -2,19 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 
-const GallerySection = ({ limit }) => {
+const GallerySection = ({ limit = 10 }) => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const fetchGallery = async () => {
+      setLoading(true);
       try {
-        const response = await axiosInstance.get('/gallery');
-        const data = response.data;
-        if (data.length > 0) {
-          setGalleryItems(data);
+        const response = await axiosInstance.get(`/gallery?page=1&limit=${limit}`);
+        const { items, totalPages, totalItems } = response.data;
+        
+        if (items && items.length > 0) {
+          setGalleryItems(items);
+          setHasMore(totalItems > limit);
         } else {
             // Fallback
             setGalleryItems([
@@ -23,6 +27,7 @@ const GallerySection = ({ limit }) => {
               { imageUrl: '🤝', type: 'icon' }, { imageUrl: '🎓', type: 'icon' },
               { imageUrl: '💊', type: 'icon' }, { imageUrl: '🏘️', type: 'icon' }
             ]);
+            setHasMore(false);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
@@ -32,9 +37,7 @@ const GallerySection = ({ limit }) => {
     };
 
     fetchGallery();
-  }, []);
-
-  const displayedItems = limit ? galleryItems.slice(0, limit) : galleryItems;
+  }, [limit]);
 
   return (
     <section id="gallery" className="py-20 bg-gray-50">
@@ -44,38 +47,36 @@ const GallerySection = ({ limit }) => {
           <div className="w-20 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto mt-4"></div>
         </h2>
 
-        {loading ? (
-          <div className="text-center">Loading gallery...</div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {displayedItems.map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => setSelectedImage(item)}
-                  className="aspect-square bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 rounded-2xl flex items-center justify-center text-4xl md:text-6xl cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
-                >
-                  {/* Check if it's a real image URL or an emoji icon fallback */}
-                  {item.imageUrl && item.imageUrl.startsWith('http') ? (
-                    <img src={item.imageUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{item.imageUrl}</span>
-                  )}
-                </div>
-              ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {galleryItems.map((item, index) => (
+            <div
+              key={`${item._id || index}-${index}`}
+              onClick={() => setSelectedImage(item)}
+              className="aspect-square bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 rounded-2xl flex items-center justify-center text-4xl md:text-6xl cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
+            >
+              {/* Check if it's a real image URL or an emoji icon fallback */}
+              {item.imageUrl && item.imageUrl.startsWith('http') ? (
+                <img src={item.imageUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" />
+              ) : (
+                <span>{item.imageUrl}</span>
+              )}
             </div>
+          ))}
+          
+          {loading && Array.from({ length: limit }).map((_, i) => (
+             <div key={`skeleton-${i}`} className="aspect-square bg-gray-200 rounded-2xl animate-pulse"></div>
+          ))}
+        </div>
 
-            {limit && galleryItems.length > limit && (
-              <div className="text-center mt-12">
-                <button 
-                  onClick={() => navigate('/gallery')}
-                  className="bg-red-600 text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
-                >
-                  View Full Gallery
-                </button>
-              </div>
-            )}
-          </>
+        {hasMore && !loading && (
+          <div className="text-center mt-12">
+            <button 
+              onClick={() => navigate('/gallery')}
+              className="bg-red-600 text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              View Full Gallery
+            </button>
+          </div>
         )}
       </div>
 

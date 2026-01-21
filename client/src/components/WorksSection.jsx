@@ -3,23 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import ProjectDetailsModal from './modals/ProjectDetailsModal';
 
-const WorksSection = ({ limit }) => {
+const WorksSection = ({ limit = 10 }) => {
   const navigate = useNavigate();
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     const fetchWorks = async () => {
+      setLoading(true);
       try {
-        const response = await axiosInstance.get('/works');
-        const data = response.data;
-        // If no data from API, fall back to initial static data for demonstration if needed, 
-        // or just show empty. For now, we'll assume if API works we use it.
-        if (data.length > 0) {
-          setWorks(data);
+        const response = await axiosInstance.get(`/works?page=1&limit=${limit}`);
+        const { works: newWorks, totalPages, totalWorks } = response.data;
+        
+        if (newWorks && newWorks.length > 0) {
+          setWorks(newWorks);
+          setHasMore(totalWorks > limit);
         } else {
-          // Fallback content if DB is empty
+          // Fallback content if DB is empty on first load
             setWorks([
             { icon: '📚', title: 'Education Programs', description: 'Quality education, scholarships, and learning resources for underprivileged children.' },
             { icon: '🏥', title: 'Healthcare Initiatives', description: 'Mobile health camps, free medical checkups, and health awareness programs.' },
@@ -28,6 +30,7 @@ const WorksSection = ({ limit }) => {
             { icon: '🏘️', title: 'Community Development', description: 'Infrastructure development, clean water projects, and sustainable livelihood programs.' },
             { icon: '🍽️', title: 'Food Security', description: 'Mid-day meals, nutrition supplements, and emergency food distribution during crises.' }
           ]);
+          setHasMore(false);
         }
       } catch (error) {
         console.error('Failed to fetch works:', error);
@@ -37,9 +40,7 @@ const WorksSection = ({ limit }) => {
     };
 
     fetchWorks();
-  }, []);
-
-  const displayedWorks = limit ? works.slice(0, limit) : works;
+  }, [limit]);
 
   return (
     <section id="works" className="py-20 bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600 text-white">
@@ -49,46 +50,49 @@ const WorksSection = ({ limit }) => {
           <div className="w-20 h-1 bg-white mx-auto mt-4"></div>
         </h2>
 
-        {loading ? (
-          <div className="text-center text-xl">Loading projects...</div>
-        ) : (
-          <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayedWorks.map((work, index) => (
-                <div 
-                  key={index} 
-                  onClick={() => setSelectedProject(work)}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl transform hover:scale-105 transition-all duration-300 hover:bg-white/20 overflow-hidden flex flex-col cursor-pointer"
-                >
-                  <div className="h-40 mb-4 flex items-center justify-center overflow-hidden rounded-xl bg-white/5">
-                    {work.images?.[0]?.startsWith('http') || work.icon?.startsWith('http') ? (
-                      <img 
-                        src={work.images?.[0] || work.icon} 
-                        alt={work.title} 
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-5xl">{work.icon || '🌟'}</div>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-center">{work.title}</h3>
-                  <p className="text-center opacity-90 text-sm line-clamp-3">{work.description}</p>
-                </div>
-              ))}
-            </div>
-
-            {limit && works.length > limit && (
-              <div className="text-center mt-12">
-                <button 
-                  onClick={() => navigate('/projects')}
-                  className="bg-white text-purple-600 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl"
-                >
-                  View All Projects
-                </button>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {works.map((work, index) => (
+            <div 
+              key={`${work._id || index}-${index}`} 
+              onClick={() => setSelectedProject(work)}
+              className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl transform hover:scale-105 transition-all duration-300 hover:bg-white/20 overflow-hidden flex flex-col cursor-pointer"
+            >
+              <div className="h-40 mb-4 flex items-center justify-center overflow-hidden rounded-xl bg-white/5">
+                {work.images?.[0]?.startsWith('http') || work.icon?.startsWith('http') ? (
+                  <img 
+                    src={work.images?.[0] || work.icon} 
+                    alt={work.title} 
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-5xl">{work.icon || '🌟'}</div>
+                )}
               </div>
-            )}
-          </>
+              <h3 className="text-xl font-bold mb-3 text-center">{work.title}</h3>
+              <p className="text-center opacity-90 text-sm line-clamp-3">{work.description}</p>
+            </div>
+          ))}
+          
+          {loading && Array.from({ length: limit }).map((_, i) => (
+            <div key={`skeleton-${i}`} className="bg-white/5 border border-white/10 p-6 rounded-2xl animate-pulse h-[300px]">
+              <div className="h-40 bg-white/10 rounded-xl mb-4"></div>
+              <div className="h-6 bg-white/10 rounded mb-3 w-3/4 mx-auto"></div>
+              <div className="h-4 bg-white/10 rounded mb-2 w-full"></div>
+              <div className="h-4 bg-white/10 rounded w-5/6 mx-auto"></div>
+            </div>
+          ))}
+        </div>
+
+        {hasMore && !loading && (
+          <div className="text-center mt-12">
+            <button 
+              onClick={() => navigate('/projects')}
+              className="bg-white text-purple-600 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl"
+            >
+              View All Projects
+            </button>
+          </div>
         )}
       </div>
 

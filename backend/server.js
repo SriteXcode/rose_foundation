@@ -22,6 +22,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 //   credentials: true,
 // }));
 const allowedOrigins = [
+  "https://www.blackrosefoundation.org.in/",
   "http://localhost:5173",
   "https://rose-foundation.onrender.com",
 ];

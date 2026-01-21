@@ -121,7 +121,7 @@ const AppContent = () => {
           } />
           
           <Route path="/profile" element={
-            <ProfilePage user={user} setUser={setUser} authLoading={authLoading} />
+            <ProfilePage user={user} setUser={setUser} authLoading={authLoading} handleLogout={handleLogout} />
           } />
           
           <Route path="/projects" element={<ProjectsPage />} />

@@ -24,8 +24,21 @@ exports.addVolunteer = async (req, res) => {
 // Get volunteers
 exports.getVolunteers = async (req, res) => {
   try {
-    const volunteers = await Volunteer.find().sort({ createdAt: -1 });
-    res.json(volunteers);
+    const { page = 1, limit = 10 } = req.query;
+    
+    const volunteers = await Volunteer.find()
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const count = await Volunteer.countDocuments();
+
+    res.json({
+      volunteers,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalVolunteers: count
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch volunteers' });
   }
