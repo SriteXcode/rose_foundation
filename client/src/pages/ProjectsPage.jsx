@@ -12,9 +12,11 @@ const ProjectsPage = () => {
   useEffect(() => {
     const fetchWorks = async () => {
       try {
-        const response = await axiosInstance.get('/works');
-        setWorks(response.data);
-        setFilteredWorks(response.data);
+        const response = await axiosInstance.get('/works?limit=1000');
+        // Handle both possible response structures (array or object with works array)
+        const data = Array.isArray(response.data) ? response.data : (response.data.works || []);
+        setWorks(data);
+        setFilteredWorks(data);
       } catch (error) {
         console.error('Failed to fetch works:', error);
       } finally {

@@ -27,14 +27,23 @@ exports.addGalleryItem = async (req, res) => {
 // Get gallery items
 exports.getGalleryItems = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, page = 1, limit = 10 } = req.query;
     const filter = category ? { category } : {};
     
     const items = await Gallery.find(filter)
       .sort({ createdAt: -1 })
-      .populate('project', 'title'); // Populate project title
+      .populate('project', 'title') // Populate project title
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
       
-    res.json(items);
+    const count = await Gallery.countDocuments(filter);
+
+    res.json({
+      items,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalItems: count
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch gallery items' });
   }

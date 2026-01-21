@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
 
-const ProfilePage = ({ user, setUser, authLoading }) => {
+const ProfilePage = ({ user, setUser, authLoading, handleLogout }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
@@ -62,9 +62,17 @@ const ProfilePage = ({ user, setUser, authLoading }) => {
     <div className="min-h-screen bg-gray-50 pt-20 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-8 text-white">
-            <h1 className="text-3xl font-bold">My Account</h1>
-            <p className="opacity-90 mt-2">Welcome back, {user.name}</p>
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-8 text-white flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">My Account</h1>
+              <p className="opacity-90 mt-2">Welcome back, {user.name}</p>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-semibold transition-colors backdrop-blur-sm border border-white/30"
+            >
+              Logout
+            </button>
           </div>
 
           <div className="flex border-b border-gray-200">

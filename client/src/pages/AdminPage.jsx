@@ -72,8 +72,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // --- API Fetch Functions ---
   const fetchVolunteers = async () => {
     try {
-      const response = await axiosInstance.get('/volunteers');
-      setVolunteers(response.data);
+      const response = await axiosInstance.get('/volunteers?limit=1000');
+      const data = response.data.volunteers || response.data;
+      setVolunteers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch volunteers', error);
     }
@@ -105,8 +106,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const fetchWorks = async () => {
     try {
-      const response = await axiosInstance.get('/works');
-      setWorks(response.data);
+      const response = await axiosInstance.get('/works?limit=1000');
+      const data = response.data.works || response.data;
+      setWorks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch works', error);
     }
@@ -114,8 +116,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const fetchGallery = async () => {
     try {
-      const response = await axiosInstance.get('/gallery');
-      setGalleryItems(response.data);
+      const response = await axiosInstance.get('/gallery?limit=1000');
+      const data = response.data.items || response.data;
+      setGalleryItems(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch gallery', error);
     }

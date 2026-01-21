@@ -35,8 +35,8 @@ const Navigation = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Black Rose Foundation Logo" className="h-15 w-15 invert" />
-            <span className="text-xl font-bold text-red-500">BlackRose Foundation</span>
+            <img src={logo} alt="Blackrose Foundation Logo" className="h-15 w-15 invert" />
+            <span className="text-xl font-bold text-red-500">Blackrose Foundation</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -72,12 +72,6 @@ const Navigation = ({
                   className="text-white hover:text-red-400 transition-colors font-semibold"
                 >
                   Welcome, {user.name.split(' ')[0]}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  Logout
                 </button>
               </div>
             ) : (
@@ -141,15 +135,6 @@ const Navigation = ({
                       Admin Panel
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                  >
-                    Logout
-                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
