@@ -147,12 +147,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         role: editingUser.role
       });
 
-      toast.success('User updated successfully');
+      toast.success('User details updated successfully');
       setEditingUser(null);
       fetchUsers();
     } catch (error) {
-      const msg = error.response?.data?.error || 'Failed to update user';
-      toast.error(msg);
+      toast.error('Failed to update user details. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +179,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setEditingWork(null);
       fetchWorks();
     } catch (error) {
-      toast.error('Error saving project');
+      toast.error('Unable to save project details.');
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +191,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       await axiosInstance.delete(`/works/${id}`);
       fetchWorks();
     } catch (error) {
-      toast.error('Failed to delete project');
+      toast.error('Unable to delete project.');
     }
   };
 
@@ -218,7 +217,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setEditingVolunteer(null);
       fetchVolunteers();
     } catch (error) {
-      toast.error('Error saving volunteer');
+       toast.error('Unable to save volunteer details.');
     } finally {
       setIsLoading(false);
     }
@@ -230,7 +229,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       await axiosInstance.delete(`/volunteers/${id}`);
       fetchVolunteers();
     } catch (error) {
-      toast.error('Failed to delete volunteer');
+      toast.error('Unable to delete volunteer.');
     }
   };
 
@@ -270,7 +269,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setTagType('none');
       fetchGallery();
     } catch (error) {
-      toast.error('Error adding image');
+      toast.error('Unable to add image.');
     } finally {
       setIsLoading(false);
     }
@@ -282,7 +281,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       await axiosInstance.delete(`/gallery/${id}`);
       fetchGallery();
     } catch (error) {
-      toast.error('Failed to delete image');
+      toast.error('Unable to delete image.');
     }
   };
 
@@ -319,7 +318,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     } catch (error) {
       clearInterval(interval);
       setNewsletterProgress({ isSending: false, total: 0, current: 0 });
-      toast.error(error.response?.data?.error || 'Failed to send newsletter');
+      toast.error('Unable to send newsletter. Please try again later.');
     }
   };
 

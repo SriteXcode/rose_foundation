@@ -18,8 +18,14 @@ export const handleContactSubmit = async (e, contactForm, setContactForm, setIsL
     setContactForm({ name: '', email: '', message: '' });
   } catch (error) {
     console.error('Contact form error:', error);
-    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to send message';
-    toast.error(`Error: ${msg}. Please try again.`);
+    let msg = error.response?.data?.message || error.response?.data?.error || error.message;
+    
+    // Default friendly message
+    if (!msg || msg.includes('Internal Server Error') || msg.includes('Failed to')) {
+      msg = 'Something went wrong. Please try again later.';
+    }
+    
+    toast.error(msg);
   } finally {
     setIsLoading(false);
   }
@@ -48,8 +54,15 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
     setNewsletter('');
   } catch (error) {
     console.error('Newsletter error:', error);
-    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to subscribe';
-    toast.error(`Error: ${msg}. Please try again.`);
+    let msg = error.response?.data?.message || error.response?.data?.error || error.message;
+
+    if (msg.includes('already subscribed')) {
+      msg = 'You are already subscribed to our newsletter!';
+    } else {
+      msg = 'Unable to subscribe at the moment. Please try again.';
+    }
+
+    toast.error(msg);
   } finally {
     setIsLoading(false);
   }
@@ -101,8 +114,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
           toast.success('Thank you for your generous donation! You will receive a confirmation email shortly.');
         } catch (error) {
           console.error('Payment verification error:', error);
-          const msg = error.response?.data?.message || error.response?.data?.error || 'Payment verification failed';
-          toast.error(`Error: ${msg}`);
+          toast.error('Payment verification failed. Please contact support if money was deducted.');
         }
       },
       prefill: {
@@ -125,8 +137,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
 
   } catch (error) {
     console.error('Donation error:', error);
-    const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Payment initiation failed';
-    toast.error(`Error: ${msg}. Please try again.`);
+    toast.error('Unable to initiate donation. Please check your connection or try again.');
   } finally {
     setIsLoading(false);
   }

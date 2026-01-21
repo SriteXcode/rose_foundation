@@ -67,8 +67,16 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
-      toast.error(`Error: ${msg}`);
+      let msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
+      
+      // User-friendly messages
+      if (msg.includes('Invalid credentials') || msg.includes('not found')) {
+        msg = 'Incorrect email or password. Please try again.';
+      } else if (msg.includes('Network Error')) {
+        msg = 'Unable to connect to the server. Please check your internet.';
+      }
+
+      toast.error(msg);
     }
   };
 
@@ -104,8 +112,14 @@ export const useAuth = () => {
       setRegisterForm({ name: "", email: "", password: "", confirmPassword: "", phone: "" });
     } catch (err) {
       console.error("Registration error:", err);
-      const msg = err.response?.data?.message || err.response?.data?.error || err.message || "Registration failed";
-      toast.error(`Error: ${msg}`);
+      let msg = err.response?.data?.message || err.response?.data?.error || err.message || "Registration failed";
+      
+      // User-friendly messages
+      if (msg.includes('User already exists') || msg.includes('duplicate')) {
+        msg = 'This email is already registered. Please login instead.';
+      }
+
+      toast.error(msg);
     }
   };
 
