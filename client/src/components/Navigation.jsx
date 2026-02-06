@@ -53,6 +53,13 @@ const Navigation = ({
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 group-hover:w-full transition-all duration-300"></span>
               </button>
             ))}
+            <button
+                onClick={() => navigate('/blog')}
+                className="text-white hover:text-red-400 transition-colors relative group"
+              >
+                Blog
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 group-hover:w-full transition-all duration-300"></span>
+            </button>
           </div>
 
           {/* Auth buttons */}
@@ -113,6 +120,15 @@ const Navigation = ({
                 {item.label}
               </button>
             ))}
+            <button
+                onClick={() => {
+                  navigate('/blog');
+                  setIsMenuOpen(false);
+                }}
+                className="block w-full text-left text-white hover:text-red-400 py-2 transition-colors"
+              >
+                Blog
+            </button>
 
             {/* Mobile auth buttons */}
             <div className="mt-4 pt-4 border-t border-gray-700">

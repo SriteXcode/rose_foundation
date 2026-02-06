@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const AboutSection = () => (
   <section id="about" className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -19,6 +20,15 @@ const AboutSection = () => (
           <p className="text-lg text-gray-700 leading-relaxed">
             With a team of dedicated volunteers and professionals, we strive to bridge the gap between resources and needs, ensuring that help reaches those who need it most.
           </p>
+          
+          <div className="pt-4">
+            <Link 
+              to="/legal" 
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 transition-all transform hover:scale-105"
+            >
+              View Legal Documents →
+            </Link>
+          </div>
         </div>
 
         <div className="relative">

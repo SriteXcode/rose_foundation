@@ -6,8 +6,13 @@ import { handleNewsletterSubmit } from '../utils/apiHandlers';
 const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLoading }) => {
   const onNewsletterSubmit = (e) => handleNewsletterSubmit(e, newsletter, setNewsletter, setIsLoading);
 
-  const quickLinks = ['Home', 'About', 'Works', 'Vision', 'Gallery', 'Contact'];
-  const socialLinks = ['Facebook', 'Twitter', 'Instagram', 'LinkedIn', 'YouTube'];
+  const quickLinks = ['Home', 'About', 'Works', 'Vision', 'Gallery', 'Contact', 'Blog', 'Legal Documents'];
+  const socialLinks = [
+    { name: 'Facebook', url: 'https://www.facebook.com/share/1A3FWfGZU5' },
+    { name: 'Twitter', url: 'https://x.com/blackrosefound' },
+    { name: 'Instagram', url: 'https://www.instagram.com/blackrosefoundation_?igsh=anNpZzZrNWZubjBt' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/company/blackrose-foundation' }
+  ];
 
   return (
     <footer className="bg-black text-white py-12">
@@ -29,12 +34,22 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
               <ul className="space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link}>
-                    <button
-                      onClick={() => scrollToSection(link.toLowerCase())}
-                      className="text-gray-400 hover:text-white transition-colors"
-                    >
-                      {link}
-                    </button>
+                    {link === 'Legal Documents' ? (
+                      <Link to="/legal" className="text-gray-400 hover:text-white transition-colors">
+                        {link}
+                      </Link>
+                    ) : link === 'Blog' ? (
+                      <Link to="/blog" className="text-gray-400 hover:text-white transition-colors">
+                        {link}
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => scrollToSection(link.toLowerCase())}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        {link}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -44,9 +59,14 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
               <h4 className="text-lg font-semibold mb-4 text-red-400">Follow Us</h4>
               <ul className="space-y-2">
                 {socialLinks.map((social) => (
-                  <li key={social}>
-                    <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                      {social}
+                  <li key={social.name}>
+                    <a 
+                      href={social.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {social.name}
                     </a>
                   </li>
                 ))}
@@ -82,7 +102,7 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
         </div>
 
         <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-          <p>© 2024 Blackrose Foundation. All rights reserved. | Designed with ❤️ for the community</p>
+          <p>© {new Date().getFullYear()} Blackrose Foundation. All rights reserved. | Designed with ❤️ for the community</p>
         </div>
       </div>
     </footer>
