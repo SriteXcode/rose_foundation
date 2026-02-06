@@ -17,7 +17,15 @@ exports.getSettings = async (req, res) => {
 // Update settings (admin only)
 exports.updateSettings = async (req, res) => {
   try {
-    const { siteName, contactEmail, contactPhone, address, socialLinks } = req.body;
+    const { 
+      siteName, 
+      contactEmail, 
+      contactPhone, 
+      address, 
+      socialLinks, 
+      heroImagesDesktop, 
+      heroImagesMobile 
+    } = req.body;
     
     let settings = await Settings.findOne();
     if (!settings) {
@@ -28,13 +36,23 @@ exports.updateSettings = async (req, res) => {
     settings.contactEmail = contactEmail || settings.contactEmail;
     settings.contactPhone = contactPhone || settings.contactPhone;
     settings.address = address || settings.address;
+    
     if (socialLinks) {
       settings.socialLinks = { ...settings.socialLinks, ...socialLinks };
+    }
+
+    if (heroImagesDesktop) {
+      settings.heroImagesDesktop = heroImagesDesktop;
+    }
+
+    if (heroImagesMobile) {
+      settings.heroImagesMobile = heroImagesMobile;
     }
 
     await settings.save();
     res.json({ message: 'Settings updated successfully', settings });
   } catch (error) {
+    console.error('Settings update error:', error);
     res.status(500).json({ error: 'Failed to update settings' });
   }
 };

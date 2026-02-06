@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
+import { API_BASE_URL } from '../utils/constants';
 import ImageUpload from '../components/ImageUpload';
 import NewsletterProgress from '../components/NewsletterProgress';
 import toast from 'react-hot-toast';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const navigate = useNavigate();
@@ -12,7 +15,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [users, setUsers] = useState([]);
   const [works, setWorks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
+  const [blogPosts, setBlogPosts] = useState([]); // Blog State
   
   // Newsletter Progress State
   const [newsletterProgress, setNewsletterProgress] = useState({ isSending: false, total: 0, current: 0 });
@@ -21,11 +26,13 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [editingUser, setEditingUser] = useState(null);
   const [editingWork, setEditingWork] = useState(null); 
   const [editingVolunteer, setEditingVolunteer] = useState(null);
+  const [editingPost, setEditingPost] = useState(null); // Blog Edit State
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showBlogModal, setShowBlogModal] = useState(false); // Blog Modal
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
-  const [tagType, setTagType] = useState('none'); // 'project', 'custom', 'none'
+  const [tagType, setTagType] = useState('none'); 
   const [showSidebar, setShowSidebar] = useState(false);
 
   const [newsletterForm, setNewsletterForm] = useState({ subject: '', message: '' });
@@ -33,7 +40,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     siteName: '',
     contactEmail: '',
     contactPhone: '',
-    address: ''
+    address: '',
+    heroImagesDesktop: [],
+    heroImagesMobile: []
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +54,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       navigate('/');
       return;
     }
-    // Load dashboard stats if not present
     if (!adminData?.isLoaded) {
       loadAdminData();
     }
@@ -59,11 +67,12 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
     if (activeTab === 'volunteers') fetchVolunteers();
+    if (activeTab === 'applications') fetchApplications();
     if (activeTab === 'gallery') fetchGallery();
+    if (activeTab === 'blog') fetchBlogPosts(); // Fetch Blog
     if (activeTab === 'settings') fetchSettings();
   }, [activeTab, user, authLoading]);
 
-  // Close sidebar on tab change (mobile)
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setShowSidebar(false);
@@ -72,11 +81,30 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // --- API Fetch Functions ---
   const fetchVolunteers = async () => {
     try {
-      const response = await axiosInstance.get('/volunteers?limit=1000');
+      const response = await axiosInstance.get('/volunteers?limit=1000&status=approved');
       const data = response.data.volunteers || response.data;
       setVolunteers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch volunteers', error);
+    }
+  };
+
+  const fetchApplications = async () => {
+    try {
+      const response = await axiosInstance.get('/volunteers?limit=1000&status=pending');
+      const data = response.data.volunteers || response.data;
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch applications', error);
+    }
+  };
+
+  const fetchBlogPosts = async () => {
+    try {
+      const response = await axiosInstance.get('/blog?limit=1000');
+      setBlogPosts(response.data.posts || []);
+    } catch (error) {
+      console.error('Failed to fetch blog posts', error);
     }
   };
 
@@ -88,7 +116,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         siteName: data.siteName || '',
         contactEmail: data.contactEmail || '',
         contactPhone: data.contactPhone || '',
-        address: data.address || ''
+        address: data.address || '',
+        heroImagesDesktop: data.heroImagesDesktop || [],
+        heroImagesMobile: data.heroImagesMobile || []
       });
     } catch (error) {
       console.error('Failed to fetch settings', error);
@@ -233,6 +263,65 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
   };
 
+  // --- Application Management ---
+  const handleApproveApplication = async (application) => {
+      try {
+          await axiosInstance.put(`/volunteers/${application._id}`, { status: 'approved' });
+          toast.success(`${application.name} approved as ${application.role}`);
+          fetchApplications();
+      } catch (error) {
+          toast.error("Failed to approve application");
+      }
+  };
+
+  const handleDeleteApplication = async (id) => {
+    if (!window.confirm('Reject and delete this application?')) return;
+    try {
+      await axiosInstance.delete(`/volunteers/${id}`);
+      toast.success('Application rejected');
+      fetchApplications();
+    } catch (error) {
+      toast.error('Unable to reject application.');
+    }
+  };
+
+  // --- Blog Management ---
+  const handleBlogSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const url = editingPost?._id 
+        ? `/blog/${editingPost._id}`
+        : '/blog';
+      
+      // If updating, method is PUT, else POST
+      const method = editingPost?._id ? 'put' : 'post';
+      
+      await axiosInstance[method](url, editingPost);
+
+      toast.success(`Post ${editingPost?._id ? 'updated' : 'published'} successfully`);
+      setShowBlogModal(false);
+      setEditingPost(null);
+      fetchBlogPosts();
+    } catch (error) {
+      console.error("Blog Error", error);
+      toast.error('Unable to save post.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeletePost = async (id) => {
+    if (!window.confirm('Delete this post? This action cannot be undone.')) return;
+    try {
+      await axiosInstance.delete(`/blog/${id}`);
+      toast.success('Post deleted');
+      fetchBlogPosts();
+    } catch (error) {
+      toast.error('Unable to delete post.');
+    }
+  };
+
   // --- Gallery Management ---
   const handleGallerySubmit = async (e) => {
     e.preventDefault();
@@ -289,11 +378,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const handleSendNewsletter = async (e) => {
     e.preventDefault();
     
-    // Start background simulation
-    const totalSubscribers = adminData.stats?.totalNewsletters || 100; // Fallback estimate
+    const totalSubscribers = adminData.stats?.totalNewsletters || 100;
     setNewsletterProgress({ isSending: true, total: totalSubscribers, current: 0 });
     
-    // Simulate progress while waiting for API (or in parallel)
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.floor(Math.random() * 5) + 1;
@@ -310,7 +397,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       toast.success(response.data.message);
       setNewsletterForm({ subject: '', message: '' });
       
-      // Auto close after 3 seconds
       setTimeout(() => {
         setNewsletterProgress({ isSending: false, total: 0, current: 0 });
       }, 3000);
@@ -348,7 +434,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // --- Render Functions ---
   const renderDashboard = () => (
     <>
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl">
           <div className="text-3xl mb-2">💰</div>
@@ -372,9 +457,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         </div>
       </div>
 
-      {/* Recent Data Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Donations */}
         <div className="bg-white p-6 rounded-xl border shadow-sm">
           <h3 className="text-xl font-bold mb-4 text-gray-800">Recent Donations</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -398,7 +481,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           </div>
         </div>
 
-        {/* Recent Messages */}
         <div className="bg-white p-6 rounded-xl border shadow-sm">
           <h3 className="text-xl font-bold mb-4 text-gray-800">Recent Messages</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -496,7 +578,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const renderVolunteers = () => (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-800">Volunteers</h3>
+        <h3 className="text-2xl font-bold text-gray-800">Approved Volunteers</h3>
         <button 
           onClick={() => { setEditingVolunteer({}); setShowVolunteerModal(true); }}
           className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
@@ -515,7 +597,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                )}
              </div>
              <h4 className="font-bold text-lg text-gray-800">{volunteer.name}</h4>
-             <p className="text-sm text-gray-500 mb-4">{volunteer.designation}</p>
+             <p className="text-sm text-gray-500 mb-4">{volunteer.role || volunteer.designation}</p>
              
              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded-lg backdrop-blur-sm">
                <button 
@@ -533,6 +615,110 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                  🗑️
                </button>
              </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderApplications = () => (
+    <div>
+      <h3 className="text-2xl font-bold mb-6 text-gray-800">Pending Applications</h3>
+      {applications.length === 0 ? (
+          <p className="text-gray-500">No pending applications.</p>
+      ) : (
+          <div className="space-y-4">
+              {applications.map((app) => (
+                  <div key={app._id} className="bg-white p-6 rounded-xl border shadow-sm flex flex-col md:flex-row gap-6">
+                      <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+                          {app.image ? (
+                              <img 
+                                src={app.image.startsWith('http') ? app.image : `${API_BASE_URL}${app.image}`} 
+                                alt={app.name} 
+                                className="w-full h-full object-cover" 
+                              />
+                          ) : (
+                              <div className="w-full h-full flex items-center justify-center text-3xl">👤</div>
+                          )}
+                      </div>
+                      <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                              <h4 className="text-xl font-bold text-gray-800">{app.name}</h4>
+                              <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${app.role === 'Intern' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                  {app.role}
+                              </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-2 text-sm text-gray-600">
+                              <p><span className="font-semibold">Email:</span> {app.email}</p>
+                              <p><span className="font-semibold">Phone:</span> {app.phone}</p>
+                              <p><span className="font-semibold">Aadhar:</span> {app.aadhar}</p>
+                              <p><span className="font-semibold">Applied:</span> {new Date(app.createdAt).toLocaleDateString()}</p>
+                          </div>
+                      </div>
+                      <div className="flex md:flex-col justify-end gap-3 shrink-0">
+                          <button 
+                              onClick={() => handleApproveApplication(app)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                              Approve
+                          </button>
+                          <button 
+                              onClick={() => handleDeleteApplication(app._id)}
+                              className="bg-red-100 hover:bg-red-200 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-semibold transition-colors"
+                          >
+                              Reject
+                          </button>
+                      </div>
+                  </div>
+              ))}
+          </div>
+      )}
+    </div>
+  );
+
+  const renderBlog = () => (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">Blog Posts</h3>
+        <button 
+          onClick={() => { 
+            setEditingPost({ title: '', summary: '', content: '', coverImage: '', tags: '' }); 
+            setShowBlogModal(true); 
+          }}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+        >
+          + New Post
+        </button>
+      </div>
+      <div className="space-y-4">
+        {blogPosts.map((post) => (
+          <div key={post._id} className="bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="w-full md:w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+               {post.coverImage ? (
+                 <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center text-xl">📝</div>
+               )}
+            </div>
+            <div className="flex-1">
+              <h4 className="text-lg font-bold text-gray-800">{post.title}</h4>
+              <p className="text-sm text-gray-500 mb-1">{new Date(post.createdAt).toLocaleDateString()} • {post.status}</p>
+              <p className="text-sm text-gray-600 line-clamp-2">{post.summary}</p>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => { setEditingPost(post); setShowBlogModal(true); }}
+                className="text-blue-600 px-3 py-1 bg-blue-50 rounded hover:bg-blue-100 font-semibold text-sm"
+              >
+                Edit
+              </button>
+              <button 
+                onClick={() => handleDeletePost(post._id)}
+                className="text-red-600 px-3 py-1 bg-red-50 rounded hover:bg-red-100 font-semibold text-sm"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -596,27 +782,98 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderSettings = () => (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <h3 className="text-2xl font-bold mb-6 text-gray-800">System Settings</h3>
       <form onSubmit={handleSaveSettings} className="space-y-6">
         <div className="bg-white p-6 rounded-xl border space-y-4">
+          <h4 className="text-lg font-bold text-gray-800 border-b pb-2">General Info</h4>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Organization Name</label>
             <input type="text" value={settingsForm.siteName} onChange={(e) => setSettingsForm({...settingsForm, siteName: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Email</label>
-            <input type="email" value={settingsForm.contactEmail} onChange={(e) => setSettingsForm({...settingsForm, contactEmail: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Phone</label>
-            <input type="tel" value={settingsForm.contactPhone} onChange={(e) => setSettingsForm({...settingsForm, contactPhone: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Email</label>
+              <input type="email" value={settingsForm.contactEmail} onChange={(e) => setSettingsForm({...settingsForm, contactEmail: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Phone</label>
+              <input type="tel" value={settingsForm.contactPhone} onChange={(e) => setSettingsForm({...settingsForm, contactPhone: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Address</label>
             <textarea rows={3} value={settingsForm.address} onChange={(e) => setSettingsForm({...settingsForm, address: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
           </div>
         </div>
+
+        {/* Hero Image Management */}
+        <div className="bg-white p-6 rounded-xl border space-y-6">
+          <h4 className="text-lg font-bold text-gray-800 border-b pb-2">Hero Carousel Images</h4>
+          
+          {/* Desktop Images */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Desktop Images (Landscape)</label>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {settingsForm.heroImagesDesktop.map((img, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden h-24 border bg-gray-50">
+                  <img src={img} alt={`Desktop Hero ${index}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = settingsForm.heroImagesDesktop.filter((_, i) => i !== index);
+                      setSettingsForm({ ...settingsForm, heroImagesDesktop: newImages });
+                    }}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="border rounded-lg p-2 bg-gray-50">
+              <ImageUpload 
+                onUpload={(url) => setSettingsForm(prev => ({
+                  ...prev,
+                  heroImagesDesktop: [...prev.heroImagesDesktop, url]
+                }))}
+              />
+              <p className="text-xs text-gray-500 mt-1 text-center">Upload new image</p>
+            </div>
+          </div>
+
+          {/* Mobile Images */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Images (Portrait/Square)</label>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {settingsForm.heroImagesMobile.map((img, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden h-32 border bg-gray-50">
+                  <img src={img} alt={`Mobile Hero ${index}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = settingsForm.heroImagesMobile.filter((_, i) => i !== index);
+                      setSettingsForm({ ...settingsForm, heroImagesMobile: newImages });
+                    }}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="border rounded-lg p-2 bg-gray-50">
+              <ImageUpload 
+                onUpload={(url) => setSettingsForm(prev => ({
+                  ...prev,
+                  heroImagesMobile: [...prev.heroImagesMobile, url]
+                }))}
+              />
+              <p className="text-xs text-gray-500 mt-1 text-center">Upload new image</p>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" disabled={isLoading} className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-lg font-semibold transition-colors">
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>
@@ -663,8 +920,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         `}>
           {[
             { id: 'dashboard', icon: '📊', label: 'Overview' },
-            { id: 'users', icon: '👥', label: 'Users' },
+            { id: 'applications', icon: '📝', label: 'Applications' }, 
+            { id: 'blog', icon: '✍️', label: 'Blog' }, // Blog Tab
             { id: 'volunteers', icon: '🤝', label: 'Volunteers' },
+            { id: 'users', icon: '👥', label: 'Users' },
             { id: 'projects', icon: '🏗️', label: 'Projects' },
             { id: 'gallery', icon: '🖼️', label: 'Gallery' },
             { id: 'newsletter', icon: '📧', label: 'Newsletter' },
@@ -684,15 +943,84 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         <div className="flex-1 p-4 md:p-8 w-full max-w-full overflow-hidden">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'users' && renderUsers()}
+          {activeTab === 'applications' && renderApplications()}
           {activeTab === 'volunteers' && renderVolunteers()}
           {activeTab === 'projects' && renderProjects()}
           {activeTab === 'gallery' && renderGallery()}
+          {activeTab === 'blog' && renderBlog()} 
           {activeTab === 'newsletter' && renderNewsletter()}
           {activeTab === 'settings' && renderSettings()}
         </div>
       </div>
 
       {/* --- Modals --- */}
+      {/* Blog Modal */}
+      {showBlogModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-4xl shadow-2xl h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">{editingPost._id ? 'Edit Post' : 'New Post'}</h3>
+            <form onSubmit={handleBlogSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                  <input 
+                    type="text" 
+                    value={editingPost.title} 
+                    onChange={(e) => setEditingPost({...editingPost, title: e.target.value})} 
+                    className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Tags (comma separated)</label>
+                  <input 
+                    type="text" 
+                    value={Array.isArray(editingPost.tags) ? editingPost.tags.join(', ') : editingPost.tags} 
+                    onChange={(e) => setEditingPost({...editingPost, tags: e.target.value})} 
+                    className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                    placeholder="Education, Health" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Cover Image</label>
+                <ImageUpload 
+                  currentImage={editingPost.coverImage}
+                  onUpload={(url) => setEditingPost({ ...editingPost, coverImage: url })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Summary (Short Excerpt)</label>
+                <textarea 
+                  rows={2} 
+                  value={editingPost.summary} 
+                  onChange={(e) => setEditingPost({...editingPost, summary: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                  required 
+                />
+              </div>
+
+              <div className="h-64 mb-12">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Content</label>
+                <ReactQuill 
+                  theme="snow" 
+                  value={editingPost.content} 
+                  onChange={(content) => setEditingPost({...editingPost, content})}
+                  className="h-48 bg-white border rounded-lg text-gray-800"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6 pt-4 border-t">
+                <button type="button" onClick={() => setShowBlogModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Publish Post</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">

@@ -60,6 +60,7 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/volunteers', require('./routes/volunteerRoutes'));
+app.use('/api/blog', require('./routes/blogRoutes'));
 
 // Organization info
 app.get('/api/organization', (req, res) => {

@@ -8,6 +8,7 @@ import { useScrollDetection } from './hooks/useScrollDetection';
 import { Toaster } from 'react-hot-toast';
 import { LoaderProvider } from './context/LoaderContext';
 import Loader from './components/Loader';
+import WhatsAppButton from './components/WhatsAppButton';
 
 // Lazy loading pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -17,6 +18,9 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 const GalleryPage = lazy(() => import('./pages/GalleryPage'));
 const NewsletterHistoryPage = lazy(() => import('./pages/NewsletterHistoryPage'));
 const CertificatePage = lazy(() => import('./pages/CertificatePage'));
+const LegalDocumentsPage = lazy(() => import('./pages/LegalDocumentsPage')); // Legal Docs Page
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -128,6 +132,9 @@ const AppContent = () => {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
                   <Route path="/certificate/:id" element={<CertificatePage />} />
+                  <Route path="/legal" element={<LegalDocumentsPage />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
                 </Routes>      </Suspense>
 
       {/* Modals are available globally (except maybe admin page depending on design, but keeping them here is safe) */}
@@ -150,6 +157,7 @@ const AppContent = () => {
         handleRegister={handleRegister}
         isLoading={isLoading}
       />
+      <WhatsAppButton />
       <Toaster position="top-center" />
     </div>
   );

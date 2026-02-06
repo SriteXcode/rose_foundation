@@ -10,7 +10,9 @@ const settingsSchema = new mongoose.Schema({
     twitter: { type: String, default: '' },
     instagram: { type: String, default: '' },
     linkedin: { type: String, default: '' }
-  }
+  },
+  heroImagesDesktop: [{ type: String }],
+  heroImagesMobile: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', settingsSchema);
