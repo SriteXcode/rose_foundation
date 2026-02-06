@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import ProjectDetailsModal from './modals/ProjectDetailsModal';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const WorksSection = ({ limit = 10 }) => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const WorksSection = ({ limit = 10 }) => {
       setLoading(true);
       try {
         const response = await axiosInstance.get(`/works?page=1&limit=${limit}`);
-        const { works: newWorks, totalPages, totalWorks } = response.data;
+        const { works: newWorks, totalWorks } = response.data;
         
         if (newWorks && newWorks.length > 0) {
           setWorks(newWorks);
@@ -51,19 +52,24 @@ const WorksSection = ({ limit = 10 }) => {
         </h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {works.map((work, index) => (
+          {works.map((work, index) => {
+            const optimizedUrl = getOptimizedImageUrl(work.images?.[0] || work.icon);
+            const isImage = optimizedUrl && optimizedUrl.startsWith('http');
+            return (
             <div 
               key={`${work._id || index}-${index}`} 
               onClick={() => setSelectedProject(work)}
               className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl transform hover:scale-105 transition-all duration-300 hover:bg-white/20 overflow-hidden flex flex-col cursor-pointer"
             >
               <div className="h-40 mb-4 flex items-center justify-center overflow-hidden rounded-xl bg-white/5">
-                {work.images?.[0]?.startsWith('http') || work.icon?.startsWith('http') ? (
+                {isImage ? (
                   <img 
-                    src={work.images?.[0] || work.icon} 
+                    src={optimizedUrl} 
                     alt={work.title} 
                     loading="lazy"
                     className="w-full h-full object-cover"
+                    width="400"
+                    height="300"
                   />
                 ) : (
                   <div className="text-5xl">{work.icon || '🌟'}</div>
@@ -72,7 +78,7 @@ const WorksSection = ({ limit = 10 }) => {
               <h3 className="text-xl font-bold mb-3 text-center">{work.title}</h3>
               <p className="text-center opacity-90 text-sm line-clamp-3">{work.description}</p>
             </div>
-          ))}
+          )})}
           
           {loading && Array.from({ length: limit }).map((_, i) => (
             <div key={`skeleton-${i}`} className="bg-white/5 border border-white/10 p-6 rounded-2xl animate-pulse h-[300px]">

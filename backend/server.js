@@ -42,7 +42,10 @@ app.use(cors({
 
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d', // Cache for 1 day
+  immutable: true 
+}));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));

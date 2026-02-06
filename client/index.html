@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
     <style>
       #splash-screen {
         position: fixed;
@@ -51,13 +51,18 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Simple logic to hide splash screen after main.jsx runs/mounts
-      // We can also dispatch a custom event from React to be more precise
-      window.onload = () => {
-        setTimeout(() => {
-          document.body.classList.add('loaded');
-        }, 1500); // Minimum 1.5s splash
+      const removeSplash = () => {
+        document.body.classList.add('loaded');
       };
+
+      // Listen for custom event from React
+      window.addEventListener('app-loaded', () => {
+        // Small delay to ensure smooth transition after React mounts
+        setTimeout(removeSplash, 100); 
+      });
+
+      // Fallback: Remove splash screen after 4 seconds max if event doesn't fire
+      setTimeout(removeSplash, 4000);
     </script>
   </body>
 </html>

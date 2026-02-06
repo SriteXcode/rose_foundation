@@ -8,3 +8,6 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Dispatch event to hide splash screen
+window.dispatchEvent(new Event('app-loaded'));

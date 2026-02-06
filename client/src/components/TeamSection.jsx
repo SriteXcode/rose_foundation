@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../utils/api';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const TeamSection = ({ limit = 10 }) => {
   const [teamMembers, setTeamMembers] = useState([]);
@@ -56,10 +57,12 @@ const TeamSection = ({ limit = 10 }) => {
               <div className="p-8 flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full overflow-hidden mb-6 border-4 border-red-100 group-hover:border-red-500 transition-colors duration-300 shadow-md">
                     <img 
-                        src={member.image} 
+                        src={getOptimizedImageUrl(member.image)} 
                         alt={member.name}
                         loading="lazy"
                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                        width="128"
+                        height="128"
                     />
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-red-600 transition-colors">{member.name}</h3>
@@ -87,6 +90,10 @@ const TeamSection = ({ limit = 10 }) => {
             </button>
           </div>
         )}
+        <div className="bg-red-600 p-4 rounded-xl hover:not-focus:bg-red-700 font-semibold text-white text-center mt-12 shadow-lg hover:shadow-xl sm:text-lg">
+  * This Foundation is running by college students.
+</div>
+
       </div>
     </section>
   );

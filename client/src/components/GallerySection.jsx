@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const GallerySection = ({ limit = 10 }) => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const GallerySection = ({ limit = 10 }) => {
       setLoading(true);
       try {
         const response = await axiosInstance.get(`/gallery?page=1&limit=${limit}`);
-        const { items, totalPages, totalItems } = response.data;
+        const { items, totalItems } = response.data;
         
         if (items && items.length > 0) {
           setGalleryItems(items);
@@ -48,20 +49,24 @@ const GallerySection = ({ limit = 10 }) => {
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {galleryItems.map((item, index) => (
+          {galleryItems.map((item, index) => {
+            const optimizedUrl = getOptimizedImageUrl(item.imageUrl);
+            const isImage = optimizedUrl && optimizedUrl.startsWith('http');
+            
+            return (
             <div
               key={`${item._id || index}-${index}`}
               onClick={() => setSelectedImage(item)}
               className="aspect-square bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 rounded-2xl flex items-center justify-center text-4xl md:text-6xl cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
             >
               {/* Check if it's a real image URL or an emoji icon fallback */}
-              {item.imageUrl && item.imageUrl.startsWith('http') ? (
-                <img src={item.imageUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" />
+              {isImage ? (
+                <img src={optimizedUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" width="300" height="300" />
               ) : (
                 <span>{item.imageUrl}</span>
               )}
             </div>
-          ))}
+          )})}
           
           {loading && Array.from({ length: limit }).map((_, i) => (
              <div key={`skeleton-${i}`} className="aspect-square bg-gray-200 rounded-2xl animate-pulse"></div>
