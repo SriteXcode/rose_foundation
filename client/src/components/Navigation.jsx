@@ -35,8 +35,10 @@ const Navigation = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Blackrose Foundation Logo" className="h-15 w-15 invert" />
-            <span className="text-xl font-bold text-red-500">Blackrose Foundation</span>
+            <img src={logo} alt="Blackrose Foundation Logo" className="h-10 w-10 sm:h-12 sm:w-12 md:h-15 md:w-15 invert" />
+            <span className="text-lg sm:text-xl font-bold text-red-500 truncate max-w-[150px] xs:max-w-none">
+              Blackrose Foundation
+            </span>
           </div>
 
           {/* Desktop Navigation */}

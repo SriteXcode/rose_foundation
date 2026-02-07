@@ -219,7 +219,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
                       placeholder="John Doe"
                     />
                   </div>
@@ -233,7 +233,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                         required
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="+91 9876543210"
                       />
                     </div>
@@ -245,7 +245,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                         required
                         value={formData.aadhar}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="12-digit number"
                       />
                     </div>
@@ -259,7 +259,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
                       placeholder="john@example.com"
                     />
                   </div>

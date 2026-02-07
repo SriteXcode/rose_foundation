@@ -1,7 +1,7 @@
 import React from 'react';
 
 const WhatsAppButton = () => {
-  const whatsappUrl = "https://whatsapp.com/channel/0029Vb3IZjiK5cDDo9E3vQ2J"; // Replace with actual channel link if different
+  const whatsappUrl = import.meta.env.VITE_WHATSAPP_CHANNEL_URL; // Replace with actual channel link if different
 
   return (
     <a

@@ -18,7 +18,7 @@ const BlogPage = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/blog?page=${page}&limit=9&search=${searchTerm}`);
+      const response = await axiosInstance.get(`/blog?page=${page}&limit=10&search=${searchTerm}`);
       setPosts(response.data.posts);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -37,28 +37,28 @@ const BlogPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
       {/* Header */}
-      <div className="bg-slate-900 text-white py-16 px-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Blog</h1>
-        <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+      <div className="bg-slate-900 text-white py-12 md:py-16 px-4 text-center">
+        <h1 className="text-3xl md:text-5xl font-bold mb-4">Our Blog</h1>
+        <p className="text-base md:text-lg text-gray-300 max-w-2xl mx-auto">
           Stories, updates, and insights from the Blackrose Foundation.
         </p>
       </div>
 
       {/* Search & Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* Search Bar */}
-        <div className="mb-12 flex justify-center">
-          <form onSubmit={handleSearch} className="w-full max-w-md flex gap-2">
+        <div className="mb-8 md:mb-12 flex justify-center">
+          <form onSubmit={handleSearch} className="w-full max-w-md flex flex-col sm:flex-row gap-2 px-4 sm:px-0">
             <input
               type="text"
               placeholder="Search articles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none"
+              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none text-sm md:text-base"
             />
             <button 
               type="submit"
-              className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors whitespace-nowrap"
             >
               Search
             </button>
@@ -71,7 +71,7 @@ const BlogPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
           </div>
         ) : posts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {posts.map((post) => (
               <div 
                 key={post._id} 
@@ -122,21 +122,21 @@ const BlogPage = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="mt-12 flex justify-center gap-2">
+          <div className="mt-12 flex flex-wrap justify-center items-center gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded border hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base rounded border hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               Previous
             </button>
-            <span className="px-4 py-2 text-gray-600">
+            <span className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 font-medium">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded border hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base rounded border hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               Next
             </button>
