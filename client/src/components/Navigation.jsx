@@ -42,12 +42,12 @@ const Navigation = ({
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden lg:flex space-x-6 xl:space-x-8">
             {navigationItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`text-white hover:text-red-400 transition-colors relative group ${
+                className={`text-white hover:text-red-400 transition-colors relative group text-sm xl:text-base ${
                   activeSection === item.id ? 'text-red-400' : ''
                 }`}
               >
@@ -57,7 +57,7 @@ const Navigation = ({
             ))}
             <button
                 onClick={() => navigate('/blog')}
-                className="text-white hover:text-red-400 transition-colors relative group"
+                className="text-white hover:text-red-400 transition-colors relative group text-sm xl:text-base"
               >
                 Blog
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 group-hover:w-full transition-all duration-300"></span>
@@ -65,20 +65,20 @@ const Navigation = ({
           </div>
 
           {/* Auth buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-3 xl:space-x-4">
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 xl:space-x-4">
                 {user.role === 'admin' && (
                   <button
                     onClick={() => setShowAdmin(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg font-semibold transition-colors text-sm xl:text-base"
                   >
                     Admin
                   </button>
                 )}
                 <button 
                   onClick={handleProfileClick}
-                  className="text-white hover:text-red-400 transition-colors font-semibold"
+                  className="text-white hover:text-red-400 transition-colors font-semibold text-sm xl:text-base"
                 >
                   Welcome, {user.name.split(' ')[0]}
                 </button>
@@ -87,13 +87,13 @@ const Navigation = ({
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg font-semibold transition-colors text-sm xl:text-base"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => setShowRegister(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg font-semibold transition-colors text-sm xl:text-base"
                 >
                   Register
                 </button>
@@ -103,7 +103,7 @@ const Navigation = ({
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden text-white text-2xl"
+            className="lg:hidden text-white text-2xl"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? '✕' : '☰'}
@@ -112,25 +112,27 @@ const Navigation = ({
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4">
-            {navigationItems.map((item) => (
+          <div className="lg:hidden pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="block w-full text-left text-white hover:text-red-400 py-2 transition-colors px-2 rounded hover:bg-white/5"
+                >
+                  {item.label}
+                </button>
+              ))}
               <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className="block w-full text-left text-white hover:text-red-400 py-2 transition-colors"
-              >
-                {item.label}
+                  onClick={() => {
+                    navigate('/blog');
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-left text-white hover:text-red-400 py-2 transition-colors px-2 rounded hover:bg-white/5"
+                >
+                  Blog
               </button>
-            ))}
-            <button
-                onClick={() => {
-                  navigate('/blog');
-                  setIsMenuOpen(false);
-                }}
-                className="block w-full text-left text-white hover:text-red-400 py-2 transition-colors"
-              >
-                Blog
-            </button>
+            </div>
 
             {/* Mobile auth buttons */}
             <div className="mt-4 pt-4 border-t border-gray-700">

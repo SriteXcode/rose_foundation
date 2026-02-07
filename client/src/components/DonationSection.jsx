@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { handleDonation } from '../utils/apiHandlers';
+import PostDonationModal from './modals/PostDonationModal';
 
-const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLoading, user }) => {
-  const onDonationClick = () => handleDonation(donationAmount, setIsLoading, user);
+const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLoading, user, setShowLogin }) => {
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [donationData, setDonationData] = useState(null);
+
+  const onDonationClick = () => {
+    handleDonation(donationAmount, setIsLoading, user, (data) => {
+      setDonationData(data);
+      setShowSuccessModal(true);
+    });
+  };
 
   return (
     <section id="donate" className="py-20 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
@@ -34,18 +43,28 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
           <div className="text-center">
             <p className="opacity-80 mb-6">Your contributions help us continue our mission of empowering communities. Every donation makes a difference!</p>
 
+            {!user && (
+              <div className="mb-8 bg-yellow-400/20 border border-yellow-400/30 p-4 rounded-xl text-sm animate-pulse">
+                <p className="text-yellow-100">
+                  <span className="font-bold">⚠️ Note:</span> Anonymous users will lose access to their certificate and invoice if the page is refreshed. 
+                  For a better experience and to access your donation history anytime, please 
+                  <button onClick={() => setShowLogin(true)} className="ml-1 underline font-bold hover:text-white transition-colors">Login</button>.
+                </p>
+              </div>
+            )}
+
             <div className="flex flex-wrap justify-center gap-4 mb-6">
-              {['₹500', '₹1000', '₹2500', '₹5000'].map((amount) => (
+              {['500', '1000', '2500', '5000'].map((amount) => (
                 <button
                   key={amount}
-                  onClick={() => setDonationAmount(amount.slice(1))}
+                  onClick={() => setDonationAmount(amount)}
                   className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
-                    donationAmount === amount.slice(1)
+                    donationAmount === amount
                       ? 'bg-white text-purple-600'
                       : 'bg-white/20 hover:bg-white/30'
                   }`}
                 >
-                  {amount}
+                  ₹{amount}
                 </button>
               ))}
             </div>
@@ -69,6 +88,13 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
           </div>
         </div>
       </div>
+
+      <PostDonationModal 
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        donationData={donationData}
+        user={user}
+      />
     </section>
   );
 };

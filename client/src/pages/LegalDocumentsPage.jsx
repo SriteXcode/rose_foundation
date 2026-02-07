@@ -13,19 +13,31 @@ const LegalDocumentsPage = () => {
   const documents = [
     {
       id: 'registration',
-      title: 'Registration Certificate',
-      description: 'Official NGO Registration Certificate under the Societies Registration Act.',
+      title: 'Certificate of Incorporation',
+      description: 'Official Registration Certificate issued by the Ministry of Corporate Affairs.',
+      images: ['https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770496615/Certificate_of_Incorporation_page-0001_gsfgiy.jpg'],
       details: [
-        { label: 'Registration No', value: 'U96091UP2025NPL223505' },
-        { label: 'Date of Registration', value: 'January 15, 2025' },
+        { label: 'Registration No (CIN)', value: 'U96091UP2025NPL223505' },
+        { label: 'Date of Incorporation', value: 'January 15, 2025' },
         { label: 'Registered Under', value: 'Section 8 of the Companies Act, 2013' },
-        { label: 'Registrar', value: 'Registrar of Companies, Uttar Pradesh' }
+        { label: 'Registrar', value: 'Registrar of Companies, Kanpur' }
+      ]
+    },
+    {
+      id: 'licence',
+      title: 'Section 8 Licence',
+      description: 'Licence granted under section 8(1) of the Companies Act, 2013.',
+      images: ['https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770496685/licence_page-0001_dnpygi.jpg'],
+      details: [
+        { label: 'Licence No', value: '163160' },
+        { label: 'Issued By', value: 'Central Government / Registrar of Companies' }
       ]
     },
     {
       id: 'pan',
       title: 'PAN Card',
       description: 'Permanent Account Number for financial transparency and taxation purposes.',
+      images: ['https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770496873/PAN_page-0001_okaely.jpg'],
       details: [
         { label: 'PAN Number', value: 'AANCB5505D' },
         { label: 'Card Holder', value: 'Blackrose Foundation' },
@@ -36,8 +48,13 @@ const LegalDocumentsPage = () => {
       id: '12a',
       title: '12A Registration',
       description: 'Registration under Section 12A of the Income Tax Act, 1961 for tax exemption on income.',
+      images: [
+        'https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770497359/AANCB5505DF20261_signed_page-0001_ckwhfz.jpg',
+        'https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770497358/AANCB5505DF20261_signed_page-0002_j0nuec.jpg'
+      ],
       details: [
         { label: 'Registration No', value: 'AANCB5505DF20261' },
+        { label: 'Form Type', value: 'Form No. 10AC' },
         { label: 'Date of Approval', value: 'February 20, 2025' },
         { label: 'Validity', value: 'Perpetual' }
       ]
@@ -46,8 +63,13 @@ const LegalDocumentsPage = () => {
       id: '80g',
       title: '80G Certificate',
       description: 'Certificate under Section 80G of the Income Tax Act, allowing donors to claim tax deductions.',
+      images: [
+        'https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770497359/AANCB5505DF20261_signed_page-0001_ckwhfz.jpg',
+        'https://res.cloudinary.com/dtjkpcuy9/image/upload/v1770497358/AANCB5505DF20261_signed_page-0002_j0nuec.jpg'
+      ],
       details: [
         { label: 'Approval No', value: 'AANCB5505DF20261' },
+        { label: 'Form Type', value: 'Form No. 10AC' },
         { label: 'Benefit', value: '50% Tax Exemption for Donors' },
         { label: 'Status', value: 'Active' }
       ]
@@ -136,7 +158,7 @@ const LegalDocumentsPage = () => {
                   </div>
 
                   <div className="p-8">
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-6 md:grid-cols-2 mb-8">
                       {doc.details.map((detail, index) => (
                         <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-red-100 transition-colors">
                           <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">{detail.label}</p>
@@ -145,15 +167,55 @@ const LegalDocumentsPage = () => {
                       ))}
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    {/* Document Image Preview */}
+                    {doc.images && doc.images.length > 0 && (
+                      <div className="space-y-8">
+                        {doc.images.map((url, idx) => (
+                          <div key={idx} className="border rounded-2xl overflow-hidden bg-gray-50 shadow-inner group">
+                            <div className="bg-gray-100 px-4 py-2 border-b flex justify-between items-center">
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                {doc.images.length > 1 ? `Page ${idx + 1}` : 'Document Preview'}
+                              </span>
+                              <a 
+                                href={url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-red-600 font-bold hover:underline"
+                              >
+                                Open Original ↗
+                              </a>
+                            </div>
+                            <div className="p-4 flex justify-center">
+                              <img 
+                                src={url} 
+                                alt={`${doc.title} - Page ${idx + 1}`} 
+                                className="max-w-full h-auto rounded-lg shadow-md transition-transform duration-500 group-hover:scale-[1.02]"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="pt-8 mt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
                       <div className="flex items-center text-green-600 bg-green-50 px-4 py-2 rounded-full text-sm font-bold">
                         <span className="mr-2">✓</span> Verified Document
                       </div>
                       
-                      {/* Placeholder for actual document download/view if available in future */}
-                      <button className="text-slate-400 text-sm font-medium cursor-not-allowed" disabled>
-                        Preview Unavailable
-                      </button>
+                      {doc.images && doc.images.length > 0 ? (
+                        <a 
+                          href={doc.images[0]} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors flex items-center gap-2"
+                        >
+                          <span>👁️</span> View Full Document
+                        </a>
+                      ) : (
+                        <button className="text-slate-400 text-sm font-medium cursor-not-allowed" disabled>
+                          Preview Unavailable
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

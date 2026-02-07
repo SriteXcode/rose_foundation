@@ -161,3 +161,30 @@ exports.verifyPayment = async (req, res) => {
     res.status(500).json({ error: 'Payment verification failed' });
   }
 };
+
+// Update Donor Name
+exports.updateDonorName = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { donorName } = req.body;
+
+    if (!donorName) {
+      return res.status(400).json({ error: 'Donor name is required' });
+    }
+
+    const updatedDonation = await Donation.findByIdAndUpdate(
+      id,
+      { donorName },
+      { new: true }
+    );
+
+    if (!updatedDonation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+
+    res.json({ message: 'Donor name updated successfully', donation: updatedDonation });
+  } catch (error) {
+    console.error('Update donor error:', error);
+    res.status(500).json({ error: 'Failed to update donor name' });
+  }
+};

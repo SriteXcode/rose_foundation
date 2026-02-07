@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import { LoaderProvider } from './context/LoaderContext';
 import Loader from './components/Loader';
 import WhatsAppButton from './components/WhatsAppButton';
+import DonateStickyButton from './components/DonateStickyButton';
 
 // Lazy loading pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -21,6 +22,7 @@ const CertificatePage = lazy(() => import('./pages/CertificatePage'));
 const LegalDocumentsPage = lazy(() => import('./pages/LegalDocumentsPage')); // Legal Docs Page
 const BlogPage = lazy(() => import('./pages/BlogPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
+const InvoicePage = lazy(() => import('./pages/InvoicePage'));
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -108,6 +110,7 @@ const AppContent = () => {
               isLoading={isLoading}
               setIsLoading={setIsLoading}
               user={user}
+              setShowLogin={setShowLogin}
               contactForm={contactForm}
               setContactForm={setContactForm}
               newsletter={newsletter}
@@ -132,6 +135,7 @@ const AppContent = () => {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
                   <Route path="/certificate/:id" element={<CertificatePage />} />
+                  <Route path="/invoice/:id" element={<InvoicePage />} />
                   <Route path="/legal" element={<LegalDocumentsPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
@@ -158,6 +162,7 @@ const AppContent = () => {
         isLoading={isLoading}
       />
       <WhatsAppButton />
+      <DonateStickyButton scrollToSection={scrollToSection} />
       <Toaster position="top-center" />
     </div>
   );

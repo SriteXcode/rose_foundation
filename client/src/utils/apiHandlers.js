@@ -69,7 +69,7 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
 };
 
 // Donation handler
-export const handleDonation = async (donationAmount, setIsLoading, user) => {
+export const handleDonation = async (donationAmount, setIsLoading, user, onSuccess) => {
   if (!donationAmount || donationAmount <= 0) {
     toast.error('Please enter a valid donation amount');
     return;
@@ -96,11 +96,9 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
       handler: async function (response) {
         // 3. Verify Payment on success
         try {
-          // Manually trigger global loading if needed, or just let axios handle it
-          // Note: Since this is a callback, the previous 'finally' block has already executed.
-          // The global loader will pop up again for this request.
+          setIsLoading(true); // Ensure loader is on during verification
           
-          await axiosInstance.post('/payment/verify', {
+          const verifyResponse = await axiosInstance.post('/payment/verify', {
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
@@ -111,10 +109,20 @@ export const handleDonation = async (donationAmount, setIsLoading, user) => {
             donorId: user?._id
           });
 
-          toast.success('Thank you for your generous donation! You will receive a confirmation email shortly.');
+          toast.success('Thank you for your generous donation!');
+          
+          if (onSuccess) {
+            onSuccess({
+              donationId: verifyResponse.data.donationId,
+              amount: donationAmount,
+              donorName: user?.name || 'Anonymous'
+            });
+          }
         } catch (error) {
           console.error('Payment verification error:', error);
           toast.error('Payment verification failed. Please contact support if money was deducted.');
+        } finally {
+          setIsLoading(false);
         }
       },
       prefill: {

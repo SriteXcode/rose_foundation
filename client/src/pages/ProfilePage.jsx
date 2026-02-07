@@ -176,12 +176,20 @@ const ProfilePage = ({ user, setUser, authLoading, handleLogout }) => {
                             </td>
                             <td className="px-6 py-4">
                               {donation.status === 'completed' && (
-                                <button
-                                  onClick={() => navigate(`/certificate/${donation._id}`)}
-                                  className="text-blue-600 hover:text-blue-800 font-semibold text-sm hover:underline flex items-center gap-1"
-                                >
-                                  <span>📜</span> Certificate
-                                </button>
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => navigate(`/certificate/${donation._id}`)}
+                                    className="text-blue-600 hover:text-blue-800 font-semibold text-xs md:text-sm hover:underline flex items-center gap-1"
+                                  >
+                                    <span>📜</span> Certificate
+                                  </button>
+                                  <button
+                                    onClick={() => navigate(`/invoice/${donation._id}`)}
+                                    className="text-slate-600 hover:text-slate-800 font-semibold text-xs md:text-sm hover:underline flex items-center gap-1"
+                                  >
+                                    <span>🧾</span> Invoice
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>

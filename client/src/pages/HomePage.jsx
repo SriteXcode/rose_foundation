@@ -28,6 +28,7 @@ const HomePage = ({
   isLoading,
   setIsLoading,
   user,
+  setShowLogin,
   contactForm,
   setContactForm,
   newsletter,
@@ -55,6 +56,7 @@ const HomePage = ({
         isLoading={isLoading}
         setIsLoading={setIsLoading}
         user={user}
+        setShowLogin={setShowLogin}
       />
       
       <Suspense fallback={<SectionLoader />}>
