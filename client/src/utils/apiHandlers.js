@@ -157,6 +157,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
         toast.error(`Payment Failed: ${response.error.description}`);
     });
 
+    setIsLoading(false); // Stop loader right before opening Razorpay
     rzp1.open();
 
   } catch (error) {
