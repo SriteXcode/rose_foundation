@@ -111,12 +111,28 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
 
           toast.success('Thank you for your generous donation!');
           
+          const donationResult = {
+            donationId: verifyResponse.data.donationId,
+            amount: donationAmount,
+            donorName: user?.name || 'Anonymous',
+            date: new Date().toISOString(),
+            transactionId: response.razorpay_payment_id
+          };
+
+          // Save for anonymous users to prevent loss on refresh
+          if (!user) {
+            try {
+              const existing = JSON.parse(localStorage.getItem('anonymousDonations') || '[]');
+              // Keep only last 5 donations
+              const updated = [donationResult, ...existing].slice(0, 5);
+              localStorage.setItem('anonymousDonations', JSON.stringify(updated));
+            } catch (err) {
+              console.error('Failed to save anonymous donation:', err);
+            }
+          }
+          
           if (onSuccess) {
-            onSuccess({
-              donationId: verifyResponse.data.donationId,
-              amount: donationAmount,
-              donorName: user?.name || 'Anonymous'
-            });
+            onSuccess(donationResult);
           }
         } catch (error) {
           console.error('Payment verification error:', error);

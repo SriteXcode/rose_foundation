@@ -31,6 +31,18 @@ const PostDonationModal = ({ isOpen, onClose, donationData, user }) => {
       await axiosInstance.put(`/payment/update-donor/${donationData.donationId}`, {
         donorName: donorName
       });
+
+      // Update localStorage if anonymous
+      if (!user) {
+        try {
+          const saved = JSON.parse(localStorage.getItem('anonymousDonations') || '[]');
+          const updated = saved.map(d => d.donationId === donationData.donationId ? { ...d, donorName } : d);
+          localStorage.setItem('anonymousDonations', JSON.stringify(updated));
+        } catch (storageErr) {
+          console.error('Failed to update localStorage donation:', storageErr);
+        }
+      }
+
       setIsSubmitted(true);
       toast.success('Donor name updated!');
     } catch (error) {
@@ -65,14 +77,14 @@ const PostDonationModal = ({ isOpen, onClose, donationData, user }) => {
                   value={donorName}
                   onChange={(e) => setDonorName(e.target.value)}
                   placeholder="Your Full Name"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                  className="w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
                   required
                 />
               </div>
               <button
                 type="submit"
                 disabled={isUpdating}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold transition-colors disabled:opacity-50"
+                className="w-full bg-green-600 hover:bg-green-700 text-gray-100 py-3 rounded-lg font-bold transition-colors disabled:opacity-50"
               >
                 {isUpdating ? 'Updating...' : 'Continue'}
               </button>

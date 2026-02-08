@@ -1,10 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { handleDonation } from '../utils/apiHandlers';
 import PostDonationModal from './modals/PostDonationModal';
+import { useNavigate } from 'react-router-dom';
 
 const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLoading, user, setShowLogin }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [donationData, setDonationData] = useState(null);
+  const [recentDonations, setRecentDonations] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      const saved = localStorage.getItem('anonymousDonations');
+      if (saved) {
+        try {
+          setRecentDonations(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse recent donations');
+        }
+      }
+    } else {
+      setRecentDonations([]);
+    }
+  }, [user, showSuccessModal]);
 
   const onDonationClick = () => {
     handleDonation(donationAmount, setIsLoading, user, (data) => {
@@ -44,17 +62,53 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
             <p className="opacity-80 mb-6">Your contributions help us continue our mission of empowering communities. Every donation makes a difference!</p>
 
             {!user && (
-              <div className="mb-8 bg-yellow-400/20 border border-yellow-400/30 p-4 rounded-xl text-sm animate-pulse">
-                <p className="text-yellow-100">
-                  <span className="font-bold">⚠️ Note:</span> Anonymous users will lose access to their certificate and invoice if the page is refreshed. 
-                  For a better experience and to access your donation history anytime, please 
-                  <button onClick={() => setShowLogin(true)} className="ml-1 underline font-bold hover:text-white transition-colors">Login</button>.
-                </p>
+              <div className="mb-8 space-y-4">
+                <div className="bg-yellow-400/20 border border-yellow-400/30 p-4 rounded-xl text-sm">
+                  <p className="text-yellow-100">
+                    <span className="font-bold">⚠️ Note:</span> Anonymous users will lose access to their certificate and invoice if the page is refreshed. 
+                    For a better experience and to access your donation history anytime, please 
+                    <button onClick={() => setShowLogin(true)} className="ml-1 underline font-bold hover:text-white transition-colors">Login</button>.
+                  </p>
+                </div>
+
+                {recentDonations.length > 0 && (
+                  <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-left">
+                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
+                      <span>🕒</span> Recent Anonymous Donations
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {recentDonations.map((don) => (
+                        <div key={don.donationId} className="bg-white/10 hover:bg-white/20 p-2 rounded-lg flex items-center gap-3 transition-colors text-xs border border-white/10 group">
+                          <div>
+                            <span className="font-bold">₹{don.amount}</span>
+                            <span className="opacity-60 ml-2">{new Date(don.date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => navigate(`/certificate/${don.donationId}`)}
+                              className="bg-white/20 hover:bg-white text-purple-600 px-2 py-1 rounded font-bold transition-all"
+                              title="Certificate"
+                            >
+                              📜
+                            </button>
+                            <button 
+                              onClick={() => navigate(`/invoice/${don.donationId}`)}
+                              className="bg-white/20 hover:bg-white text-purple-600 px-2 py-1 rounded font-bold transition-all"
+                              title="Invoice"
+                            >
+                              🧾
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="flex flex-wrap justify-center gap-4 mb-6">
-              {['500', '1000', '2500', '5000'].map((amount) => (
+              {['5', '10', '500', '1000'].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => setDonationAmount(amount)}

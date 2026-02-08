@@ -191,7 +191,7 @@ const CertificatePage = () => {
   if (!donation) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex items-center justify-center lg:justify-start lg:pl-16 overflow-hidden pt-20">
+    <div className="fixed inset-0 bg-gray-100 flex items-start lg:items-center justify-center lg:justify-start lg:pl-16 overflow-hidden pt-28">
       
       {/* Desktop Right Sidebar Buttons */}
       <div className="hidden lg:flex flex-col gap-6 fixed right-16 top-1/2 -translate-y-1/2 z-50">
@@ -245,7 +245,7 @@ const CertificatePage = () => {
             <img src={logo} alt="watermark" className="w-[40%]" crossOrigin="anonymous" />
           </div>
 
-          <div className="relative h-full w-full p-10 flex flex-col justify-between">
+          <div className="relative h-full w-full p-10 flex flex-col justify-between" style={{ backgroundColor: '#ffffff' }}>
             <div className="text-center space-y-2">
               <div className="flex justify-center mb-2">
                 <img src={logo} alt="Logo" className="h-16" crossOrigin="anonymous" />
