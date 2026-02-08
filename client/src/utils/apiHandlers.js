@@ -93,6 +93,14 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
       name: "Blackrose Foundation",
       description: "Donation for social cause",
       order_id: orderData.orderId,
+      modal: {
+        ondismiss: function() {
+          setIsLoading(false);
+        },
+        // Better stability for mobile WebViews
+        backdropClose: false,
+        escape: false
+      },
       handler: async function (response) {
         // 3. Verify Payment on success
         try {
@@ -151,6 +159,12 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
       }
     };
 
+    if (typeof window.Razorpay === 'undefined') {
+      toast.error('Payment gateway is still loading. Please try again in a moment.');
+      setIsLoading(false);
+      return;
+    }
+
     const rzp1 = new window.Razorpay(options);
     
     rzp1.on('payment.failed', function (response){
@@ -158,7 +172,18 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
     });
 
     setIsLoading(false); // Stop loader right before opening Razorpay
-    rzp1.open();
+    
+    // Slight delay (100ms) helps mobile browsers/WebViews handle the context switch 
+    // from the main app thread to the payment iframe without crashing/freezing.
+    setTimeout(() => {
+      try {
+        rzp1.open();
+      } catch (err) {
+        console.error('Razorpay open error:', err);
+        toast.error('Failed to open payment window. Please check if popups are blocked.');
+        setIsLoading(false);
+      }
+    }, 100);
 
   } catch (error) {
     console.error('Donation error:', error);
