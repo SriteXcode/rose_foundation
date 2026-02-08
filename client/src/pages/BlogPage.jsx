@@ -122,7 +122,7 @@ const BlogPage = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="mt-12 flex flex-wrap justify-center items-center gap-2">
+          <div className="mt- flex flex-wrap justify-center items-center gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}

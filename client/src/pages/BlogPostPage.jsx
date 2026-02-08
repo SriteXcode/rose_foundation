@@ -54,7 +54,7 @@ const BlogPostPage = () => {
                 </span>
               ))}
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight break-words">
               {post.title}
             </h1>
             <div className="flex items-center gap-3 text-sm md:text-base text-gray-200">
@@ -67,15 +67,15 @@ const BlogPostPage = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
         {/* Summary Block */}
-        <div className="bg-gray-50 border-l-4 border-red-600 p-5 md:p-8 mb-10 italic text-gray-700 text-base md:text-lg rounded-r-lg shadow-sm">
+        <div className="bg-gray-50 border-l-4 border-red-600 p-5 md:p-8 mb-10 italic text-gray-700 text-base md:text-lg rounded-r-lg shadow-sm break-words">
           {post.summary}
         </div>
 
         {/* Main Body - Safely Rendered HTML */}
         <div 
-          className="prose max-w-none"
+          className="prose max-w-none break-words"
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
         />
 
@@ -88,7 +88,7 @@ const BlogPostPage = () => {
                 navigator.clipboard.writeText(window.location.href);
                 alert('Link copied to clipboard!'); 
               }}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-gray-900 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <span>🔗</span> Copy Link
             </button>
