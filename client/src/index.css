@@ -13,7 +13,6 @@
   background-color: #242424;
 
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -38,30 +37,23 @@
 .newsletter-content a { @apply text-red-600 hover:underline; }
 .newsletter-content strong { @apply font-semibold text-gray-900; }
 
-/* Blog Content (Prose) Styling - Fallback for missing typography plugin */
-.prose {
-  @apply text-gray-800 leading-relaxed;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-.prose h1 { @apply text-2xl md:text-4xl font-bold mt-8 mb-4 text-slate-900; }
-.prose h2 { @apply text-xl md:text-3xl font-bold mt-8 mb-4 text-slate-900; }
-.prose h3 { @apply text-lg md:text-2xl font-bold mt-6 mb-3 text-slate-900; }
-.prose p { @apply mb-5; }
-.prose ul { @apply list-disc list-inside mb-5 space-y-2; }
-.prose ol { @apply list-decimal list-inside mb-5 space-y-2; }
-.prose li { @apply ml-4; }
-.prose img { @apply rounded-xl shadow-md my-8 mx-auto max-w-full h-auto; }
-.prose a { @apply text-red-600 font-medium underline underline-offset-4 hover:text-red-700 transition-colors; }
-.prose blockquote { @apply border-l-4 border-gray-200 pl-4 italic my-6 text-gray-700; }
-.prose pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 text-sm; }
-.prose code { @apply bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm font-mono; }
-.prose table { @apply w-full border-collapse my-6 overflow-hidden; }
-.prose th, .prose td { @apply border border-gray-200 p-3 text-left; }
-.prose th { @apply bg-gray-50 font-semibold; }
+/* ===== BLOG CONTENT – HARD FIX ===== */
 
-/* Responsive utility for tables in prose */
-.prose-table-container {
-  @apply w-full overflow-x-auto mb-6;
+.blog-content,
+.blog-content * {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  hyphens: none !important;
+}
+
+/* Prevent invisible character wrapping */
+.blog-content {
+  unicode-bidi: plaintext;
+}
+
+/* Fix long URLs / code */
+.blog-content a,
+.blog-content code {
+  word-break: break-word !important;
 }

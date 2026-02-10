@@ -27,6 +27,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [editingWork, setEditingWork] = useState(null); 
   const [editingVolunteer, setEditingVolunteer] = useState(null);
   const [editingPost, setEditingPost] = useState(null); // Blog Edit State
+  const [volunteerSubTab, setVolunteerSubTab] = useState('approved');
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -66,8 +67,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
-    if (activeTab === 'volunteers') fetchVolunteers();
-    if (activeTab === 'applications') fetchApplications();
+    if (activeTab === 'volunteers') {
+      fetchVolunteers();
+      fetchApplications();
+    }
     if (activeTab === 'gallery') fetchGallery();
     if (activeTab === 'blog') fetchBlogPosts(); // Fetch Blog
     if (activeTab === 'settings') fetchSettings();
@@ -246,6 +249,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setShowVolunteerModal(false);
       setEditingVolunteer(null);
       fetchVolunteers();
+      fetchApplications();
     } catch (error) {
        toast.error('Unable to save volunteer details.');
     } finally {
@@ -577,59 +581,79 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   const renderVolunteers = () => (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-800">Approved Volunteers</h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-800">Volunteer Management</h3>
+          <div className="flex mt-2 bg-gray-200 p-1 rounded-lg">
+            <button 
+              onClick={() => setVolunteerSubTab('approved')}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${volunteerSubTab === 'approved' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              Approved ({volunteers.length})
+            </button>
+            <button 
+              onClick={() => setVolunteerSubTab('pending')}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${volunteerSubTab === 'pending' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+            >
+              Pending ({applications.length})
+            </button>
+          </div>
+        </div>
         <button 
-          onClick={() => { setEditingVolunteer({}); setShowVolunteerModal(true); }}
+          onClick={() => { setEditingVolunteer({ role: 'Volunteer' }); setShowVolunteerModal(true); }}
           className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
         >
           + Add Volunteer
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {volunteers.map((volunteer) => (
-          <div key={volunteer._id} className="bg-white p-4 rounded-xl border shadow-sm text-center group relative">
-             <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-red-100">
-               {volunteer.image?.startsWith('http') ? (
-                 <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-2xl">👤</div>
-               )}
-             </div>
-             <h4 className="font-bold text-lg text-gray-800">{volunteer.name}</h4>
-             <p className="text-sm text-gray-500 mb-4">{volunteer.role || volunteer.designation}</p>
-             
-             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded-lg backdrop-blur-sm">
-               <button 
-                 onClick={() => { setEditingVolunteer(volunteer); setShowVolunteerModal(true); }}
-                 className="text-blue-600 p-1 hover:bg-blue-50 rounded"
-                 title="Edit"
-               >
-                 ✏️
-               </button>
-               <button 
-                 onClick={() => handleDeleteVolunteer(volunteer._id)}
-                 className="text-red-600 p-1 hover:bg-red-50 rounded"
-                 title="Delete"
-               >
-                 🗑️
-               </button>
-             </div>
-          </div>
-        ))}
-      </div>
+
+      {volunteerSubTab === 'approved' ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {volunteers.map((volunteer) => (
+            <div key={volunteer._id} className="bg-white p-4 rounded-xl border shadow-sm text-center group relative">
+              <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-red-100">
+                {volunteer.image?.startsWith('http') ? (
+                  <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-2xl">👤</div>
+                )}
+              </div>
+              <h4 className="font-bold text-lg text-gray-800">{volunteer.name}</h4>
+              <p className="text-sm text-gray-500 mb-4">{volunteer.role || volunteer.designation}</p>
+              
+              <div className="absolute top-2 right-2 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/90 md:bg-white/80 p-1.5 md:p-1 rounded-lg backdrop-blur-sm shadow-sm border md:border-none">
+                <button 
+                  onClick={() => { setEditingVolunteer(volunteer); setShowVolunteerModal(true); }}
+                  className="text-blue-600 p-1.5 md:p-1 hover:bg-blue-50 rounded"
+                  title="Edit"
+                >
+                  ✏️
+                </button>
+                <button 
+                  onClick={() => handleDeleteVolunteer(volunteer._id)}
+                  className="text-red-600 p-1.5 md:p-1 hover:bg-red-50 rounded"
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        renderApplications()
+      )}
     </div>
   );
 
   const renderApplications = () => (
     <div>
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">Pending Applications</h3>
       {applications.length === 0 ? (
           <p className="text-gray-500">No pending applications.</p>
       ) : (
           <div className="space-y-4">
               {applications.map((app) => (
-                  <div key={app._id} className="bg-white p-6 rounded-xl border shadow-sm flex flex-col md:flex-row gap-6">
+                  <div key={app._id} className="bg-white p-6 rounded-xl border shadow-sm flex flex-col md:flex-row gap-6 group relative">
                       <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
                           {app.image ? (
                               <img 
@@ -649,9 +673,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                               </span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-2 text-sm text-gray-600">
-                              <p><span className="font-semibold">Email:</span> {app.email}</p>
-                              <p><span className="font-semibold">Phone:</span> {app.phone}</p>
-                              <p><span className="font-semibold">Aadhar:</span> {app.aadhar}</p>
+                              <p><span className="font-semibold">Email:</span> {app.email || 'N/A'}</p>
+                              <p><span className="font-semibold">Phone:</span> {app.phone || 'N/A'}</p>
+                              <p><span className="font-semibold">Aadhar:</span> {app.aadhar || 'N/A'}</p>
                               <p><span className="font-semibold">Applied:</span> {new Date(app.createdAt).toLocaleDateString()}</p>
                           </div>
                       </div>
@@ -668,6 +692,17 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                           >
                               Reject
                           </button>
+                      </div>
+
+                      {/* Edit Button for Pending Application */}
+                      <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => { setEditingVolunteer(app); setShowVolunteerModal(true); }}
+                          className="bg-white/90 p-2 rounded-full shadow-sm border hover:bg-white text-blue-600"
+                          title="Edit Info"
+                        >
+                          ✏️
+                        </button>
                       </div>
                   </div>
               ))}
@@ -744,12 +779,13 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
              ) : (
                <div className="flex items-center justify-center h-full text-4xl">{item.imageUrl}</div>
              )}
-             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+             <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                <button 
                  onClick={() => handleDeleteGallery(item._id)}
-                 className="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold"
+                 className="bg-red-600/90 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg backdrop-blur-sm transition-colors"
+                 title="Delete Image"
                >
-                 Delete
+                 🗑️
                </button>
              </div>
           </div>
@@ -920,7 +956,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         `}>
           {[
             { id: 'dashboard', icon: '📊', label: 'Overview' },
-            { id: 'applications', icon: '📝', label: 'Applications' }, 
             { id: 'blog', icon: '✍️', label: 'Blog' }, // Blog Tab
             { id: 'volunteers', icon: '🤝', label: 'Volunteers' },
             { id: 'users', icon: '👥', label: 'Users' },
@@ -943,7 +978,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         <div className="flex-1 p-4 md:p-8 w-full max-w-full overflow-hidden">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'users' && renderUsers()}
-          {activeTab === 'applications' && renderApplications()}
           {activeTab === 'volunteers' && renderVolunteers()}
           {activeTab === 'projects' && renderProjects()}
           {activeTab === 'gallery' && renderGallery()}
@@ -1046,12 +1080,29 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       {/* Volunteer Modal */}
       {showVolunteerModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
             <h3 className="text-xl font-bold mb-4 text-gray-800">{editingVolunteer?._id ? 'Edit Volunteer' : 'Add Volunteer'}</h3>
             <form onSubmit={handleVolunteerSubmit} className="space-y-4">
               <input type="text" placeholder="Name" value={editingVolunteer?.name||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
               <input type="text" placeholder="Designation" value={editingVolunteer?.designation||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, designation: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
               
+              <div className="grid grid-cols-2 gap-4">
+                <input type="email" placeholder="Email" value={editingVolunteer?.email||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, email: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
+                <input type="tel" placeholder="Phone" value={editingVolunteer?.phone||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, phone: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <input type="text" placeholder="Aadhar Number" value={editingVolunteer?.aadhar||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, aadhar: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
+                <select 
+                  value={editingVolunteer?.role || 'Volunteer'} 
+                  onChange={(e) => setEditingVolunteer({...editingVolunteer, role: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg bg-white text-gray-800"
+                >
+                  <option value="Volunteer">Volunteer</option>
+                  <option value="Intern">Intern</option>
+                </select>
+              </div>
+
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Photo</label>

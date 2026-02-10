@@ -25,6 +25,18 @@ const BlogPostPage = () => {
     fetchPost();
   }, [slug, navigate]);
 
+  const cleanContent = (html) => {
+  return html
+    // remove zero-width characters
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    // replace non-breaking spaces with normal space
+    .replace(/&nbsp;/g, ' ')
+    // remove soft hyphens
+    .replace(/&shy;/g, '');
+};
+
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -37,77 +49,107 @@ const BlogPostPage = () => {
 
   return (
     <div className="min-h-screen bg-white pt-20">
-      {/* Hero / Cover Image */}
-      <div className="w-full h-[40vh] md:h-[60vh] relative">
-        <img 
-          src={post.coverImage} 
-          alt={post.title} 
-          className="w-full h-full object-cover"
+      {/* Hero Section */}
+      <div className="w-full min-h-[40vh] md:min-h-[60vh] relative bg-slate-900 overflow-hidden flex items-center justify-center">
+        {/* Blurred Background Layer */}
+        <div 
+          className="absolute inset-0 scale-110 blur-2xl opacity-60 bg-cover bg-center"
+          style={{ backgroundImage: `url(${post.coverImage})` }}
+        ></div>
+
+        {/* Overlay to dim background for text readability */}
+        <div className="absolute inset-0 bg-black/40 z-10"></div>
+
+        {/* Foreground Image Layer */}
+        <img
+          src={post.coverImage}
+          alt={post.title}
+          className="relative z-20 w-full h-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-2xl"
         />
-        <div className="absolute inset-0 bg-black/50"></div>
-        <div className="absolute inset-0 flex flex-col justify-end">
-          <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-12 pb-8 md:pb-16 text-white">
+
+        {/* Text Content Overlay */}
+        <div className="absolute inset-0 flex flex-col justify-end z-30">
+          <div className="max-w-4xl w-full mx-auto px-4 pb-8 md:pb-12 text-white drop-shadow-lg">
             <div className="flex flex-wrap gap-2 mb-4">
               {post.tags?.map((tag, idx) => (
-                <span key={idx} className="bg-red-600 px-3 py-1 rounded-full text-xs md:text-sm font-semibold uppercase tracking-wider">
+                <span
+                  key={idx}
+                  className="bg-red-600 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                >
                   {tag}
                 </span>
               ))}
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight break-words">
+
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight drop-shadow-md">
               {post.title}
             </h1>
-            <div className="flex items-center gap-3 text-sm md:text-base text-gray-200">
-              <span className="font-medium">By {post.author || 'Admin'}</span>
-              <span>•</span>
-              <span>{new Date(post.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+
+            <div className="text-sm md:text-base text-gray-100 font-medium">
+              By {post.author || 'Admin'} •{' '}
+              {new Date(post.createdAt).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+      {/* Content Section */}
+      <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
         {/* Summary Block */}
-        <div className="bg-gray-50 border-l-4 border-red-600 p-5 md:p-8 mb-10 italic text-gray-700 text-base md:text-lg rounded-r-lg shadow-sm break-words">
+        <div className="bg-gray-50 border-l-4 border-red-600 p-6 md:p-8 mb-12 italic text-gray-700 text-lg rounded-r-lg shadow-sm">
           {post.summary}
         </div>
 
-        {/* Main Body - Safely Rendered HTML */}
-        <div 
-          className="prose max-w-none break-words"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+        {/* Blog Body Content */}
+        <div
+          className="blog-content text-gray-700 text-base leading-relaxed max-w-none"
+          // dangerouslySetInnerHTML={{
+          //   __html: DOMPurify.sanitize(post.content, {
+          //     FORBID_ATTR: ['style'],
+          //   }),
+          // }}
+          dangerouslySetInnerHTML={{
+  __html: cleanContent(
+    DOMPurify.sanitize(post.content, {
+      FORBID_ATTR: ['style'],
+    })
+  ),
+}}
         />
 
-        {/* Share & Tags Footer */}
+        {/* Article Footer / Share */}
         <div className="mt-16 pt-8 border-t border-gray-100">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Share this article</h3>
           <div className="flex flex-wrap gap-3">
-            <button 
+            <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!'); 
+                toast.success('Link copied to clipboard!');
               }}
-              className="px-4 py-2.5 bg-gray-900 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <span>🔗</span> Copy Link
             </button>
+            
             <a 
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-black text-white hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              X
+              Twitter
             </a>
+            
             <a 
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               Facebook
             </a>
           </div>

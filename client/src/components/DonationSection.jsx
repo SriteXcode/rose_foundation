@@ -108,7 +108,7 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
             )}
 
             <div className="flex flex-wrap justify-center gap-4 mb-6">
-              {['5', '10', '500', '1000'].map((amount) => (
+              {['500', '1000', '2000', '5000'].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => setDonationAmount(amount)}
