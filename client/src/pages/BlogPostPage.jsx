@@ -53,7 +53,7 @@ const BlogPostPage = () => {
       <div className="w-full min-h-[40vh] md:min-h-[60vh] relative bg-slate-900 overflow-hidden flex items-center justify-center">
         {/* Blurred Background Layer */}
         <div 
-          className="absolute inset-0 scale-110 blur-2xl opacity-60 bg-cover bg-center"
+          className="absolute inset-0 scale-110 blur-sm opacity-60 bg-cover bg-center"
           style={{ backgroundImage: `url(${post.coverImage})` }}
         ></div>
 
