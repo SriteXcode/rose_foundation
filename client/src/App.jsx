@@ -1,5 +1,6 @@
-import React, { useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import Navigation from './components/Navigation';
 import LoginModal from './components/modals/LoginModal';
 import RegisterModal from './components/modals/RegisterModal';
@@ -10,6 +11,25 @@ import { LoaderProvider } from './context/LoaderContext';
 import Loader from './components/Loader';
 import WhatsAppButton from './components/WhatsAppButton';
 import DonateStickyButton from './components/DonateStickyButton';
+
+// Initialize GA4 with your Measurement ID
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
+if (GA_MEASUREMENT_ID) {
+  ReactGA.initialize(GA_MEASUREMENT_ID);
+}
+
+// Analytics tracking component
+const AnalyticsTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (GA_MEASUREMENT_ID) {
+      ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+    }
+  }, [location]);
+
+  return null;
+};
 
 // Lazy loading pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -171,6 +191,7 @@ const AppContent = () => {
 const BlackRoseFoundation = () => {
   return (
     <Router>
+      <AnalyticsTracker />
       <LoaderProvider>
         <AppContent />
       </LoaderProvider>
