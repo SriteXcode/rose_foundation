@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import Footer from '../components/Footer';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const BlogPage = () => {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ const BlogPage = () => {
               >
                 <div className="h-48 overflow-hidden relative">
                   <img 
-                    src={post.coverImage || 'https://via.placeholder.com/400x250?text=No+Image'} 
+                    src={getOptimizedImageUrl(post.coverImage || 'https://via.placeholder.com/400x250?text=No+Image', { width: 500, height: 300 })} 
                     alt={post.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

@@ -1,5 +1,6 @@
 import axiosInstance from './api';
 import toast from 'react-hot-toast';
+import { loadExternalScript } from './loadExternalScript';
 
 // Contact form submission
 export const handleContactSubmit = async (e, contactForm, setContactForm, setIsLoading) => {
@@ -78,6 +79,15 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
   setIsLoading(true);
 
   try {
+    // Dynamically load Razorpay script
+    const isLoaded = await loadExternalScript('https://checkout.razorpay.com/v1/checkout.js');
+    
+    if (!isLoaded || typeof window.Razorpay === 'undefined') {
+      toast.error('Unable to load payment gateway. Please check your internet connection and try again.');
+      setIsLoading(false);
+      return;
+    }
+
     // 1. Create Order
     const orderResponse = await axiosInstance.post('/payment/create-order', {
       amount: parseFloat(donationAmount)

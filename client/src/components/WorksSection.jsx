@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
-import ProjectDetailsModal from './modals/ProjectDetailsModal';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+
+// Lazy load ProjectDetailsModal
+const ProjectDetailsModal = lazy(() => import('./modals/ProjectDetailsModal'));
 
 const WorksSection = ({ limit = 10 }) => {
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ const WorksSection = ({ limit = 10 }) => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {works.map((work, index) => {
-            const optimizedUrl = getOptimizedImageUrl(work.images?.[0] || work.icon);
+            const optimizedUrl = getOptimizedImageUrl(work.images?.[0] || work.icon, { width: 500, height: 350 });
             const isImage = optimizedUrl && optimizedUrl.startsWith('http');
             return (
             <div 
@@ -102,10 +104,14 @@ const WorksSection = ({ limit = 10 }) => {
         )}
       </div>
 
-      <ProjectDetailsModal 
-        project={selectedProject} 
-        onClose={() => setSelectedProject(null)} 
-      />
+      <Suspense fallback={null}>
+        {selectedProject && (
+          <ProjectDetailsModal 
+            project={selectedProject} 
+            onClose={() => setSelectedProject(null)} 
+          />
+        )}
+      </Suspense>
     </section>
   );
 };

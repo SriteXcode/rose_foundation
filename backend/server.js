@@ -24,6 +24,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const allowedOrigins = [
   "https://www.blackrosefoundation.org.in",
   "http://localhost:5173",
+  "http://localhost:4173",
   "https://rose-foundation.onrender.com",
 ];
 
@@ -62,8 +63,10 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/volunteers', require('./routes/volunteerRoutes'));
 app.use('/api/blog', require('./routes/blogRoutes'));
 
+const { cacheMiddleware } = require('./middleware/cacheMiddleware');
+
 // Organization info
-app.get('/api/organization', (req, res) => {
+app.get('/api/organization', cacheMiddleware(86400000), (req, res) => { // 24 hours cache
   res.json({
     name: 'Black Rose Foundation',
     mission: 'To empower communities through sustainable development programs, education initiatives, healthcare support, and social welfare activities.',

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { handleDonation } from '../utils/apiHandlers';
-import PostDonationModal from './modals/PostDonationModal';
 import { useNavigate } from 'react-router-dom';
+
+// Lazy load PostDonationModal
+const PostDonationModal = lazy(() => import('./modals/PostDonationModal'));
 
 const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLoading, user, setShowLogin }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -143,12 +145,16 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
         </div>
       </div>
 
-      <PostDonationModal 
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        donationData={donationData}
-        user={user}
-      />
+      <Suspense fallback={null}>
+        {showSuccessModal && (
+          <PostDonationModal 
+            isOpen={showSuccessModal}
+            onClose={() => setShowSuccessModal(false)}
+            donationData={donationData}
+            user={user}
+          />
+        )}
+      </Suspense>
     </section>
   );
 };

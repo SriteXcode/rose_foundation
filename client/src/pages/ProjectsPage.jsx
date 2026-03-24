@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
-import ProjectDetailsModal from '../components/modals/ProjectDetailsModal';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
+
+// Lazy load ProjectDetailsModal
+const ProjectDetailsModal = lazy(() => import('../components/modals/ProjectDetailsModal'));
 
 const ProjectsPage = () => {
   const [works, setWorks] = useState([]);
@@ -78,9 +81,9 @@ const ProjectsPage = () => {
                 className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer transform hover:-translate-y-2 transition-all duration-300 group"
               >
                 <div className="h-56 overflow-hidden relative">
-                  {work.images?.[0]?.startsWith('http') || work.icon?.startsWith('http') ? (
+                  {(work.images?.[0]?.startsWith('http') || work.icon?.startsWith('http')) ? (
                     <img 
-                      src={work.images?.[0] || work.icon} 
+                      src={getOptimizedImageUrl(work.images?.[0] || work.icon, { width: 600, height: 400 })} 
                       alt={work.title} 
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -112,10 +115,14 @@ const ProjectsPage = () => {
         )}
       </div>
 
-      <ProjectDetailsModal 
-        project={selectedProject} 
-        onClose={() => setSelectedProject(null)} 
-      />
+      <Suspense fallback={null}>
+        {selectedProject && (
+          <ProjectDetailsModal 
+            project={selectedProject} 
+            onClose={() => setSelectedProject(null)} 
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import JoinUsModal from './modals/JoinUsModal';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
+
+// Lazy load JoinUsModal
+const JoinUsModal = lazy(() => import('./modals/JoinUsModal'));
 
 const HeroSection = ({ scrollToSection }) => {
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -63,12 +66,14 @@ const HeroSection = ({ scrollToSection }) => {
           <AnimatePresence mode="wait">
             <motion.img
               key={currentImageIndex}
-              src={heroImages[currentImageIndex]}
+              src={getOptimizedImageUrl(heroImages[currentImageIndex], isMobile ? { width: 800 } : { width: 1920 })}
               alt="Hero Background"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1 }}
+              loading={currentImageIndex === 0 ? "eager" : "lazy"}
+              fetchpriority={currentImageIndex === 0 ? "high" : "auto"}
               className="w-full h-full object-fit-cover"
             />
           </AnimatePresence>
@@ -111,10 +116,14 @@ const HeroSection = ({ scrollToSection }) => {
         </button>
       </div>
 
-      <JoinUsModal 
-        isOpen={showJoinModal} 
-        onClose={() => setShowJoinModal(false)} 
-      />
+      <Suspense fallback={null}>
+        {showJoinModal && (
+          <JoinUsModal 
+            isOpen={showJoinModal} 
+            onClose={() => setShowJoinModal(false)} 
+          />
+        )}
+      </Suspense>
     </section>
   );
 };

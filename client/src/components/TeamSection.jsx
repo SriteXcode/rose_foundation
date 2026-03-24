@@ -57,7 +57,7 @@ const TeamSection = ({ limit = 10 }) => {
               <div className="p-8 flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full overflow-hidden mb-6 border-4 border-red-100 group-hover:border-red-500 transition-colors duration-300 shadow-md">
                     <img 
-                        src={getOptimizedImageUrl(member.image)} 
+                        src={getOptimizedImageUrl(member.image, { width: 200, height: 200 })} 
                         alt={member.name}
                         loading="lazy"
                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"

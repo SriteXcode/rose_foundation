@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from "../assets/logo.png";
+import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { CLOUDINARY_LOGO_URL } from '../utils/constants';
+import localLogo from '../assets/logo.webp';
 
 const Navigation = ({ 
   activeSection, 
@@ -30,12 +32,23 @@ const Navigation = ({
     setIsMenuOpen(false);
   };
 
+  const logoSrc = getOptimizedImageUrl(CLOUDINARY_LOGO_URL, { width: 120 }) || localLogo;
+
   return (
     <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-md z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Blackrose Foundation Logo" className="h-10 w-10 sm:h-12 sm:w-12 md:h-15 md:w-15 invert" />
+            <img 
+              src={logoSrc} 
+              alt="Blackrose Foundation Logo" 
+              className="h-10 w-10 sm:h-12 sm:w-12 md:h-15 md:w-15 invert" 
+              onError={(e) => {
+                if (e.target.src !== localLogo) {
+                  e.target.src = localLogo;
+                }
+              }}
+            />
             <span className="text-lg sm:text-xl font-bold text-red-500 truncate max-w-[150px] xs:max-w-none">
               Blackrose Foundation
             </span>

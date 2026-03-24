@@ -50,7 +50,7 @@ const GallerySection = ({ limit = 10 }) => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {galleryItems.map((item, index) => {
-            const optimizedUrl = getOptimizedImageUrl(item.imageUrl);
+            const optimizedUrl = getOptimizedImageUrl(item.imageUrl, { width: 400, height: 400 });
             const isImage = optimizedUrl && optimizedUrl.startsWith('http');
             
             return (

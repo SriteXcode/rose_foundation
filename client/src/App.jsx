@@ -2,8 +2,6 @@ import React, { useState, Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 import Navigation from './components/Navigation';
-import LoginModal from './components/modals/LoginModal';
-import RegisterModal from './components/modals/RegisterModal';
 import { useAuth } from './hooks/useAuth';
 import { useScrollDetection } from './hooks/useScrollDetection';
 import { Toaster } from 'react-hot-toast';
@@ -15,7 +13,10 @@ import DonateStickyButton from './components/DonateStickyButton';
 // Initialize GA4 with your Measurement ID
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
 if (GA_MEASUREMENT_ID) {
-  ReactGA.initialize(GA_MEASUREMENT_ID);
+  // Defer initialization to after the initial page render
+  setTimeout(() => {
+    ReactGA.initialize(GA_MEASUREMENT_ID);
+  }, 3000);
 }
 
 // Analytics tracking component
@@ -30,6 +31,10 @@ const AnalyticsTracker = () => {
 
   return null;
 };
+
+// Lazy loading components
+const LoginModal = lazy(() => import('./components/modals/LoginModal'));
+const RegisterModal = lazy(() => import('./components/modals/RegisterModal'));
 
 // Lazy loading pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -61,8 +66,6 @@ const AppContent = () => {
     setShowLogin,
     showRegister,
     setShowRegister,
-    // showAdmin, // No longer needed as state
-    // setShowAdmin, // No longer needed as state
     loginForm,
     setLoginForm,
     registerForm,
@@ -72,7 +75,7 @@ const AppContent = () => {
     handleRegister,
     handleLogout,
     loadAdminData,
-    setUser // Make sure setUser is returned from useAuth
+    setUser
   } = useAuth();
 
   // Scroll detection
@@ -102,9 +105,8 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-white">
       <Loader />
-      {/* Navigation is visible on all pages, but we might want to hide it on Admin page or customize it */}
       <Routes>
-        <Route path="/admin" element={null} /> {/* Hide main Nav on Admin page */}
+        <Route path="/admin" element={null} />
         <Route path="*" element={
           <Navigation 
             activeSection={activeSection}
@@ -152,35 +154,42 @@ const AppContent = () => {
           } />
           
           <Route path="/projects" element={<ProjectsPage />} />
-                  <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
-                  <Route path="/certificate/:id" element={<CertificatePage />} />
-                  <Route path="/invoice/:id" element={<InvoicePage />} />
-                  <Route path="/legal" element={<LegalDocumentsPage />} />
-                  <Route path="/blog" element={<BlogPage />} />
-                  <Route path="/blog/:slug" element={<BlogPostPage />} />
-                </Routes>      </Suspense>
+          <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
+          <Route path="/certificate/:id" element={<CertificatePage />} />
+          <Route path="/invoice/:id" element={<InvoicePage />} />
+          <Route path="/legal" element={<LegalDocumentsPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+        </Routes>
+      </Suspense>
 
-      {/* Modals are available globally (except maybe admin page depending on design, but keeping them here is safe) */}
-      <LoginModal 
-        showLogin={showLogin}
-        setShowLogin={setShowLogin}
-        setShowRegister={setShowRegister}
-        loginForm={loginForm}
-        setLoginForm={setLoginForm}
-        handleLogin={handleLogin}
-        isLoading={isLoading}
-      />
-      
-      <RegisterModal 
-        showRegister={showRegister}
-        setShowRegister={setShowRegister}
-        setShowLogin={setShowLogin}
-        registerForm={registerForm}
-        setRegisterForm={setRegisterForm}
-        handleRegister={handleRegister}
-        isLoading={isLoading}
-      />
+      <Suspense fallback={null}>
+        {showLogin && (
+          <LoginModal 
+            showLogin={showLogin}
+            setShowLogin={setShowLogin}
+            setShowRegister={setShowRegister}
+            loginForm={loginForm}
+            setLoginForm={setLoginForm}
+            handleLogin={handleLogin}
+            isLoading={isLoading}
+          />
+        )}
+        
+        {showRegister && (
+          <RegisterModal 
+            showRegister={showRegister}
+            setShowRegister={setShowRegister}
+            setShowLogin={setShowLogin}
+            registerForm={registerForm}
+            setRegisterForm={setRegisterForm}
+            handleRegister={handleRegister}
+            isLoading={isLoading}
+          />
+        )}
+      </Suspense>
+
       <WhatsAppButton />
       <DonateStickyButton scrollToSection={scrollToSection} />
       <Toaster position="top-center" />

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { CLOUDINARY_LOGO_URL } from '../utils/constants';
+import localLogo from '../assets/logo.webp';
 import { handleNewsletterSubmit } from '../utils/apiHandlers';
 
 const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLoading }) => {
@@ -14,13 +16,24 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
     { name: 'LinkedIn', url: 'https://www.linkedin.com/company/blackrose-foundation' }
   ];
 
+  const logoSrc = getOptimizedImageUrl(CLOUDINARY_LOGO_URL, { width: 120 }) || localLogo;
+
   return (
     <footer className="bg-black text-white py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
           <div className="flex items-center space-x-3 mb-6">
-            <img src={logo} alt="Blackrose Foundation Logo" className="h-20 w-20 invert" />
+            <img 
+              src={logoSrc} 
+              alt="Blackrose Foundation Logo" 
+              className="h-20 w-20 invert" 
+              onError={(e) => {
+                if (e.target.src !== localLogo) {
+                  e.target.src = localLogo;
+                }
+              }}
+            />
             <span className="text-xl font-bold text-red-500">Blackrose Foundation</span>
           </div>
             <p className="text-gray-400">
