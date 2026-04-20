@@ -91,7 +91,7 @@ const TeamSection = ({ limit = 10 }) => {
           </div>
         )}
         <div className="bg-red-600 p-4 rounded-xl hover:not-focus:bg-red-700 font-semibold text-white text-center mt-12 shadow-lg hover:shadow-xl sm:text-lg">
-  * This Foundation is running by college students.
+  * This foundation is led by young scholars from college.
 </div>
 
       </div>
