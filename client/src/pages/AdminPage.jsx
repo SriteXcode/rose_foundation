@@ -525,7 +525,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {users.map((u) => (
+            {Array.isArray(users) && users.map((u) => (
               <tr key={u._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-gray-800">{u.name}</td>
                 <td className="px-6 py-4 text-gray-800">{u.email}</td>
@@ -536,6 +536,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 </td>
               </tr>
             ))}
+            {(!Array.isArray(users) || users.length === 0) && (
+              <tr>
+                <td colSpan="4" className="px-6 py-10 text-center text-gray-500">No users found or error loading users.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

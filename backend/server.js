@@ -21,12 +21,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 //   methods: "GET,POST,PUT,DELETE,PATCH,HEAD",
 //   credentials: true,
 // }));
-const allowedOrigins = [
-  "https://www.blackrosefoundation.org.in",
-  "http://localhost:5173",
-  "http://localhost:4173",
-  "https://rose-foundation.onrender.com",
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : [
+      "https://www.blackrosefoundation.org.in",
+      "https://blackrosefoundation.org.in",
+      "http://localhost:5173",
+      "http://localhost:4173",
+      "https://rose-foundation.onrender.com",
+    ];
 
 app.use(cors({
   origin: (origin, callback) => {
