@@ -1,0 +1,17 @@
+{
+  "name": "rose-foundation",
+  "version": "1.0.0",
+  "description": "Black Rose Foundation - MERN Stack Application for NGO Management",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix client",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix client\"",
+    "start:backend": "npm start --prefix backend",
+    "build:client": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
