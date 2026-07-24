@@ -8,18 +8,21 @@ exports.addGalleryItem = async (req, res) => {
       return res.status(400).json({ error: 'Title, image URL, and category are required' });
     }
 
+    const isValidProject = project && typeof project === 'string' && project.trim() !== '' && project !== 'none';
+
     const galleryItem = new Gallery({ 
       title, 
       description, 
       imageUrl, 
       category,
-      project: project || undefined 
+      project: isValidProject ? project : undefined 
     });
     
     await galleryItem.save();
 
     res.status(201).json({ message: 'Gallery item added!', item: galleryItem });
   } catch (error) {
+    console.error('Failed to add gallery item:', error);
     res.status(500).json({ error: 'Failed to add gallery item' });
   }
 };
@@ -53,6 +56,10 @@ exports.getGalleryItems = async (req, res) => {
 exports.deleteGalleryItem = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || id === 'undefined') {
+      return res.status(400).json({ error: 'Invalid gallery item ID' });
+    }
+    
     const deletedItem = await Gallery.findByIdAndDelete(id);
     
     if (!deletedItem) {
@@ -61,6 +68,7 @@ exports.deleteGalleryItem = async (req, res) => {
     
     res.json({ message: 'Gallery item deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete gallery item' });
+    console.error('Delete gallery item error:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete gallery item' });
   }
 };

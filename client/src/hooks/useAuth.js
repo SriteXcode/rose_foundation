@@ -149,7 +149,28 @@ export const useAuth = () => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const payloadBase64 = token.split('.')[1];
+        if (payloadBase64) {
+          const decodedJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+          const payload = JSON.parse(decodedJson);
+          if (payload.exp && payload.exp * 1000 < Date.now()) {
+            console.log('Session expired. Clearing token and logging out.');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          } else {
+            setUser(JSON.parse(savedUser));
+          }
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (err) {
+        console.error('Failed to parse auth token:', err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     testBackendConnection();
     setAuthLoading(false);

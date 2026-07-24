@@ -17,10 +17,7 @@ const cacheMiddleware = (ttl = 3600000) => {
       const cachedResponse = await cache.get(key);
 
       if (cachedResponse) {
-        // console.log(`[Cache] Serving ${req.originalUrl} from cache`);
-        
-        // Add browser cache headers even for server-cached responses
-        res.set('Cache-Control', `public, max-age=${Math.floor(ttl / 1000)}`);
+        res.set('Cache-Control', 'no-cache');
         return res.json(cachedResponse);
       }
 
@@ -31,8 +28,7 @@ const cacheMiddleware = (ttl = 3600000) => {
       res.json = (data) => {
         // Store in cache only for 2xx status codes
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          // Set browser cache headers
-          res.set('Cache-Control', `public, max-age=${Math.floor(ttl / 1000)}`);
+          res.set('Cache-Control', 'no-cache');
           
           // Fire and forget cache set to not block response
           cache.set(key, data, ttl).catch(err => console.error('[Cache] Middleware set error:', err));
@@ -56,12 +52,17 @@ const clearCache = (prefix) => {
   return async (req, res, next) => {
     const fullPrefix = `__express__/api/${prefix}`;
     try {
-      // Fire and forget invalidation
-      cache.clearPattern(fullPrefix).catch(err => console.error('[Cache] Invalidation error:', err));
-      // console.log(`[Cache] Invalidating cache for prefix: ${fullPrefix}`);
+      await cache.clearPattern(fullPrefix);
     } catch (err) {
       console.error('[Cache] clearCache middleware error:', err);
     }
+
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        cache.clearPattern(fullPrefix).catch(err => console.error('[Cache] Post-clear error:', err));
+      }
+    });
+
     next();
   };
 };

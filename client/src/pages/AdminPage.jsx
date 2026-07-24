@@ -222,6 +222,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (!window.confirm('Delete this project?')) return;
     try {
       await axiosInstance.delete(`/works/${id}`);
+      toast.success('Project deleted successfully');
+      setWorks(prev => prev.filter(w => w._id !== id));
       fetchWorks();
     } catch (error) {
       toast.error('Unable to delete project.');
@@ -261,6 +263,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (!window.confirm('Delete this volunteer?')) return;
     try {
       await axiosInstance.delete(`/volunteers/${id}`);
+      toast.success('Volunteer deleted successfully');
+      setVolunteers(prev => prev.filter(v => v._id !== id));
       fetchVolunteers();
     } catch (error) {
       toast.error('Unable to delete volunteer.');
@@ -283,6 +287,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     try {
       await axiosInstance.delete(`/volunteers/${id}`);
       toast.success('Application rejected');
+      setApplications(prev => prev.filter(app => app._id !== id));
       fetchApplications();
     } catch (error) {
       toast.error('Unable to reject application.');
@@ -320,6 +325,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     try {
       await axiosInstance.delete(`/blog/${id}`);
       toast.success('Post deleted');
+      setBlogPosts(prev => prev.filter(p => p._id !== id));
       fetchBlogPosts();
     } catch (error) {
       toast.error('Unable to delete post.');
@@ -369,12 +375,20 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   };
 
   const handleDeleteGallery = async (id) => {
+    if (!id) {
+      toast.error('Invalid image ID');
+      return;
+    }
     if (!window.confirm('Delete this image?')) return;
     try {
       await axiosInstance.delete(`/gallery/${id}`);
+      toast.success('Gallery image deleted successfully');
+      setGalleryItems(prev => prev.filter(item => (item._id || item.id) !== id));
       fetchGallery();
     } catch (error) {
-      toast.error('Unable to delete image.');
+      console.error('Delete gallery error:', error);
+      const msg = error.response?.data?.error || error.response?.data?.message || error.message || 'Unable to delete image.';
+      toast.error(msg);
     }
   };
 
@@ -552,7 +566,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-bold text-gray-800">Projects</h3>
         <button 
-          onClick={() => { setEditingWork({}); setShowWorkModal(true); }}
+          onClick={() => { 
+            setEditingWork({ title: '', description: '', category: 'General', status: 'ongoing', beneficiaries: 0, images: [] }); 
+            setShowWorkModal(true); 
+          }}
           className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
         >
           + Add Project
@@ -777,8 +794,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {galleryItems.map((item) => (
-          <div key={item._id} className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square">
+        {galleryItems.map((item, index) => (
+          <div key={item._id || item.id || index} className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square">
              {item.imageUrl?.startsWith('http') ? (
                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
              ) : (
@@ -786,7 +803,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
              )}
              <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                <button 
-                 onClick={() => handleDeleteGallery(item._id)}
+                 onClick={() => handleDeleteGallery(item._id || item.id)}
                  className="bg-red-600/90 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg backdrop-blur-sm transition-colors"
                  title="Delete Image"
                >
