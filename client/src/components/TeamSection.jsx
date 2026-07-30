@@ -81,7 +81,30 @@ const TeamSection = ({ limit = 10 }) => {
     }
   };
 
-  const displayMembers = teamMembers.length > 0 ? teamMembers : defaultTeam;
+  const isLeader = (member) => {
+    if (member.isTeamLeader || member.isLeader) return true;
+    const roleStr = `${member.role || ''} ${member.designation || ''}`.toLowerCase();
+    return (
+      roleStr.includes('founder') ||
+      roleStr.includes('director') ||
+      roleStr.includes('leader') ||
+      roleStr.includes('president') ||
+      roleStr.includes('head') ||
+      roleStr.includes('lead') ||
+      roleStr.includes('chief')
+    );
+  };
+
+  const rawMembers = teamMembers.length > 0 ? teamMembers : defaultTeam;
+
+  // Sort team leaders ahead with highest priority
+  const displayMembers = [...rawMembers].sort((a, b) => {
+    const aLeader = isLeader(a);
+    const bLeader = isLeader(b);
+    if (aLeader && !bLeader) return -1;
+    if (!aLeader && bLeader) return 1;
+    return 0;
+  });
 
   return (
     <section id="team" className="py-4 md:py-6 bg-white dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
@@ -132,19 +155,27 @@ const TeamSection = ({ limit = 10 }) => {
               const imgSrc = member.image?.startsWith('http') 
                 ? getOptimizedImageUrl(member.image, { width: 300, height: 300 })
                 : member.image || defaultTeam[index % defaultTeam.length].image;
+              const leader = isLeader(member);
 
               return (
                 <div 
                   key={`${member._id || index}-${index}`} 
-                  className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-2.5 shadow-sm hover:shadow-md transition-all group shrink-0 w-44 sm:w-52 snap-start flex flex-col"
+                  className={`bg-white dark:bg-zinc-900 border rounded-2xl p-2.5 shadow-sm hover:shadow-md transition-all group shrink-0 w-44 sm:w-52 snap-start flex flex-col ${
+                    leader ? 'border-amber-400/80 dark:border-amber-500/50 shadow-amber-500/5' : 'border-gray-200/70 dark:border-zinc-800'
+                  }`}
                 >
-                  <div className="aspect-square w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                  <div className="aspect-square w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800 relative">
                     <img 
                       src={imgSrc} 
                       alt={member.name}
                       loading="lazy"
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                     />
+                    {leader && (
+                      <span className="absolute top-2 left-2 bg-amber-500 text-zinc-950 font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md">
+                        Team Lead
+                      </span>
+                    )}
                   </div>
                   <div className="p-2.5">
                     <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors truncate">
