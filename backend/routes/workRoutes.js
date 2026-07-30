@@ -6,8 +6,8 @@ const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware')
 
 const router = express.Router();
 
-router.get('/', cacheMiddleware(3600000), getWorks);
-router.get('/stats', cacheMiddleware(3600000), getWorkStats);
+router.get('/', getWorks);
+router.get('/stats', getWorkStats);
 
 router.post('/', authMiddleware, adminMiddleware, clearCache('works'), addWork);
 router.put('/:id', authMiddleware, adminMiddleware, clearCache('works'), updateWork);

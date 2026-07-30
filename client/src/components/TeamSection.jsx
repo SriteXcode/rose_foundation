@@ -1,12 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+
+const JoinUsModal = lazy(() => import('./modals/JoinUsModal'));
+
+const defaultTeam = [
+  { name: 'Priscilla Sekar', designation: 'Founder & Director', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Karan Mehta', designation: 'Program Lead', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Priya Nair', designation: 'Outreach Manager', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Rohan Kumar', designation: 'Field Coordinator', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600' },
+];
 
 const TeamSection = ({ limit = 10 }) => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const scrollContainerRef = useRef(null);
+
+  const checkScroll = () => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      setCanScrollLeft(el.scrollLeft > 10);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+    }
+  };
 
   const fetchTeam = async (pageNum) => {
     setLoading(true);
@@ -18,10 +40,12 @@ const TeamSection = ({ limit = 10 }) => {
         setTeamMembers(prev => pageNum === 1 ? volunteers : [...prev, ...volunteers]);
         setHasMore(pageNum < totalPages);
       } else {
+        setTeamMembers(defaultTeam);
         setHasMore(false);
       }
     } catch (error) {
       console.error('Failed to fetch team members', error);
+      setTeamMembers(defaultTeam);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -32,71 +56,144 @@ const TeamSection = ({ limit = 10 }) => {
     fetchTeam(page);
   }, [page]);
 
-  const handleLoadMore = () => {
-    setPage(prev => prev + 1);
+  useEffect(() => {
+    checkScroll();
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+    }
+    return () => {
+      if (el) el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [teamMembers]);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -240, behavior: 'smooth' });
+    }
   };
 
-  if (loading && page === 1 && teamMembers.length === 0) {
-      // Show initial loading skeleton layout if completely empty
-      // Or we can let it render the section and show skeletons inside the grid
-  } else if (teamMembers.length === 0 && !loading) {
-      return null; 
-  }
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 240, behavior: 'smooth' });
+    }
+  };
+
+  const displayMembers = teamMembers.length > 0 ? teamMembers : defaultTeam;
 
   return (
-    <section id="team" className="py-20 bg-white">
+    <section id="team" className="py-4 md:py-6 bg-white dark:bg-zinc-900/50 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-slate-800">
-          Our Dedicated Team
-          <div className="w-20 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto mt-4"></div>
-        </h2>
-
-        <div className="flex flex-wrap justify-center gap-8">
-          {teamMembers.map((member, index) => (
-            <div key={`${member._id || index}-${index}`} className="bg-gray-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 text-center group border border-gray-100 w-full sm:w-72">
-              <div className="p-8 flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden mb-6 border-4 border-red-100 group-hover:border-red-500 transition-colors duration-300 shadow-md">
-                    <img 
-                        src={getOptimizedImageUrl(member.image, { width: 200, height: 200 })} 
-                        alt={member.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                        width="128"
-                        height="128"
-                    />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-red-600 transition-colors">{member.name}</h3>
-                <p className="text-gray-500 font-medium uppercase tracking-wide text-sm">{member.designation}</p>
-              </div>
-            </div>
-          ))}
-          
-          {loading && Array.from({ length: page === 1 ? limit : 4 }).map((_, i) => (
-             <div key={`skeleton-${i}`} className="bg-gray-50 rounded-xl shadow p-8 flex flex-col items-center animate-pulse border border-gray-100 w-full sm:w-72">
-                <div className="w-32 h-32 rounded-full bg-gray-200 mb-6"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-             </div>
-          ))}
+        
+        {/* Section Header */}
+        <div className="text-left mb-6 sm:mb-8">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1 block">
+            Our People
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+            Meet our dedicated team
+          </h2>
         </div>
 
-        {hasMore && !loading && (
-          <div className="text-center mt-12">
-            <button 
-              onClick={handleLoadMore}
-              className="bg-red-600 text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
+        {/* Carousel Container with Floating Arrows on Image */}
+        <div className="relative group">
+
+          {/* Left Arrow (Visible only if can scroll left) */}
+          {canScrollLeft && (
+            <button
+              onClick={scrollLeft}
+              aria-label="Scroll left"
+              className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white shadow-lg backdrop-blur-md flex items-center justify-center hover:scale-110 transition-all cursor-pointer border border-gray-200/60 dark:border-zinc-700"
             >
-              Load More Team Members
+              <ChevronLeft className="w-5 h-5" />
             </button>
+          )}
+
+          {/* Right Arrow (Visible only if can scroll right) */}
+          {canScrollRight && (
+            <button
+              onClick={scrollRight}
+              aria-label="Scroll right"
+              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white shadow-lg backdrop-blur-md flex items-center justify-center hover:scale-110 transition-all cursor-pointer border border-gray-200/60 dark:border-zinc-700"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Horizontal Scroll Container across all device sizes */}
+          <div 
+            ref={scrollContainerRef}
+            onScroll={checkScroll}
+            className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory text-left [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
+            {displayMembers.map((member, index) => {
+              const imgSrc = member.image?.startsWith('http') 
+                ? getOptimizedImageUrl(member.image, { width: 300, height: 300 })
+                : member.image || defaultTeam[index % defaultTeam.length].image;
+
+              return (
+                <div 
+                  key={`${member._id || index}-${index}`} 
+                  className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-2.5 shadow-sm hover:shadow-md transition-all group shrink-0 w-44 sm:w-52 snap-start flex flex-col"
+                >
+                  <div className="aspect-square w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                    <img 
+                      src={imgSrc} 
+                      alt={member.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors truncate">
+                      {member.name}
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
+                      {member.designation}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-        <div className="bg-red-600 p-4 rounded-xl hover:not-focus:bg-red-700 font-semibold text-white text-center mt-12 shadow-lg hover:shadow-xl sm:text-lg">
-  * This foundation is led by young scholars from college.
-</div>
+
+        </div>
+
+        {/* Action Buttons: Show More & Join Our Team */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <button 
+            onClick={() => setShowJoinModal(true)}
+            className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-6 py-3 rounded-full text-xs font-semibold transition-all shadow-sm cursor-pointer group"
+          >
+            <span>Join Our Team</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        {/* Highlighted Scholar Disclaimer */}
+        <div className="mt-8 flex justify-center">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 via-amber-400/15 to-amber-500/10 dark:from-amber-400/10 dark:to-amber-400/10 border border-amber-300/60 dark:border-amber-700/50 px-5 py-2.5 rounded-full text-xs font-semibold text-amber-900 dark:text-amber-200 shadow-sm">
+            <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>This foundation is led by young scholars from college.</span>
+          </div>
+        </div>
 
       </div>
+
+      <Suspense fallback={null}>
+        {showJoinModal && (
+          <JoinUsModal 
+            isOpen={showJoinModal} 
+            onClose={() => setShowJoinModal(false)} 
+          />
+        )}
+      </Suspense>
     </section>
   );
 };
 
 export default TeamSection;
+
+

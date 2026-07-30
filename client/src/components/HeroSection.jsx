@@ -2,8 +2,8 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { ArrowRight } from 'lucide-react';
 
-// Lazy load JoinUsModal
 const JoinUsModal = lazy(() => import('./modals/JoinUsModal'));
 
 const HeroSection = ({ scrollToSection }) => {
@@ -12,7 +12,8 @@ const HeroSection = ({ scrollToSection }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Fetch settings on mount
+  const fallbackHeroImage = "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=1200";
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -25,11 +26,11 @@ const HeroSection = ({ scrollToSection }) => {
           
           const desktopImages = settings.heroImagesDesktop?.length > 0 
             ? settings.heroImagesDesktop 
-            : []; // Fallback if needed, currently empty to show gradient
+            : [];
             
           const mobileImages = settings.heroImagesMobile?.length > 0 
             ? settings.heroImagesMobile 
-            : desktopImages; // Fallback to desktop if no mobile
+            : desktopImages;
 
           setHeroImages(mobile ? mobileImages : desktopImages);
         };
@@ -46,74 +47,114 @@ const HeroSection = ({ scrollToSection }) => {
     fetchSettings();
   }, []);
 
-  // Carousel timer
   useEffect(() => {
     if (heroImages.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
-    }, 5000); // Change image every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [heroImages]);
 
+  const displayImage = heroImages.length > 0
+    ? getOptimizedImageUrl(heroImages[currentImageIndex], isMobile ? { width: 800 } : { width: 1200 })
+    : fallbackHeroImage;
+
   return (
-    <section id="home" className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden">
-      
-      {/* Background Carousel */}
-      <div className="absolute inset-0 z-0">
-        {heroImages.length > 0 ? (
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={currentImageIndex}
-              src={getOptimizedImageUrl(heroImages[currentImageIndex], isMobile ? { width: 800 } : { width: 1920 })}
-              alt="Hero Background"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1 }}
-              loading={currentImageIndex === 0 ? "eager" : "lazy"}
-              fetchpriority={currentImageIndex === 0 ? "high" : "auto"}
-              className="w-full h-full object-fit-cover"
-            />
-          </AnimatePresence>
-        ) : (
-          // Fallback Gradient if no images
-          <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-red-600"></div>
-        )}
-        {/* Overlay to ensure text readability */}
-        <div className="absolute inset-0 bg-black/50"></div>
-      </div>
+    <section id="home" className="pt-20 pb-6 sm:pt-24 sm:pb-8 bg-fafafa dark:bg-zinc-950 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-12 gap-8 items-center">
+          
+          {/* Left Content Column */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left">
+            
+            {/* Pill Badge */}
+            <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700/80 mb-4">
+              Nonprofit Foundation
+            </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto flex flex-col items-center">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-red-400 bg-clip-text text-transparent animate-pulse">
-          Empowering Communities
-        </h1>
-        <p className="text-xl md:text-2xl mb-8 opacity-90 drop-shadow-md">
-          Together we can create a better tomorrow for everyone
-        </p>
-        
-        <div className="flex flex-col gap-4 items-center">
-          <button
-            onClick={() => scrollToSection('about')}
-            className="bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-2xl w-48 shadow-lg"
-          >
-            Learn More
-          </button>
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-white mb-4 leading-[1.15]">
+              Empowering communities together
+            </h1>
 
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="bg-white/10 backdrop-blur-md border-2 border-white/50 hover:bg-white/20 text-white px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl flex items-center justify-center gap-2 w-48 group shadow-lg"
-          >
-            <span>✨</span> Join Us
-          </button>
+            {/* Description */}
+            <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed max-w-xl">
+              We create a better tomorrow for everyone through education, relief and sustainable support programs that reach those who need it most.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3.5 mb-8 w-full sm:w-auto">
+              <button
+                onClick={() => setShowJoinModal(true)}
+                className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-6 py-3 rounded-full text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto group"
+              >
+                <span>Get Involved</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => scrollToSection('about')}
+                className="bg-transparent hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-gray-300 dark:border-zinc-700 px-6 py-3 rounded-full text-xs font-semibold transition-all cursor-pointer w-full sm:w-auto"
+              >
+                Learn More
+              </button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-6 sm:gap-10 pt-5 border-t border-gray-200 dark:border-zinc-800/80 w-full">
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">12k+</div>
+                <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-1">Lives impacted</div>
+              </div>
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">240</div>
+                <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-1">Volunteers</div>
+              </div>
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">18</div>
+                <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-1">Programs</div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Image Column - Compact on md/lg */}
+          <div className="lg:col-span-5 relative w-full max-w-md lg:max-w-none mx-auto">
+            <div className="relative rounded-2xl overflow-hidden shadow-xl bg-gray-100 dark:bg-zinc-900 border border-gray-200/60 dark:border-zinc-800/80 aspect-[4/3] sm:aspect-[16/11] max-h-[320px] md:max-h-[360px] lg:max-h-[380px]">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentImageIndex}
+                  src={displayImage}
+                  alt="Rose Foundation Community Care"
+                  initial={{ opacity: 0, scale: 1.02 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="w-full h-full object-cover"
+                />
+              </AnimatePresence>
+
+              {/* Carousel Slide Indicators */}
+              {heroImages.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-full">
+                  {heroImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        idx === currentImageIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
-      </div>
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-10">
-        <button onClick={() => scrollToSection('about')} className="text-white text-3xl drop-shadow-md">
-          ⬇
-        </button>
       </div>
 
       <Suspense fallback={null}>
@@ -129,3 +170,4 @@ const HeroSection = ({ scrollToSection }) => {
 };
 
 export default HeroSection;
+

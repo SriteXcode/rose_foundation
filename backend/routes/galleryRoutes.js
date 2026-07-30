@@ -6,7 +6,7 @@ const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware')
 
 const router = express.Router();
 
-router.get('/', cacheMiddleware(3600000), getGalleryItems);
+router.get('/', getGalleryItems);
 
 router.post('/', authMiddleware, adminMiddleware, clearCache('gallery'), addGalleryItem);
 router.delete('/:id', authMiddleware, adminMiddleware, clearCache('gallery'), deleteGalleryItem);

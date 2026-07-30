@@ -1,44 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #09090b;
+  background-color: #fafafa;
 
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dark {
+  color: #f4f4f5;
+  background-color: #09090b;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #fafafa;
+  color: #09090b;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background-color: #09090b;
+  color: #f4f4f5;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Newsletter Content Styling (Fallback for missing typography plugin) */
-.newsletter-content h1 { @apply text-2xl font-bold mb-4 text-gray-800; }
-.newsletter-content h2 { @apply text-xl font-bold mb-3 text-gray-800; }
-.newsletter-content h3 { @apply text-lg font-bold mb-2 text-gray-800; }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+}
+
+/* Newsletter Content Styling */
+.newsletter-content h1 { @apply text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100; }
+.newsletter-content h2 { @apply text-xl font-bold mb-3 text-gray-800 dark:text-gray-100; }
+.newsletter-content h3 { @apply text-lg font-bold mb-2 text-gray-800 dark:text-gray-100; }
 .newsletter-content p { @apply mb-4 leading-relaxed; }
 .newsletter-content ul { @apply list-disc list-inside mb-4 space-y-1; }
 .newsletter-content ol { @apply list-decimal list-inside mb-4 space-y-1; }
 .newsletter-content li { @apply ml-2; }
-.newsletter-content a { @apply text-red-600 hover:underline; }
-.newsletter-content strong { @apply font-semibold text-gray-900; }
+.newsletter-content a { @apply text-black dark:text-white underline font-semibold; }
+.newsletter-content strong { @apply font-semibold text-gray-900 dark:text-white; }
 
-/* ===== BLOG CONTENT – HARD FIX ===== */
-
+/* Blog Content Fixes */
 .blog-content,
 .blog-content * {
   word-break: normal !important;
@@ -47,13 +78,12 @@
   hyphens: none !important;
 }
 
-/* Prevent invisible character wrapping */
 .blog-content {
   unicode-bidi: plaintext;
 }
 
-/* Fix long URLs / code */
 .blog-content a,
 .blog-content code {
   word-break: break-word !important;
 }
+

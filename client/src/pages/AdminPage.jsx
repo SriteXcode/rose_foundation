@@ -7,17 +7,41 @@ import NewsletterProgress from '../components/NewsletterProgress';
 import toast from 'react-hot-toast';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Users, 
+  FolderKanban, 
+  Image as ImageIcon, 
+  Mail, 
+  Settings, 
+  UserCheck, 
+  LogOut, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  Search, 
+  CheckCircle2, 
+  XCircle, 
+  ShieldCheck, 
+  DollarSign,
+  MessageSquare,
+  Sparkles,
+  ChevronRight,
+  X,
+  Menu,
+  Heart
+} from 'lucide-react';
 
 const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const navigate = useNavigate();
-  // ... existing states ...
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [works, setWorks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [applications, setApplications] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
-  const [blogPosts, setBlogPosts] = useState([]); // Blog State
+  const [blogPosts, setBlogPosts] = useState([]);
   
   // Newsletter Progress State
   const [newsletterProgress, setNewsletterProgress] = useState({ isSending: false, total: 0, current: 0 });
@@ -26,15 +50,20 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [editingUser, setEditingUser] = useState(null);
   const [editingWork, setEditingWork] = useState(null); 
   const [editingVolunteer, setEditingVolunteer] = useState(null);
-  const [editingPost, setEditingPost] = useState(null); // Blog Edit State
+  const [editingPost, setEditingPost] = useState(null);
   const [volunteerSubTab, setVolunteerSubTab] = useState('approved');
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
-  const [showBlogModal, setShowBlogModal] = useState(false); // Blog Modal
+  const [showBlogModal, setShowBlogModal] = useState(false);
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
   const [tagType, setTagType] = useState('none'); 
   const [showSidebar, setShowSidebar] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+
+  const [campaignsList, setCampaignsList] = useState([]);
+  const [editingCampaignItem, setEditingCampaignItem] = useState(null);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
 
   const [newsletterForm, setNewsletterForm] = useState({ subject: '', message: '' });
   const [settingsForm, setSettingsForm] = useState({
@@ -72,7 +101,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       fetchApplications();
     }
     if (activeTab === 'gallery') fetchGallery();
-    if (activeTab === 'blog') fetchBlogPosts(); // Fetch Blog
+    if (activeTab === 'blog') fetchBlogPosts();
+    if (activeTab === 'campaigns') {
+      fetchCampaignsList();
+      fetchBlogPosts();
+    }
     if (activeTab === 'settings') fetchSettings();
   }, [activeTab, user, authLoading]);
 
@@ -123,8 +156,67 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         heroImagesDesktop: data.heroImagesDesktop || [],
         heroImagesMobile: data.heroImagesMobile || []
       });
+      if (data.activeCampaign) {
+        setCampaignForm({
+          title: data.activeCampaign.title || '',
+          subtitle: data.activeCampaign.subtitle || '',
+          description: data.activeCampaign.description || '',
+          imageUrl: data.activeCampaign.imageUrl || '',
+          targetAmount: data.activeCampaign.targetAmount || 100000,
+          currentAmount: data.activeCampaign.currentAmount || 0,
+          buttonText: data.activeCampaign.buttonText || 'Donate Now',
+          isActive: data.activeCampaign.isActive ?? true
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch settings', error);
+    }
+  };
+
+  const fetchCampaignsList = async () => {
+    try {
+      const response = await axiosInstance.get('/campaigns');
+      setCampaignsList(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch campaigns list', error);
+    }
+  };
+
+  const handleCampaignSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const payload = { ...editingCampaignItem };
+      if (!payload.startDate || payload.startDate === '') delete payload.startDate;
+      if (!payload.endDate || payload.endDate === '') delete payload.endDate;
+      if (!payload.relatedBlogPost || payload.relatedBlogPost === '') payload.relatedBlogPost = null;
+
+      const url = editingCampaignItem?._id 
+        ? `/campaigns/${editingCampaignItem._id}`
+        : '/campaigns';
+      const method = editingCampaignItem?._id ? 'put' : 'post';
+      await axiosInstance[method](url, payload);
+
+      toast.success(`Campaign ${editingCampaignItem?._id ? 'updated' : 'created'} successfully`);
+      setShowCampaignModal(false);
+      setEditingCampaignItem(null);
+      fetchCampaignsList();
+    } catch (error) {
+      console.error('Campaign save error:', error);
+      toast.error(error.response?.data?.error || 'Unable to save campaign.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCampaignItem = async (id) => {
+    if (!window.confirm('Delete this campaign?')) return;
+    try {
+      await axiosInstance.delete(`/campaigns/${id}`);
+      toast.success('Campaign deleted successfully');
+      fetchCampaignsList();
+    } catch (error) {
+      toast.error('Unable to delete campaign.');
     }
   };
 
@@ -184,7 +276,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setEditingUser(null);
       fetchUsers();
     } catch (error) {
-      toast.error('Failed to update user details. Please try again.');
+      toast.error('Failed to update user details.');
     } finally {
       setIsLoading(false);
     }
@@ -303,9 +395,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         ? `/blog/${editingPost._id}`
         : '/blog';
       
-      // If updating, method is PUT, else POST
       const method = editingPost?._id ? 'put' : 'post';
-      
       await axiosInstance[method](url, editingPost);
 
       toast.success(`Post ${editingPost?._id ? 'updated' : 'published'} successfully`);
@@ -337,7 +427,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Prepare payload based on tagType
     const payload = { ...newGalleryItem };
     if (tagType === 'project') {
       if (!payload.project) {
@@ -347,21 +436,19 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       }
       payload.category = 'Project'; 
     } else if (tagType === 'custom') {
-      payload.project = ''; // Clear project
+      payload.project = '';
       if (!payload.category) {
         toast.error('Please enter a tag name');
         setIsLoading(false);
         return;
       }
     } else {
-      // None
       payload.project = '';
       payload.category = 'General';
     }
 
     try {
       await axiosInstance.post('/gallery', payload);
-
       toast.success('Image added successfully');
       setShowGalleryModal(false);
       setNewGalleryItem({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
@@ -387,8 +474,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       fetchGallery();
     } catch (error) {
       console.error('Delete gallery error:', error);
-      const msg = error.response?.data?.error || error.response?.data?.message || error.message || 'Unable to delete image.';
-      toast.error(msg);
+      toast.error('Unable to delete image.');
     }
   };
 
@@ -408,7 +494,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
     try {
       const response = await axiosInstance.post('/newsletter/send', newsletterForm);
-      
       clearInterval(interval);
       setNewsletterProgress({ isSending: true, total: totalSubscribers, current: totalSubscribers });
       
@@ -422,7 +507,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     } catch (error) {
       clearInterval(interval);
       setNewsletterProgress({ isSending: false, total: 0, current: 0 });
-      toast.error('Unable to send newsletter. Please try again later.');
+      toast.error('Unable to send newsletter.');
     }
   };
 
@@ -441,159 +526,350 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl font-semibold text-gray-600">Verifying access...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center">
+        <div className="text-sm font-semibold text-zinc-500 animate-pulse">Verifying administrative access...</div>
       </div>
     );
   }
 
   if (!user || user.role !== 'admin') return null;
 
-  // --- Render Functions ---
-  const renderDashboard = () => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl">
-          <div className="text-3xl mb-2">💰</div>
-          <h3 className="text-lg font-semibold">Total Donations</h3>
-          <p className="text-2xl font-bold">₹{adminData.stats?.totalAmount?.toLocaleString() || 0}</p>
+  const renderCampaigns = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Active & Past Campaigns</h3>
+          <p className="text-xs text-zinc-500">Manage multiple campaign drives, popups, and linked blog stories</p>
         </div>
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl">
-          <div className="text-3xl mb-2">📧</div>
-          <h3 className="text-lg font-semibold">Contact Messages</h3>
-          <p className="text-2xl font-bold">{adminData.stats?.totalContacts || 0}</p>
-        </div>
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-xl">
-          <div className="text-3xl mb-2">📬</div>
-          <h3 className="text-lg font-semibold">Subscribers</h3>
-          <p className="text-2xl font-bold">{adminData.stats?.totalNewsletters || 0}</p>
-        </div>
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-xl">
-          <div className="text-3xl mb-2">👥</div>
-          <h3 className="text-lg font-semibold">Total Users</h3>
-          <p className="text-2xl font-bold">{adminData.stats?.totalUsers || 0}</p>
-        </div>
+
+        <button 
+          onClick={() => { 
+            setEditingCampaignItem({ 
+              title: '', 
+              subtitle: 'Featured Initiative', 
+              description: '', 
+              imageUrl: '', 
+              targetAmount: 100000, 
+              currentAmount: 0, 
+              status: 'active', 
+              relatedBlogPost: '', 
+              buttonText: 'Donate Now', 
+              isPopup: true 
+            }); 
+            setShowCampaignModal(true); 
+          }}
+          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" /> New Campaign
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-xl border shadow-sm">
-          <h3 className="text-xl font-bold mb-4 text-gray-800">Recent Donations</h3>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {adminData.donations?.length > 0 ? (
-              adminData.donations.map((donation) => (
-                <div key={donation._id} className="bg-gray-50 p-4 rounded-lg border">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold text-gray-800">{donation.donorName || 'Anonymous'}</p>
-                      <p className="text-sm text-gray-600">{new Date(donation.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    <div className={`font-bold ${donation.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>
-                      ₹{donation.amount?.toLocaleString()}
-                    </div>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {campaignsList.map((camp) => (
+          <div key={camp._id} className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 mr-2">
+                    {camp.subtitle || 'Drive'}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${camp.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                    {camp.status}
+                  </span>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">No donations found.</p>
-            )}
-          </div>
-        </div>
+                {camp.isPopup && (
+                  <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded-full">
+                    Auto-Popup Active
+                  </span>
+                )}
+              </div>
 
-        <div className="bg-white p-6 rounded-xl border shadow-sm">
-          <h3 className="text-xl font-bold mb-4 text-gray-800">Recent Messages</h3>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {adminData.contacts?.length > 0 ? (
-              adminData.contacts.map((message) => (
-                <div key={message._id} className="bg-gray-50 p-4 rounded-lg border">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold text-gray-800">{message.name}</p>
-                      <p className="text-sm text-gray-600 truncate max-w-[150px]">{message.message}</p>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(message.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
+              <h4 className="font-bold text-base text-zinc-900 dark:text-white mb-1.5">{camp.title}</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed mb-3">{camp.description}</p>
+              
+              <div className="text-xs text-zinc-500 font-medium mb-3">
+                Raised: <span className="font-bold text-zinc-900 dark:text-white">₹{camp.currentAmount?.toLocaleString()}</span> of ₹{camp.targetAmount?.toLocaleString()}
+              </div>
+
+              {camp.relatedBlogPost && (
+                <div className="text-[11px] bg-blue-50/50 dark:bg-blue-950/30 p-2 rounded-lg text-blue-600 dark:text-blue-400 font-medium truncate mb-3">
+                  🔗 Linked Blog: {typeof camp.relatedBlogPost === 'object' ? camp.relatedBlogPost.title : 'Selected Post'}
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">No messages found.</p>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+              )}
+            </div>
 
-  const renderUsers = () => (
-    <div>
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">User Management</h3>
-      <div className="bg-white rounded-xl border overflow-hidden overflow-x-auto">
-        <table className="w-full text-left whitespace-nowrap">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-gray-600">Name</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Email</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Role</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {Array.isArray(users) && users.map((u) => (
-              <tr key={u._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-gray-800">{u.name}</td>
-                <td className="px-6 py-4 text-gray-800">{u.email}</td>
-                <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-gray-100 text-xs font-semibold text-gray-700">{u.role}</span></td>
-                <td className="px-6 py-4 flex space-x-3">
-                  <button onClick={() => setEditingUser(u)} className="text-blue-500 font-semibold text-sm">Edit</button>
-                  {u.role !== 'admin' && <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 font-semibold text-sm">Delete</button>}
-                </td>
-              </tr>
-            ))}
-            {(!Array.isArray(users) || users.length === 0) && (
-              <tr>
-                <td colSpan="4" className="px-6 py-10 text-center text-gray-500">No users found or error loading users.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-zinc-800">
+              <button 
+                onClick={() => { setEditingCampaignItem(camp); setShowCampaignModal(true); }}
+                className="text-xs font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Edit3 className="w-3 h-3" /> Edit
+              </button>
+              <button 
+                onClick={() => handleDeleteCampaignItem(camp._id)}
+                className="text-xs font-semibold text-red-500 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+        {campaignsList.length === 0 && (
+          <div className="col-span-full py-12 text-center text-xs text-zinc-400">
+            No custom campaigns created yet. Click "+ New Campaign" above to launch one!
+          </div>
+        )}
       </div>
     </div>
   );
 
+  // Nav Items Definition
+  const sidebarItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'campaigns', icon: Sparkles, label: 'Campaign Popup' },
+    { id: 'blog', icon: FileText, label: 'Blog Posts' },
+    { id: 'volunteers', icon: UserCheck, label: 'Volunteers' },
+    { id: 'users', icon: Users, label: 'Users' },
+    { id: 'projects', icon: FolderKanban, label: 'Projects' },
+    { id: 'gallery', icon: ImageIcon, label: 'Gallery' },
+    { id: 'newsletter', icon: Mail, label: 'Newsletter' },
+    { id: 'settings', icon: Settings, label: 'Settings' }
+  ];
+
+  // --- Render Functions ---
+  const renderDashboard = () => (
+    <div className="space-y-6">
+      {/* Quick KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Raised</p>
+              <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">₹{adminData.stats?.totalAmount?.toLocaleString() || 0}</h3>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Contact Messages</p>
+              <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{adminData.stats?.totalContacts || 0}</h3>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Subscribers</p>
+              <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{adminData.stats?.totalNewsletters || 0}</h3>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Mail className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Registered Users</p>
+              <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{adminData.stats?.totalUsers || 0}</h3>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2-Column Activity Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Donations */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white">Recent Donations</h3>
+            <span className="text-xs text-zinc-400 font-medium">Live Activity</span>
+          </div>
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {adminData.donations?.length > 0 ? (
+              adminData.donations.map((donation) => (
+                <div key={donation._id} className="bg-gray-50 dark:bg-zinc-800/60 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+                  <div>
+                    <p className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-white">{donation.donorName || 'Anonymous Donor'}</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{new Date(donation.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">₹{donation.amount?.toLocaleString()}</span>
+                    <span className={`block text-[10px] font-semibold uppercase ${donation.status === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {donation.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-zinc-400 text-xs text-center py-6">No recent donations recorded.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Messages */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white">Recent Messages</h3>
+            <span className="text-xs text-zinc-400 font-medium">Inquiries</span>
+          </div>
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {adminData.contacts?.length > 0 ? (
+              adminData.contacts.map((message) => (
+                <div key={message._id} className="bg-gray-50 dark:bg-zinc-800/60 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+                  <div className="flex-1 pr-3">
+                    <p className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-white">{message.name}</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-xs">{message.message}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-zinc-400">{new Date(message.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-zinc-400 text-xs text-center py-6">No contact messages received yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderUsers = () => {
+    const filteredUsersList = users.filter(u => 
+      !userSearchTerm.trim() || 
+      u.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) || 
+      u.email?.toLowerCase().includes(userSearchTerm.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">User Accounts</h3>
+            <p className="text-xs text-zinc-500">Manage registered user credentials and permission roles</p>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={userSearchTerm}
+              onChange={(e) => setUserSearchTerm(e.target.value)}
+              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-full pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
+            />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200/80 dark:border-zinc-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap text-xs sm:text-sm">
+              <thead className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200/80 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
+                <tr>
+                  <th className="px-6 py-3.5 font-semibold">User</th>
+                  <th className="px-6 py-3.5 font-semibold">Email</th>
+                  <th className="px-6 py-3.5 font-semibold">Role</th>
+                  <th className="px-6 py-3.5 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/80">
+                {filteredUsersList.map((u) => (
+                  <tr key={u._id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-6 py-3.5 font-medium text-zinc-900 dark:text-white">{u.name}</td>
+                    <td className="px-6 py-3.5 text-zinc-600 dark:text-zinc-400">{u.email}</td>
+                    <td className="px-6 py-3.5">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'bg-gray-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-right space-x-2">
+                      <button onClick={() => setEditingUser(u)} className="text-zinc-900 dark:text-white font-semibold text-xs hover:underline cursor-pointer">Edit</button>
+                      {u.role !== 'admin' && (
+                        <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 font-semibold text-xs hover:underline cursor-pointer">Delete</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {filteredUsersList.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-8 text-center text-zinc-400 text-xs">No users found matching query.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderProjects = () => (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-800">Projects</h3>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Social Projects</h3>
+          <p className="text-xs text-zinc-500">Manage impact initiatives and community programs</p>
+        </div>
         <button 
           onClick={() => { 
             setEditingWork({ title: '', description: '', category: 'General', status: 'ongoing', beneficiaries: 0, images: [] }); 
             setShowWorkModal(true); 
           }}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
         >
-          + Add Project
+          <Plus className="w-3.5 h-3.5" /> New Project
         </button>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {works.map((work) => (
-          <div key={work._id} className="bg-white p-4 rounded-xl border shadow-sm">
-            <h4 className="font-bold text-lg text-gray-800">{work.title}</h4>
-            <p className="text-sm text-gray-500 mb-2">{work.category} • {work.status}</p>
-            <p className="text-gray-600 text-sm mb-4 truncate">{work.description}</p>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => { setEditingWork(work); setShowWorkModal(true); }}
-                className="text-blue-600 text-sm font-semibold"
-              >
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDeleteWork(work._id)}
-                className="text-red-600 text-sm font-semibold"
-              >
-                Delete
-              </button>
+          <div key={work._id} className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-bold text-base text-zinc-900 dark:text-white">{work.title}</h4>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                  {work.status}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 font-medium">{work.category} • {work.beneficiaries || 0} Beneficiaries</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 mb-4 leading-relaxed">{work.description}</p>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
+              <div className="flex items-center gap-1.5">
+                {work.images?.slice(0, 3).map((img, i) => (
+                  <img key={i} src={img} alt="" className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-zinc-700" />
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => { setEditingWork(work); setShowWorkModal(true); }}
+                  className="text-xs font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <Edit3 className="w-3 h-3" /> Edit
+                </button>
+                <button 
+                  onClick={() => handleDeleteWork(work._id)}
+                  className="text-xs font-semibold text-red-500 hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -602,61 +878,66 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderVolunteers = () => (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800">Volunteer Management</h3>
-          <div className="flex mt-2 bg-gray-200 p-1 rounded-lg">
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Volunteer & Intern Management</h3>
+          <p className="text-xs text-zinc-500">Review applications and manage active foundation scholars</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100 dark:bg-zinc-900 p-1 rounded-full border border-gray-200/80 dark:border-zinc-800">
             <button 
               onClick={() => setVolunteerSubTab('approved')}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${volunteerSubTab === 'approved' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${volunteerSubTab === 'approved' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs' : 'text-zinc-600 dark:text-zinc-400'}`}
             >
               Approved ({volunteers.length})
             </button>
             <button 
               onClick={() => setVolunteerSubTab('pending')}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors ${volunteerSubTab === 'pending' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${volunteerSubTab === 'pending' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs' : 'text-zinc-600 dark:text-zinc-400'}`}
             >
               Pending ({applications.length})
             </button>
           </div>
+
+          <button 
+            onClick={() => { setEditingVolunteer({ role: 'Volunteer' }); setShowVolunteerModal(true); }}
+            className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Volunteer
+          </button>
         </div>
-        <button 
-          onClick={() => { setEditingVolunteer({ role: 'Volunteer' }); setShowVolunteerModal(true); }}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
-        >
-          + Add Volunteer
-        </button>
       </div>
 
       {volunteerSubTab === 'approved' ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {volunteers.map((volunteer) => (
-            <div key={volunteer._id} className="bg-white p-4 rounded-xl border shadow-sm text-center group relative">
-              <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-red-100">
+            <div key={volunteer._id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 text-center relative group">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
                 {volunteer.image?.startsWith('http') ? (
                   <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-2xl">👤</div>
+                  <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
                 )}
               </div>
-              <h4 className="font-bold text-lg text-gray-800">{volunteer.name}</h4>
-              <p className="text-sm text-gray-500 mb-4">{volunteer.role || volunteer.designation}</p>
+              <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{volunteer.name}</h4>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mb-3">{volunteer.role || volunteer.designation}</p>
               
-              <div className="absolute top-2 right-2 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-white/90 md:bg-white/80 p-1.5 md:p-1 rounded-lg backdrop-blur-sm shadow-sm border md:border-none">
+              <div className="flex justify-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
                 <button 
                   onClick={() => { setEditingVolunteer(volunteer); setShowVolunteerModal(true); }}
-                  className="text-blue-600 p-1.5 md:p-1 hover:bg-blue-50 rounded"
+                  className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
                   title="Edit"
                 >
-                  ✏️
+                  <Edit3 className="w-3.5 h-3.5" />
                 </button>
                 <button 
                   onClick={() => handleDeleteVolunteer(volunteer._id)}
-                  className="text-red-600 p-1.5 md:p-1 hover:bg-red-50 rounded"
+                  className="p-1.5 text-red-500 hover:text-red-600 cursor-pointer"
                   title="Delete"
                 >
-                  🗑️
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -671,60 +952,47 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const renderApplications = () => (
     <div>
       {applications.length === 0 ? (
-          <p className="text-gray-500">No pending applications.</p>
+          <p className="text-zinc-400 text-xs text-center py-10">No pending volunteer applications.</p>
       ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
               {applications.map((app) => (
-                  <div key={app._id} className="bg-white p-6 rounded-xl border shadow-sm flex flex-col md:flex-row gap-6 group relative">
-                      <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
-                          {app.image ? (
-                              <img 
-                                src={app.image.startsWith('http') ? app.image : `${API_BASE_URL}${app.image}`} 
-                                alt={app.name} 
-                                className="w-full h-full object-cover" 
-                              />
-                          ) : (
-                              <div className="w-full h-full flex items-center justify-center text-3xl">👤</div>
-                          )}
-                      </div>
-                      <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                              <h4 className="text-xl font-bold text-gray-800">{app.name}</h4>
-                              <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${app.role === 'Intern' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                                  {app.role}
-                              </span>
+                  <div key={app._id} className="bg-white dark:bg-zinc-900 p-4 sm:p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800 shrink-0 border border-gray-200 dark:border-zinc-700">
+                              {app.image ? (
+                                  <img 
+                                    src={app.image.startsWith('http') ? app.image : `${API_BASE_URL}${app.image}`} 
+                                    alt={app.name} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                              ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-lg">👤</div>
+                              )}
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-2 text-sm text-gray-600">
-                              <p><span className="font-semibold">Email:</span> {app.email || 'N/A'}</p>
-                              <p><span className="font-semibold">Phone:</span> {app.phone || 'N/A'}</p>
-                              <p><span className="font-semibold">Aadhar:</span> {app.aadhar || 'N/A'}</p>
-                              <p><span className="font-semibold">Applied:</span> {new Date(app.createdAt).toLocaleDateString()}</p>
+                          <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-zinc-900 dark:text-white">{app.name}</h4>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                                    {app.role}
+                                </span>
+                              </div>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{app.email} • Phone: {app.phone || 'N/A'}</p>
                           </div>
                       </div>
-                      <div className="flex md:flex-col justify-end gap-3 shrink-0">
+
+                      <div className="flex items-center gap-2 self-end md:self-auto">
                           <button 
                               onClick={() => handleApproveApplication(app)}
-                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
                           >
-                              Approve
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button 
                               onClick={() => handleDeleteApplication(app._id)}
-                              className="bg-red-100 hover:bg-red-200 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-semibold transition-colors"
+                              className="bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
                           >
-                              Reject
+                              <XCircle className="w-3.5 h-3.5" /> Reject
                           </button>
-                      </div>
-
-                      {/* Edit Button for Pending Application */}
-                      <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => { setEditingVolunteer(app); setShowVolunteerModal(true); }}
-                          className="bg-white/90 p-2 rounded-full shadow-sm border hover:bg-white text-blue-600"
-                          title="Edit Info"
-                        >
-                          ✏️
-                        </button>
                       </div>
                   </div>
               ))}
@@ -734,44 +1002,50 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderBlog = () => (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-800">Blog Posts</h3>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Blog Articles</h3>
+          <p className="text-xs text-zinc-500">Publish stories and ground updates</p>
+        </div>
         <button 
           onClick={() => { 
             setEditingPost({ title: '', summary: '', content: '', coverImage: '', tags: '' }); 
             setShowBlogModal(true); 
           }}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
         >
-          + New Post
+          <Plus className="w-3.5 h-3.5" /> New Article
         </button>
       </div>
-      <div className="space-y-4">
+
+      <div className="space-y-3">
         {blogPosts.map((post) => (
-          <div key={post._id} className="bg-white p-4 rounded-xl border shadow-sm flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="w-full md:w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
-               {post.coverImage ? (
-                 <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-xl">📝</div>
-               )}
+          <div key={post._id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
+                 {post.coverImage ? (
+                   <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-base">📝</div>
+                 )}
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-zinc-900 dark:text-white">{post.title}</h4>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{new Date(post.createdAt).toLocaleDateString()} • {post.summary?.substring(0, 70)}...</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h4 className="text-lg font-bold text-gray-800">{post.title}</h4>
-              <p className="text-sm text-gray-500 mb-1">{new Date(post.createdAt).toLocaleDateString()} • {post.status}</p>
-              <p className="text-sm text-gray-600 line-clamp-2">{post.summary}</p>
-            </div>
-            <div className="flex gap-2">
+
+            <div className="flex items-center gap-2 self-end md:self-auto">
               <button 
                 onClick={() => { setEditingPost(post); setShowBlogModal(true); }}
-                className="text-blue-600 px-3 py-1 bg-blue-50 rounded hover:bg-blue-100 font-semibold text-sm"
+                className="text-xs font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800"
               >
                 Edit
               </button>
               <button 
                 onClick={() => handleDeletePost(post._id)}
-                className="text-red-600 px-3 py-1 bg-red-50 rounded hover:bg-red-100 font-semibold text-sm"
+                className="text-xs font-semibold text-red-500 hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-red-100 dark:border-red-950 bg-red-50 dark:bg-red-950/30"
               >
                 Delete
               </button>
@@ -783,31 +1057,35 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderGallery = () => (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-800">Gallery</h3>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Media Gallery</h3>
+          <p className="text-xs text-zinc-500">Manage photo gallery moments</p>
+        </div>
         <button 
           onClick={() => setShowGalleryModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
         >
-          + Add Image
+          <Plus className="w-3.5 h-3.5" /> Upload Image
         </button>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {galleryItems.map((item, index) => (
-          <div key={item._id || item.id || index} className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square">
+          <div key={item._id || item.id || index} className="relative group rounded-2xl overflow-hidden bg-gray-100 dark:bg-zinc-900 aspect-square border border-gray-200/80 dark:border-zinc-800">
              {item.imageUrl?.startsWith('http') ? (
                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
              ) : (
-               <div className="flex items-center justify-center h-full text-4xl">{item.imageUrl}</div>
+               <div className="flex items-center justify-center h-full text-3xl">{item.imageUrl}</div>
              )}
-             <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                <button 
                  onClick={() => handleDeleteGallery(item._id || item.id)}
-                 className="bg-red-600/90 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg backdrop-blur-sm transition-colors"
+                 className="bg-red-600 text-white p-2 rounded-full shadow-lg cursor-pointer"
                  title="Delete Image"
                >
-                 🗑️
+                 <Trash2 className="w-4 h-4" />
                </button>
              </div>
           </div>
@@ -817,64 +1095,80 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderNewsletter = () => (
-    <div className="max-w-2xl mx-auto">
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">Send Newsletter</h3>
-      <form onSubmit={handleSendNewsletter} className="space-y-4">
-        <input 
-          type="text" placeholder="Subject" 
-          value={newsletterForm.subject}
-          onChange={(e) => setNewsletterForm({...newsletterForm, subject: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg text-gray-800" required
-        />
-        <textarea 
-          rows={6} placeholder="Message" 
-          value={newsletterForm.message}
-          onChange={(e) => setNewsletterForm({...newsletterForm, message: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg text-gray-800" required
-        />
-        <button type="submit" disabled={isLoading} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold">
-          {isLoading ? 'Sending...' : 'Send Campaign'}
+    <div className="max-w-2xl mx-auto space-y-4">
+      <div>
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Broadcast Campaign</h3>
+        <p className="text-xs text-zinc-500">Compose and send newsletters to active email subscribers</p>
+      </div>
+
+      <form onSubmit={handleSendNewsletter} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Subject</label>
+          <input 
+            type="text" placeholder="Campaign Subject Line..." 
+            value={newsletterForm.subject}
+            onChange={(e) => setNewsletterForm({...newsletterForm, subject: e.target.value})}
+            className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white" 
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Message</label>
+          <textarea 
+            rows={6} placeholder="Write your newsletter announcement..." 
+            value={newsletterForm.message}
+            onChange={(e) => setNewsletterForm({...newsletterForm, message: e.target.value})}
+            className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white" 
+            required
+          />
+        </div>
+        <button type="submit" disabled={isLoading} className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-3 rounded-full text-xs font-semibold transition-all shadow-xs cursor-pointer">
+          {isLoading ? 'Sending Campaign...' : 'Send Campaign'}
         </button>
       </form>
     </div>
   );
 
   const renderSettings = () => (
-    <div className="max-w-3xl mx-auto">
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">System Settings</h3>
+    <div className="max-w-3xl mx-auto space-y-4">
+      <div>
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Organization Settings</h3>
+        <p className="text-xs text-zinc-500">Configure global foundation metadata & hero carousel images</p>
+      </div>
+
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        <div className="bg-white p-6 rounded-xl border space-y-4">
-          <h4 className="text-lg font-bold text-gray-800 border-b pb-2">General Info</h4>
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-gray-100 dark:border-zinc-800 pb-2">General Details</h4>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Organization Name</label>
-            <input type="text" value={settingsForm.siteName} onChange={(e) => setSettingsForm({...settingsForm, siteName: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Organization Name</label>
+            <input type="text" value={settingsForm.siteName} onChange={(e) => setSettingsForm({...settingsForm, siteName: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white" />
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Email</label>
-              <input type="email" value={settingsForm.contactEmail} onChange={(e) => setSettingsForm({...settingsForm, contactEmail: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Contact Email</label>
+              <input type="email" value={settingsForm.contactEmail} onChange={(e) => setSettingsForm({...settingsForm, contactEmail: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Phone</label>
-              <input type="tel" value={settingsForm.contactPhone} onChange={(e) => setSettingsForm({...settingsForm, contactPhone: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Contact Phone</label>
+              <input type="tel" value={settingsForm.contactPhone} onChange={(e) => setSettingsForm({...settingsForm, contactPhone: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Address</label>
-            <textarea rows={3} value={settingsForm.address} onChange={(e) => setSettingsForm({...settingsForm, address: e.target.value})} className="w-full px-4 py-2 border rounded-lg text-gray-800" />
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Address</label>
+            <textarea rows={3} value={settingsForm.address} onChange={(e) => setSettingsForm({...settingsForm, address: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white" />
           </div>
         </div>
 
         {/* Hero Image Management */}
-        <div className="bg-white p-6 rounded-xl border space-y-6">
-          <h4 className="text-lg font-bold text-gray-800 border-b pb-2">Hero Carousel Images</h4>
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-6">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-gray-100 dark:border-zinc-800 pb-2">Hero Carousel Images</h4>
           
           {/* Desktop Images */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Desktop Images (Landscape)</label>
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Desktop Images (Landscape)</label>
             <div className="grid grid-cols-3 gap-2 mb-2">
               {settingsForm.heroImagesDesktop.map((img, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden h-24 border bg-gray-50">
+                <div key={index} className="relative group rounded-xl overflow-hidden h-24 border border-gray-200 dark:border-zinc-800 bg-gray-50">
                   <img src={img} alt={`Desktop Hero ${index}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
@@ -882,30 +1176,29 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                       const newImages = settingsForm.heroImagesDesktop.filter((_, i) => i !== index);
                       setSettingsForm({ ...settingsForm, heroImagesDesktop: newImages });
                     }}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-            <div className="border rounded-lg p-2 bg-gray-50">
+            <div className="border border-gray-200/80 dark:border-zinc-800 rounded-xl p-2 bg-gray-50 dark:bg-zinc-800/50">
               <ImageUpload 
                 onUpload={(url) => setSettingsForm(prev => ({
                   ...prev,
                   heroImagesDesktop: [...prev.heroImagesDesktop, url]
                 }))}
               />
-              <p className="text-xs text-gray-500 mt-1 text-center">Upload new image</p>
             </div>
           </div>
 
           {/* Mobile Images */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Images (Portrait/Square)</label>
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Mobile Images (Portrait)</label>
             <div className="grid grid-cols-3 gap-2 mb-2">
               {settingsForm.heroImagesMobile.map((img, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden h-32 border bg-gray-50">
+                <div key={index} className="relative group rounded-xl overflow-hidden h-32 border border-gray-200 dark:border-zinc-800 bg-gray-50">
                   <img src={img} alt={`Mobile Hero ${index}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
@@ -913,92 +1206,98 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                       const newImages = settingsForm.heroImagesMobile.filter((_, i) => i !== index);
                       setSettingsForm({ ...settingsForm, heroImagesMobile: newImages });
                     }}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-xs cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-            <div className="border rounded-lg p-2 bg-gray-50">
+            <div className="border border-gray-200/80 dark:border-zinc-800 rounded-xl p-2 bg-gray-50 dark:bg-zinc-800/50">
               <ImageUpload 
                 onUpload={(url) => setSettingsForm(prev => ({
                   ...prev,
                   heroImagesMobile: [...prev.heroImagesMobile, url]
                 }))}
               />
-              <p className="text-xs text-gray-500 mt-1 text-center">Upload new image</p>
             </div>
           </div>
         </div>
 
-        <button type="submit" disabled={isLoading} className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-lg font-semibold transition-colors">
-          {isLoading ? 'Saving...' : 'Save Changes'}
+        <button type="submit" disabled={isLoading} className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-3 rounded-full text-xs font-semibold transition-all shadow-xs cursor-pointer">
+          {isLoading ? 'Saving Changes...' : 'Save Changes'}
         </button>
       </form>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header - Made Sticky */}
-      <div className="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-40">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col transition-colors">
+      {/* Top Glassmorphic Navbar */}
+      <div className="bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-gray-200/80 dark:border-zinc-800 px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-40">
+        <div className="flex items-center gap-3">
           <button 
-            className="md:hidden text-2xl text-gray-600 focus:outline-none"
+            className="md:hidden text-zinc-700 dark:text-zinc-300 focus:outline-none p-1"
             onClick={() => setShowSidebar(!showSidebar)}
           >
-            ☰
+            <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <h1 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">Admin Console</h1>
+          </div>
         </div>
+
         <button 
           onClick={() => navigate('/')} 
-          className="px-3 py-2 md:px-4 md:py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm md:text-base rounded-lg font-semibold transition-colors"
+          className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs rounded-full font-semibold transition-all cursor-pointer border border-gray-200 dark:border-zinc-700"
         >
           Exit to Home
         </button>
       </div>
 
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
         {/* Mobile Sidebar Overlay */}
         {showSidebar && (
           <div 
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-xs"
             onClick={() => setShowSidebar(false)}
           ></div>
         )}
 
-        {/* Sidebar - Responsive */}
+        {/* Sidebar */}
         <div className={`
-          fixed md:sticky top-[73px] left-0 h-[calc(100vh-73px)] w-64 bg-white border-r shadow-lg md:shadow-sm p-4 space-y-2 z-40
-          transition-transform duration-300 ease-in-out
-          ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          overflow-y-auto
+          fixed md:sticky top-20 left-0 h-auto w-60 bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-3 space-y-1 z-40
+          transition-transform duration-300 ease-in-out shadow-sm
+          ${showSidebar ? 'translate-x-4' : '-translate-x-full md:translate-x-0'}
+          overflow-y-auto shrink-0 self-start
         `}>
-          {[
-            { id: 'dashboard', icon: '📊', label: 'Overview' },
-            { id: 'blog', icon: '✍️', label: 'Blog' }, // Blog Tab
-            { id: 'volunteers', icon: '🤝', label: 'Volunteers' },
-            { id: 'users', icon: '👥', label: 'Users' },
-            { id: 'projects', icon: '🏗️', label: 'Projects' },
-            { id: 'gallery', icon: '🖼️', label: 'Gallery' },
-            { id: 'newsletter', icon: '📧', label: 'Newsletter' },
-            { id: 'settings', icon: '⚙️', label: 'Settings' }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleTabChange(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-gray-100 text-purple-700 font-bold border-l-4 border-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-              <span className="text-xl">{item.icon}</span><span>{item.label}</span>
-            </button>
-          ))}
+          {sidebarItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  isActive 
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs' 
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-4 md:p-8 w-full max-w-full overflow-hidden">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0">
           {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'campaigns' && renderCampaigns()}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'volunteers' && renderVolunteers()}
           {activeTab === 'projects' && renderProjects()}
@@ -1012,65 +1311,65 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       {/* --- Modals --- */}
       {/* Blog Modal */}
       {showBlogModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-4xl shadow-2xl h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">{editingPost._id ? 'Edit Post' : 'New Post'}</h3>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-4xl shadow-2xl h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingPost?._id ? 'Edit Article' : 'New Article'}</h3>
             <form onSubmit={handleBlogSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Title</label>
                   <input 
                     type="text" 
-                    value={editingPost.title} 
+                    value={editingPost?.title || ''} 
                     onChange={(e) => setEditingPost({...editingPost, title: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" 
                     required 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Tags (comma separated)</label>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tags (comma separated)</label>
                   <input 
                     type="text" 
-                    value={Array.isArray(editingPost.tags) ? editingPost.tags.join(', ') : editingPost.tags} 
+                    value={Array.isArray(editingPost?.tags) ? editingPost.tags.join(', ') : (editingPost?.tags || '')} 
                     onChange={(e) => setEditingPost({...editingPost, tags: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" 
                     placeholder="Education, Health" 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Cover Image</label>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Cover Image</label>
                 <ImageUpload 
-                  currentImage={editingPost.coverImage}
+                  currentImage={editingPost?.coverImage}
                   onUpload={(url) => setEditingPost({ ...editingPost, coverImage: url })}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Summary (Short Excerpt)</label>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Summary Excerpt</label>
                 <textarea 
                   rows={2} 
-                  value={editingPost.summary} 
+                  value={editingPost?.summary || ''} 
                   onChange={(e) => setEditingPost({...editingPost, summary: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg text-gray-800" 
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" 
                   required 
                 />
               </div>
 
               <div className="h-64 mb-12">
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Content</label>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Article Body</label>
                 <ReactQuill 
                   theme="snow" 
-                  value={editingPost.content} 
+                  value={editingPost?.content || ''} 
                   onChange={(content) => setEditingPost({...editingPost, content})}
-                  className="h-48 bg-white border rounded-lg text-gray-800"
+                  className="h-48 bg-white dark:bg-zinc-800 rounded-xl text-zinc-900 dark:text-white"
                 />
               </div>
 
-              <div className="flex gap-3 mt-6 pt-4 border-t">
-                <button type="button" onClick={() => setShowBlogModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Publish Post</button>
+              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                <button type="button" onClick={() => setShowBlogModal(false)} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Publish Article</button>
               </div>
             </form>
           </div>
@@ -1079,20 +1378,20 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
       {/* Edit User Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">Edit User</h3>
-            <form onSubmit={handleUpdateUser} className="space-y-4">
-              <input type="text" value={editingUser.name} onChange={(e) => setEditingUser({...editingUser, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              <input type="email" value={editingUser.email} onChange={(e) => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              <input type="tel" value={editingUser.phone||''} onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" placeholder="Phone" />
-              <select value={editingUser.role} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} className="w-full px-3 py-2 border rounded-lg bg-white text-gray-800">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">Edit User Credentials</h3>
+            <form onSubmit={handleUpdateUser} className="space-y-3">
+              <input type="text" value={editingUser.name} onChange={(e) => setEditingUser({...editingUser, name: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              <input type="email" value={editingUser.email} onChange={(e) => setEditingUser({...editingUser, email: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              <input type="tel" value={editingUser.phone||''} onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" placeholder="Phone" />
+              <select value={editingUser.role} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white">
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
               </select>
               <div className="flex gap-3 mt-6">
-                <button type="button" onClick={() => setEditingUser(null)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+                <button type="button" onClick={() => setEditingUser(null)} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Save User</button>
               </div>
             </form>
           </div>
@@ -1101,33 +1400,32 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
       {/* Volunteer Modal */}
       {showVolunteerModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">{editingVolunteer?._id ? 'Edit Volunteer' : 'Add Volunteer'}</h3>
-            <form onSubmit={handleVolunteerSubmit} className="space-y-4">
-              <input type="text" placeholder="Name" value={editingVolunteer?.name||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              <input type="text" placeholder="Designation" value={editingVolunteer?.designation||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, designation: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingVolunteer?._id ? 'Edit Volunteer' : 'Add Volunteer'}</h3>
+            <form onSubmit={handleVolunteerSubmit} className="space-y-3">
+              <input type="text" placeholder="Full Name" value={editingVolunteer?.name||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, name: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              <input type="text" placeholder="Designation / Role Title" value={editingVolunteer?.designation||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, designation: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
               
-              <div className="grid grid-cols-2 gap-4">
-                <input type="email" placeholder="Email" value={editingVolunteer?.email||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, email: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
-                <input type="tel" placeholder="Phone" value={editingVolunteer?.phone||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, phone: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="email" placeholder="Email" value={editingVolunteer?.email||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, email: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+                <input type="tel" placeholder="Phone" value={editingVolunteer?.phone||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, phone: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="Aadhar Number" value={editingVolunteer?.aadhar||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, aadhar: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Aadhar" value={editingVolunteer?.aadhar||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, aadhar: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
                 <select 
                   value={editingVolunteer?.role || 'Volunteer'} 
                   onChange={(e) => setEditingVolunteer({...editingVolunteer, role: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg bg-white text-gray-800"
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
                 >
                   <option value="Volunteer">Volunteer</option>
                   <option value="Intern">Intern</option>
                 </select>
               </div>
 
-              {/* Image Upload */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Photo</label>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Avatar Photo</label>
                 <ImageUpload 
                   currentImage={editingVolunteer?.image}
                   onUpload={(url) => setEditingVolunteer({ ...editingVolunteer, image: url })}
@@ -1135,8 +1433,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button type="button" onClick={() => { setShowVolunteerModal(false); setEditingVolunteer(null); }} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Save</button>
+                <button type="button" onClick={() => { setShowVolunteerModal(false); setEditingVolunteer(null); }} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Save Volunteer</button>
               </div>
             </form>
           </div>
@@ -1145,70 +1443,44 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
       {/* Work/Project Modal */}
       {showWorkModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">{editingWork._id ? 'Edit Project' : 'New Project'}</h3>
-            <form onSubmit={handleWorkSubmit} className="space-y-4">
-              <input type="text" placeholder="Title" value={editingWork.title||''} onChange={(e) => setEditingWork({...editingWork, title: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              <textarea rows={3} placeholder="Description" value={editingWork.description||''} onChange={(e) => setEditingWork({...editingWork, description: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="Category" value={editingWork.category||''} onChange={(e) => setEditingWork({...editingWork, category: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-                <select value={editingWork.status||'ongoing'} onChange={(e) => setEditingWork({...editingWork, status: e.target.value})} className="w-full px-3 py-2 border rounded-lg bg-white text-gray-800">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingWork?._id ? 'Edit Project' : 'New Project'}</h3>
+            <form onSubmit={handleWorkSubmit} className="space-y-3">
+              <input type="text" placeholder="Title" value={editingWork?.title||''} onChange={(e) => setEditingWork({...editingWork, title: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              <textarea rows={3} placeholder="Description" value={editingWork?.description||''} onChange={(e) => setEditingWork({...editingWork, description: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Category" value={editingWork?.category||''} onChange={(e) => setEditingWork({...editingWork, category: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+                <select value={editingWork?.status||'ongoing'} onChange={(e) => setEditingWork({...editingWork, status: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white">
                   <option value="ongoing">Ongoing</option>
                   <option value="completed">Completed</option>
                   <option value="planned">Planned</option>
                 </select>
               </div>
-              <input type="number" placeholder="Beneficiaries Count" value={editingWork.beneficiaries||0} onChange={(e) => setEditingWork({...editingWork, beneficiaries: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" />
               
-              {/* Multiple Image Upload */}
+              <input type="number" placeholder="Beneficiaries Count" value={editingWork?.beneficiaries||0} onChange={(e) => setEditingWork({...editingWork, beneficiaries: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+              
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Project Images</label>
-                
-                {/* Image List */}
-                {editingWork.images && editingWork.images.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {editingWork.images.map((img, index) => (
-                      <div key={index} className="relative group rounded-lg overflow-hidden h-24 border">
-                        {img.startsWith('http') ? (
-                          <img src={img} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-2xl">{img}</div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newImages = editingWork.images.filter((_, i) => i !== index);
-                            setEditingWork({ ...editingWork, images: newImages, icon: newImages[0] || '' });
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="border rounded-lg p-2">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Project Images</label>
+                <div className="border border-gray-200/80 dark:border-zinc-800 rounded-xl p-2">
                   <ImageUpload 
                     onUpload={(url) => {
-                      const currentImages = editingWork.images || [];
+                      const currentImages = editingWork?.images || [];
                       const newImages = [...currentImages, url];
                       setEditingWork({ 
                         ...editingWork, 
                         images: newImages, 
-                        icon: newImages[0] // Set first image as icon/main image
+                        icon: newImages[0]
                       });
                     }}
                   />
-                  <p className="text-xs text-gray-500 mt-2 text-center">Add another image</p>
                 </div>
               </div>
               
               <div className="flex gap-3 mt-6">
-                <button type="button" onClick={() => { setShowWorkModal(false); setEditingWork(null); }} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Save Project</button>
+                <button type="button" onClick={() => { setShowWorkModal(false); setEditingWork(null); }} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Save Project</button>
               </div>
             </form>
           </div>
@@ -1217,54 +1489,31 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
       {/* Gallery Modal */}
       {showGalleryModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">Add Image</h3>
-            <form onSubmit={handleGallerySubmit} className="space-y-4">
-              <input type="text" placeholder="Title" value={newGalleryItem.title} onChange={(e) => setNewGalleryItem({...newGalleryItem, title: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">Add Gallery Image</h3>
+            <form onSubmit={handleGallerySubmit} className="space-y-3">
+              <input type="text" placeholder="Title" value={newGalleryItem.title} onChange={(e) => setNewGalleryItem({...newGalleryItem, title: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
               
-              {/* Tagging Options */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Tagging Option</label>
-                <div className="flex gap-4 text-sm text-gray-700">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Tagging Option</label>
+                <div className="flex gap-3 text-xs text-zinc-700 dark:text-zinc-300">
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="tagType" 
-                      value="project" 
-                      checked={tagType === 'project'} 
-                      onChange={(e) => setTagType(e.target.value)} 
-                    />
-                    Link to Project
+                    <input type="radio" name="tagType" value="project" checked={tagType === 'project'} onChange={(e) => setTagType(e.target.value)} /> Project Link
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="tagType" 
-                      value="custom" 
-                      checked={tagType === 'custom'} 
-                      onChange={(e) => setTagType(e.target.value)} 
-                    />
-                    Custom Tag
+                    <input type="radio" name="tagType" value="custom" checked={tagType === 'custom'} onChange={(e) => setTagType(e.target.value)} /> Custom Tag
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="tagType" 
-                      value="none" 
-                      checked={tagType === 'none'} 
-                      onChange={(e) => setTagType(e.target.value)} 
-                    />
-                    No Tag
+                    <input type="radio" name="tagType" value="none" checked={tagType === 'none'} onChange={(e) => setTagType(e.target.value)} /> No Tag
                   </label>
                 </div>
 
-                {/* Conditional Inputs */}
                 {tagType === 'project' && (
                   <select 
                     value={newGalleryItem.project} 
                     onChange={(e) => setNewGalleryItem({...newGalleryItem, project: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg bg-white text-gray-800 mt-2"
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white mt-1"
                     required
                   >
                     <option value="">-- Select Project --</option>
@@ -1277,20 +1526,17 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 {tagType === 'custom' && (
                   <input 
                     type="text" 
-                    placeholder="Enter Custom Tag (e.g. Education)" 
+                    placeholder="Custom Tag Name (e.g. Workshop)" 
                     value={newGalleryItem.category === 'General' ? '' : newGalleryItem.category} 
                     onChange={(e) => setNewGalleryItem({...newGalleryItem, category: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg text-gray-800 mt-2" 
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white mt-1" 
                     required 
                   />
                 )}
               </div>
 
-              <input type="text" placeholder="Image URL (http://...) or Emoji" value={newGalleryItem.imageUrl} onChange={(e) => setNewGalleryItem({...newGalleryItem, imageUrl: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-gray-800" required />
-              
-              {/* Image Upload */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Image</label>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Image Upload</label>
                 <ImageUpload 
                   currentImage={newGalleryItem.imageUrl}
                   onUpload={(url) => setNewGalleryItem({ ...newGalleryItem, imageUrl: url })}
@@ -1298,13 +1544,87 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               </div>
               
               <div className="flex gap-3 mt-6">
-                <button type="button" onClick={() => setShowGalleryModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">Add Image</button>
+                <button type="button" onClick={() => setShowGalleryModal(false)} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Add Image</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Campaign Manager Modal */}
+      {showCampaignModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingCampaignItem?._id ? 'Edit Campaign' : 'New Campaign'}</h3>
+            <form onSubmit={handleCampaignSubmit} className="space-y-3">
+              <input type="text" placeholder="Campaign Title" value={editingCampaignItem?.title || ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, title: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Subtitle / Badge (e.g. Urgent)" value={editingCampaignItem?.subtitle || ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, subtitle: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+                <select value={editingCampaignItem?.status || 'active'} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, status: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white">
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+
+              <textarea rows={3} placeholder="Description Excerpt & Details..." value={editingCampaignItem?.description || ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, description: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Target (₹)</label>
+                  <input type="number" value={editingCampaignItem?.targetAmount || 100000} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, targetAmount: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Current (₹)</label>
+                  <input type="number" value={editingCampaignItem?.currentAmount || 0} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, currentAmount: Number(e.target.value)})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
+                </div>
+              </div>
+
+              {/* Optional Start & End Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Start Date (Optional)</label>
+                  <input type="date" value={editingCampaignItem?.startDate ? new Date(editingCampaignItem.startDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, startDate: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">End Date (Optional)</label>
+                  <input type="date" value={editingCampaignItem?.endDate ? new Date(editingCampaignItem.endDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, endDate: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+                </div>
+              </div>
+
+              {/* Related Blog Post Link Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Link Related Blog Post (Optional)</label>
+                <select 
+                  value={editingCampaignItem?.relatedBlogPost?._id || editingCampaignItem?.relatedBlogPost || ''} 
+                  onChange={(e) => setEditingCampaignItem({...editingCampaignItem, relatedBlogPost: e.target.value || null})}
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                >
+                  <option value="">-- No Related Blog Post --</option>
+                  {blogPosts.map(post => (
+                    <option key={post._id} value={post._id}>{post.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Campaign Image</label>
+                <ImageUpload 
+                  currentImage={editingCampaignItem?.imageUrl}
+                  onUpload={(url) => setEditingCampaignItem({ ...editingCampaignItem, imageUrl: url })}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button type="button" onClick={() => { setShowCampaignModal(false); setEditingCampaignItem(null); }} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Save Campaign</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Newsletter Progress Widget */}
       <NewsletterProgress 
         isSending={newsletterProgress.isSending}

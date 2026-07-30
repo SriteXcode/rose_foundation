@@ -6,7 +6,7 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // Import upload middleware
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
 
-router.get('/', cacheMiddleware(3600000), volunteerController.getVolunteers);
+router.get('/', volunteerController.getVolunteers);
 router.post('/', authMiddleware, adminMiddleware, clearCache('volunteers'), volunteerController.addVolunteer);
 router.put('/:id', authMiddleware, adminMiddleware, clearCache('volunteers'), volunteerController.updateVolunteer);
 router.delete('/:id', authMiddleware, adminMiddleware, clearCache('volunteers'), volunteerController.deleteVolunteer);

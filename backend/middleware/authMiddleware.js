@@ -15,4 +15,11 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+const adminMiddleware = require('./adminMiddleware');
+
+authMiddleware.protect = authMiddleware;
+authMiddleware.admin = adminMiddleware;
+
 module.exports = authMiddleware;
+module.exports.protect = authMiddleware;
+module.exports.admin = adminMiddleware;
