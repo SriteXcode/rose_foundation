@@ -35,6 +35,7 @@ const AnalyticsTracker = () => {
 // Lazy loading components
 const LoginModal = lazy(() => import('./components/modals/LoginModal'));
 const RegisterModal = lazy(() => import('./components/modals/RegisterModal'));
+const CampaignModal = lazy(() => import('./components/modals/CampaignModal'));
 
 // Lazy loading pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -47,7 +48,9 @@ const CertificatePage = lazy(() => import('./pages/CertificatePage'));
 const LegalDocumentsPage = lazy(() => import('./pages/LegalDocumentsPage')); // Legal Docs Page
 const BlogPage = lazy(() => import('./pages/BlogPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
+const CampaignsPage = lazy(() => import('./pages/CampaignsPage'));
 const InvoicePage = lazy(() => import('./pages/InvoicePage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const AppContent = () => {
   const navigate = useNavigate();
@@ -81,20 +84,38 @@ const AppContent = () => {
   // Scroll detection
   useScrollDetection(setActiveSection);
 
+  const location = useLocation();
+
+  const performScroll = (sectionId) => {
+    let attempts = 0;
+    const maxAttempts = 20;
+    const interval = setInterval(() => {
+      attempts++;
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        clearInterval(interval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 100);
+  };
+
+  useEffect(() => {
+    if (location.pathname === '/' && location.state?.scrollTo) {
+      const targetId = location.state.scrollTo;
+      performScroll(targetId);
+    }
+  }, [location]);
+
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
     setIsMenuOpen(false);
     
-    // If we are not on home page, go there first
-    if (window.location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+    if (location.pathname !== '/') {
+      navigate('/', { state: { scrollTo: sectionId } });
     } else {
-      const element = document.getElementById(sectionId);
-      if (element) element.scrollIntoView({ behavior: 'smooth' });
+      performScroll(sectionId);
     }
   };
 
@@ -105,6 +126,9 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-white">
       <Loader />
+      <Suspense fallback={null}>
+        <CampaignModal scrollToSection={scrollToSection} />
+      </Suspense>
       <Routes>
         <Route path="/admin" element={null} />
         <Route path="*" element={
@@ -159,8 +183,10 @@ const AppContent = () => {
           <Route path="/certificate/:id" element={<CertificatePage />} />
           <Route path="/invoice/:id" element={<InvoicePage />} />
           <Route path="/legal" element={<LegalDocumentsPage />} />
+          <Route path="/campaigns" element={<CampaignsPage scrollToSection={scrollToSection} />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
 

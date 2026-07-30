@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import axiosInstance from '../../utils/api';
+import { X, UserCheck, GraduationCap, ArrowLeft, Camera, Check } from 'lucide-react';
 
 const JoinUsModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState('selection'); // 'selection' -> 'instructions' -> 'form'
@@ -70,7 +71,6 @@ const JoinUsModal = ({ isOpen, onClose }) => {
 
       toast.success("Sent successfully! We will contact you soon...");
       
-      // Reset
       setFormData({ name: '', aadhar: '', email: '', phone: '', image: null });
       setPreview(null);
       setStep('selection');
@@ -94,44 +94,59 @@ const JoinUsModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-zinc-800 text-left"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-red-600 to-red-800 p-6 text-white flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Join Our Mission</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-2xl">×</button>
+        {/* Header */}
+        <div className="p-6 sm:p-8 pb-4 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Get Involved</span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white">Join Our Mission</h2>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 sm:p-8">
           <AnimatePresence mode="wait">
             
             {/* Step 1: Selection */}
             {step === 'selection' && (
               <motion.div 
                 key="selection"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="space-y-6"
               >
-                <p className="text-center text-gray-600 text-lg">How would you like to contribute?</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+                  Select how you would like to contribute to our initiatives:
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <button 
                     onClick={() => handleRoleSelect('Volunteer')}
-                    className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-slate-100 hover:border-red-500 hover:bg-red-50 transition-all group"
+                    className="flex flex-col items-center justify-center p-6 rounded-3xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/40 hover:border-zinc-900 dark:hover:border-white transition-all group cursor-pointer"
                   >
-                    <span className="text-4xl mb-3">🤝</span>
-                    <span className="font-bold text-slate-700 group-hover:text-red-600">Volunteer</span>
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-zinc-900 dark:text-white mb-3 group-hover:scale-110 transition-transform">
+                      <UserCheck className="w-6 h-6 stroke-[1.8]" />
+                    </div>
+                    <span className="font-bold text-sm text-zinc-900 dark:text-white">Volunteer</span>
                   </button>
                   <button 
                     onClick={() => handleRoleSelect('Intern')}
-                    className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                    className="flex flex-col items-center justify-center p-6 rounded-3xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/40 hover:border-zinc-900 dark:hover:border-white transition-all group cursor-pointer"
                   >
-                    <span className="text-4xl mb-3">🎓</span>
-                    <span className="font-bold text-slate-700 group-hover:text-blue-600">Intern</span>
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-zinc-900 dark:text-white mb-3 group-hover:scale-110 transition-transform">
+                      <GraduationCap className="w-6 h-6 stroke-[1.8]" />
+                    </div>
+                    <span className="font-bold text-sm text-zinc-900 dark:text-white">Intern</span>
                   </button>
                 </div>
               </motion.div>
@@ -141,26 +156,28 @@ const JoinUsModal = ({ isOpen, onClose }) => {
             {step === 'instructions' && (
               <motion.div 
                 key="instructions"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-bold text-gray-800">Guidelines for {role}s</h3>
-                  <button onClick={handleBack} className="text-sm text-gray-500 hover:text-gray-800">Back</button>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Guidelines for {role}s</h3>
+                  <button onClick={handleBack} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer">
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
+                  </button>
                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-700 space-y-2 h-64 overflow-y-auto">
+                <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-gray-200/70 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2.5 max-h-56 overflow-y-auto">
                   <p><strong>1. Commitment:</strong> We value dedication. Ensure you can commit the required time for the selected role.</p>
                   <p><strong>2. Conduct:</strong> Maintain professionalism and respect towards all community members and staff.</p>
-                  <p><strong>3. Verification:</strong> All provided details (Aadhar, Contact) will be verified. False information will lead to immediate rejection.</p>
+                  <p><strong>3. Verification:</strong> All provided details (Aadhar, Contact) will be verified.</p>
                   <p><strong>4. Orientation:</strong> Selected candidates must attend a mandatory orientation session.</p>
                   <p><strong>5. Privacy:</strong> Your data is secure with us and used solely for organizational purposes.</p>
                   {role === 'Intern' && (
                     <>
-                      <p><strong>6. Certification:</strong> Internship certificates will be issued only upon successful completion of the tenure.</p>
-                      <p><strong>7. Reporting:</strong> Regular progress reports must be submitted to your supervisor.</p>
+                      <p><strong>6. Certification:</strong> Internship certificates will be issued upon completion.</p>
+                      <p><strong>7. Reporting:</strong> Progress reports must be submitted periodically.</p>
                     </>
                   )}
                 </div>
@@ -171,21 +188,17 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                     id="agree" 
                     checked={agreed} 
                     onChange={(e) => setAgreed(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    className="mt-0.5 w-4 h-4 rounded text-zinc-900 focus:ring-zinc-900 border-gray-300 cursor-pointer"
                   />
-                  <label htmlFor="agree" className="text-sm text-gray-600 cursor-pointer select-none">
-                    I have read and understood the instructions. I agree to abide by the rules and regulations of the Blackrose Foundation.
+                  <label htmlFor="agree" className="text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
+                    I agree to abide by the rules and regulations of Blackrose Foundation.
                   </label>
                 </div>
 
                 <button
                   onClick={handleInstructionNext}
                   disabled={!agreed}
-                  className={`w-full py-3 rounded-lg font-bold shadow-md transition-all ${
-                    agreed 
-                      ? 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-3 rounded-full font-semibold text-xs transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                   Proceed to Application
                 </button>
@@ -196,113 +209,101 @@ const JoinUsModal = ({ isOpen, onClose }) => {
             {step === 'form' && (
               <motion.div 
                 key="form"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    Apply as <span className="text-red-600">{role}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
+                    Apply as <span className="text-zinc-500 dark:text-zinc-400">{role}</span>
                   </h3>
-                  <button onClick={handleBack} className="text-sm text-gray-500 hover:text-gray-800">
-                    ← Back to Guidelines
+                  <button onClick={handleBack} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer">
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Full Name</label>
                     <input 
                       type="text" 
                       name="name"
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
-                      placeholder="John Doe"
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                      placeholder="Jane Doe"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone No.</label>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Phone No.</label>
                       <input 
                         type="tel" 
                         name="phone"
                         required
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
                         placeholder="+91 9876543210"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Number</label>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Aadhar Number</label>
                       <input 
                         type="text" 
                         name="aadhar"
                         required
                         value={formData.aadhar}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
                         placeholder="12-digit number"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Email Address</label>
                     <input 
                       type="email" 
                       name="email"
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-red-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
                       placeholder="john@example.com"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Passport Size Photo 
-                      <span className="text-xs font-normal text-gray-500 ml-2">(Max 2MB)</span>
-                    </label>
-                    <div className="flex items-center space-x-4">
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Passport Size Photo</label>
+                    <div className="flex items-center space-x-3 bg-gray-50 dark:bg-zinc-800/50 p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700">
                       <div className="shrink-0">
                         {preview ? (
-                          <img src={preview} alt="Preview" className="h-16 w-16 object-cover rounded-full border border-gray-300" />
+                          <img src={preview} alt="Preview" className="h-10 w-10 object-cover rounded-full border border-gray-300" />
                         ) : (
-                          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
-                            📷
+                          <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-500">
+                            <Camera className="w-4 h-4" />
                           </div>
                         )}
                       </div>
-                      <label className="block">
-                        <span className="sr-only">Choose profile photo</span>
-                        <input 
-                          type="file" 
-                          name="image"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          required
-                          className="block w-full text-sm text-slate-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-full file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-red-50 file:text-red-700
-                            hover:file:bg-red-100
-                            cursor-pointer"
-                        />
-                      </label>
+                      <input 
+                        type="file" 
+                        name="image"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        required
+                        className="block w-full text-xs text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-900 file:text-white hover:file:bg-zinc-800 cursor-pointer"
+                      />
                     </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+                    className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-3.5 rounded-full font-semibold text-xs transition-all shadow-sm cursor-pointer disabled:opacity-50 mt-4"
                   >
                     {loading ? 'Submitting Application...' : 'Submit Application'}
                   </button>
@@ -317,3 +318,4 @@ const JoinUsModal = ({ isOpen, onClose }) => {
 };
 
 export default JoinUsModal;
+

@@ -9,11 +9,21 @@
  * @param {string} options.crop - Crop mode (default: 'fill')
  * @returns {string} The optimized URL
  */
+import { API_BASE_URL } from './constants';
+
 export const getOptimizedImageUrl = (url, options = {}) => {
-  if (!url) return null;
-  
+  if (!url) return '';
+
+  let finalUrl = url;
+
+  // Handle local uploaded relative paths (e.g. /uploads/image-123.jpg)
+  if (typeof finalUrl === 'string' && finalUrl.startsWith('/uploads/')) {
+    const backendOrigin = (API_BASE_URL || 'http://localhost:5000/api').replace('/api', '');
+    finalUrl = `${backendOrigin}${finalUrl}`;
+  }
+
   // Handle Cloudinary URLs
-  if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+  if (typeof finalUrl === 'string' && finalUrl.includes('cloudinary.com') && finalUrl.includes('/upload/')) {
     const transformations = ['f_auto', 'q_auto'];
     
     if (options.width) {
@@ -55,5 +65,5 @@ export const getOptimizedImageUrl = (url, options = {}) => {
     }
   }
   
-  return url;
+  return finalUrl;
 };

@@ -49,6 +49,10 @@ exports.updateSettings = async (req, res) => {
       settings.heroImagesMobile = heroImagesMobile;
     }
 
+    if (req.body.activeCampaign) {
+      settings.activeCampaign = { ...settings.activeCampaign, ...req.body.activeCampaign };
+    }
+
     await settings.save();
     res.json({ message: 'Settings updated successfully', settings });
   } catch (error) {

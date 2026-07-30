@@ -2,8 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import { ArrowRight, X } from 'lucide-react';
 
-const GallerySection = ({ limit = 10 }) => {
+const defaultGallery = [
+  { imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800', title: 'Community Distribution' },
+  { imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=800', title: 'Youth Skill Building' },
+  { imageUrl: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800', title: 'Empowerment Workshop' },
+  { imageUrl: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=800', title: 'Education Camp' },
+  { imageUrl: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?auto=format&fit=crop&q=80&w=800', title: 'Relief Drive' },
+  { imageUrl: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=800', title: 'Health Support' }
+];
+
+const GallerySection = ({ limit = 6 }) => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,19 +29,14 @@ const GallerySection = ({ limit = 10 }) => {
         
         if (items && items.length > 0) {
           setGalleryItems(items);
-          setHasMore(totalItems > limit);
+          setHasMore(totalItems > limit || items.length >= limit);
         } else {
-            // Fallback
-            setGalleryItems([
-              { imageUrl: '📚', type: 'icon' }, { imageUrl: '🏥', type: 'icon' }, 
-              { imageUrl: '👩‍🏫', type: 'icon' }, { imageUrl: '🌱', type: 'icon' },
-              { imageUrl: '🤝', type: 'icon' }, { imageUrl: '🎓', type: 'icon' },
-              { imageUrl: '💊', type: 'icon' }, { imageUrl: '🏘️', type: 'icon' }
-            ]);
-            setHasMore(false);
+          setGalleryItems(defaultGallery);
+          setHasMore(defaultGallery.length >= limit);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
+        setGalleryItems(defaultGallery);
       } finally {
         setLoading(false);
       }
@@ -40,66 +45,80 @@ const GallerySection = ({ limit = 10 }) => {
     fetchGallery();
   }, [limit]);
 
-  return (
-    <section id="gallery" className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-slate-800">
-          Gallery
-          <div className="w-20 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto mt-4"></div>
-        </h2>
+  const displayItems = galleryItems.length > 0 ? galleryItems : defaultGallery;
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {galleryItems.map((item, index) => {
-            const optimizedUrl = getOptimizedImageUrl(item.imageUrl, { width: 400, height: 400 });
-            const isImage = optimizedUrl && optimizedUrl.startsWith('http');
-            
-            return (
-            <div
-              key={`${item._id || index}-${index}`}
-              onClick={() => setSelectedImage(item)}
-              className="aspect-square bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 rounded-2xl flex items-center justify-center text-4xl md:text-6xl cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
-            >
-              {/* Check if it's a real image URL or an emoji icon fallback */}
-              {isImage ? (
-                <img src={optimizedUrl} alt={item.title || 'Gallery Item'} loading="lazy" className="w-full h-full object-cover" width="300" height="300" />
-              ) : (
-                <span>{item.imageUrl}</span>
-              )}
-            </div>
-          )})}
-          
-          {loading && Array.from({ length: limit }).map((_, i) => (
-             <div key={`skeleton-${i}`} className="aspect-square bg-gray-200 rounded-2xl animate-pulse"></div>
-          ))}
+  return (
+    <section id="gallery" className="py-4 md:py-6 bg-fafafa dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Section Header */}
+        <div className="text-center mb-8">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 block">
+            Moments
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+            Gallery
+          </h2>
         </div>
 
-        {hasMore && !loading && (
-          <div className="text-center mt-12">
+        {/* Responsive Masonry Layout */}
+        <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
+          {displayItems.map((item, index) => {
+            const rawUrl = item.imageUrl || defaultGallery[index % defaultGallery.length].imageUrl;
+            const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
+
+            return (
+              <div
+                key={`${item._id || index}-${index}`}
+                onClick={() => setSelectedImage(item)}
+                className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
+              >
+                <img 
+                  src={optimizedUrl} 
+                  alt={item.title || 'Gallery Moment'} 
+                  loading="lazy" 
+                  className="w-full h-auto max-h-[220px] sm:max-h-[190px] md:max-h-[170px] lg:max-h-[180px] object-cover transform group-hover:scale-105 transition-transform duration-700 block" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                  <span className="text-white font-semibold text-xs">
+                    {item.title || 'Rose Foundation'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {(hasMore || displayItems.length >= 6) && (
+          <div className="text-center mt-8">
             <button 
               onClick={() => navigate('/gallery')}
-              className="bg-red-600 text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 bg-transparent hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-gray-300 dark:border-zinc-700 px-6 py-3 rounded-full text-xs font-semibold transition-all cursor-pointer group"
             >
-              View Full Gallery
+              <span>View Full Gallery</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         )}
+
       </div>
 
       {/* Lightbox Modal */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-4 right-4 text-white text-4xl hover:text-red-500 transition-colors z-[70] p-2 bg-black/50 rounded-full">✕</button>
-          <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
-              {selectedImage.imageUrl?.startsWith('http') ? (
-                <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full h-full object-contain" />
-              ) : (
-                <div className="text-9xl text-white select-none">{selectedImage.imageUrl}</div>
-              )}
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={() => setSelectedImage(null)}>
+          <button 
+            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 rounded-full bg-white/10 transition-colors z-[70] cursor-pointer"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+              <img src={selectedImage.imageUrl || defaultGallery[0].imageUrl} alt={selectedImage.title} className="w-full h-full object-contain" />
             </div>
-            <div className="p-6 bg-white border-t border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-900 leading-tight mb-2">{selectedImage.title || 'Gallery Image'}</h3>
-              <p className="text-red-600 font-medium uppercase tracking-wider text-sm">{selectedImage.category || 'Rose Foundation'}</p>
+            <div className="p-6 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">{selectedImage.title || 'Gallery Image'}</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{selectedImage.category || 'Rose Foundation'}</p>
             </div>
           </div>
         </div>

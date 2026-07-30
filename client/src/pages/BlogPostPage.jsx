@@ -3,12 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import DOMPurify from 'dompurify';
 import Footer from '../components/Footer';
+import { ArrowLeft, Calendar, User, Share2, Copy, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const BlogPostPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -26,21 +29,24 @@ const BlogPostPage = () => {
   }, [slug, navigate]);
 
   const cleanContent = (html) => {
-  return html
-    // remove zero-width characters
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    // replace non-breaking spaces with normal space
-    .replace(/&nbsp;/g, ' ')
-    // remove soft hyphens
-    .replace(/&shy;/g, '');
-};
+    if (!html) return '';
+    return html
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&shy;/g, '');
+  };
 
-
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    toast.success('Link copied to clipboard!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
+        <div className="text-xs font-semibold text-zinc-400">Loading article...</div>
       </div>
     );
   }
@@ -48,115 +54,106 @@ const BlogPostPage = () => {
   if (!post) return null;
 
   return (
-    <div className="min-h-screen bg-white pt-20">
-      {/* Hero Section */}
-      <div className="w-full min-h-[40vh] md:min-h-[60vh] relative bg-slate-900 overflow-hidden flex items-center justify-center">
-        {/* Blurred Background Layer */}
-        <div 
-          className="absolute inset-0 scale-110 blur-sm opacity-60 bg-cover bg-center"
-          style={{ backgroundImage: `url(${post.coverImage})` }}
-        ></div>
+    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      
+      {/* Container */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Back Button */}
+        <button 
+          onClick={() => navigate('/blog')}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors mb-6 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Articles</span>
+        </button>
 
-        {/* Overlay to dim background for text readability */}
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
-
-        {/* Foreground Image Layer */}
-        <img
-          src={post.coverImage}
-          alt={post.title}
-          className="relative z-20 w-full h-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-2xl"
-        />
-
-        {/* Text Content Overlay */}
-        <div className="absolute inset-0 flex flex-col justify-end z-30">
-          <div className="max-w-4xl w-full mx-auto px-4 pb-8 md:pb-12 text-white drop-shadow-lg">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {post.tags?.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="bg-red-600 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight drop-shadow-md">
-              {post.title}
-            </h1>
-
-            <div className="text-sm md:text-base text-gray-100 font-medium">
-              By {post.author || 'Admin'} •{' '}
-              {new Date(post.createdAt).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </div>
+        {/* Article Meta Header */}
+        <div className="text-left mb-6">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400 mb-3">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <User className="w-3.5 h-3.5" />
+              {post.author || 'Rose Foundation'}
+            </span>
+            {post.tags?.map((tag, idx) => (
+              <span
+                key={idx}
+                className="bg-gray-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ml-1"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
-        </div>
-      </div>
 
-      {/* Content Section */}
-      <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-        {/* Summary Block */}
-        <div className="bg-gray-50 border-l-4 border-red-600 p-6 md:p-8 mb-12 italic text-gray-700 text-lg rounded-r-lg shadow-sm">
-          {post.summary}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-zinc-900 dark:text-white leading-tight tracking-tight">
+            {post.title}
+          </h1>
         </div>
 
-        {/* Blog Body Content */}
+        {/* Hero Cover Image */}
+        {post.coverImage && (
+          <div className="w-full aspect-[16/9] bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden mb-8 border border-gray-200/70 dark:border-zinc-800 shadow-sm">
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Summary Card */}
+        {post.summary && (
+          <div className="bg-gray-50 dark:bg-zinc-900 border-l-4 border-zinc-900 dark:border-white p-5 sm:p-6 mb-8 text-zinc-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed rounded-r-xl text-left italic">
+            "{post.summary}"
+          </div>
+        )}
+
+        {/* Article Body */}
         <div
-          className="blog-content text-gray-700 text-base leading-relaxed max-w-none"
-          // dangerouslySetInnerHTML={{
-          //   __html: DOMPurify.sanitize(post.content, {
-          //     FORBID_ATTR: ['style'],
-          //   }),
-          // }}
+          className="blog-content text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed space-y-4 text-left border-b border-gray-100 dark:border-zinc-800 pb-12"
           dangerouslySetInnerHTML={{
-  __html: cleanContent(
-    DOMPurify.sanitize(post.content, {
-      FORBID_ATTR: ['style'],
-    })
-  ),
-}}
+            __html: cleanContent(
+              DOMPurify.sanitize(post.content, {
+                FORBID_ATTR: ['style'],
+              })
+            ),
+          }}
         />
 
-        {/* Article Footer / Share */}
-        <div className="mt-16 pt-8 border-t border-gray-100">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Share this article</h3>
-          <div className="flex flex-wrap gap-3">
+        {/* Share Section */}
+        <div className="mt-8 pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+            Share this article
+          </h3>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                toast.success('Link copied to clipboard!');
-              }}
-              className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-2 bg-gray-100 dark:bg-zinc-900 hover:bg-gray-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-gray-200/80 dark:border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer"
             >
-              <span>🔗</span> Copy Link
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied!' : 'Copy Link'}</span>
             </button>
-            
             <a 
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="inline-flex items-center justify-center bg-gray-100 dark:bg-zinc-900 hover:bg-gray-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-gray-200/80 dark:border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold transition-all"
             >
-              Twitter
-            </a>
-            
-            <a 
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              Facebook
+              Twitter / X
             </a>
           </div>
         </div>
+
       </div>
 
-      <Footer />
+      <div className="mt-16">
+        <Footer />
+      </div>
     </div>
   );
 };

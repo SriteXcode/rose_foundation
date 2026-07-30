@@ -1,106 +1,150 @@
 import React from 'react';
 import { handleContactSubmit } from '../utils/apiHandlers';
+import { MapPin, Mail, Phone, Send } from 'lucide-react';
 
 const ContactSection = ({ contactForm, setContactForm, isLoading, setIsLoading }) => {
   const onSubmit = (e) => handleContactSubmit(e, contactForm, setContactForm, setIsLoading);
 
   return (
-    <section id="contact" className="py-20 bg-slate-800 text-white">
+    <section id="contact" className="py-4 md:py-6 bg-white dark:bg-zinc-900/50 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
-          Get In Touch
-          <div className="w-20 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto mt-4"></div>
-        </h2>
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column Contact Details matching Screen 1 */}
+          <div className="lg:col-span-6 flex flex-col text-left">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 block">
+              Contact
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 dark:text-white mb-3 tracking-tight">
+              Get in touch
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
+              Have a question or want to collaborate? We'd love to hear from you. Reach out and our team will respond shortly.
+            </p>
 
-        <div className="grid md:grid-cols-2 gap-12">
-          <div>
-            <h3 className="text-2xl font-bold mb-6">Contact Information</h3>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center space-x-3">
-                <span className="text-red-400">📧</span>
-                <span>blackrosefoundation111@gmail.com</span>
+            {/* Info Items */}
+            <div className="space-y-5 mb-6">
+              
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white shrink-0">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Visit us
+                  </h3>
+                  <a 
+                    href="https://maps.google.com/maps/place//data=!4m2!3m1!1s0x399c4195602a6f0d:0x92304ffba0a77df7?entry=s&sa=X&ved=2ahUKEwjf7cLXuoaSAxVDslYBHUVAEEEQ4kB6BAgWEAA&hl=en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white hover:underline mt-0.5 block"
+                  >
+                    Lal Bangla Jk puri Kanpur 208010, India
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-red-400">📞</span>
-                <span>+91 6394107475, +91 93052 71187</span>
+
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white shrink-0">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Email us
+                  </h3>
+                  <a 
+                    href="mailto:blackrosefoundation111@gmail.com"
+                    className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white hover:underline mt-0.5 block"
+                  >
+                    blackrosefoundation111@gmail.com
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-red-400">📍</span>
-                <a 
-                  href="https://maps.google.com/maps/place//data=!4m2!3m1!1s0x399c4195602a6f0d:0x92304ffba0a77df7?entry=s&sa=X&ved=2ahUKEwjf7cLXuoaSAxVDslYBHUVAEEEQ4kB6BAgWEAA&hl=en" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-red-400 transition-colors"
+
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white shrink-0">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Call us
+                  </h3>
+                  <a 
+                    href="tel:+916394107475"
+                    className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white hover:underline mt-0.5 block"
+                  >
+                    +91 63941 07475 / +91 93052 71187
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Right Column Form Card matching Screen 1 */}
+          <div className="lg:col-span-6 w-full">
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-6 sm:p-7 shadow-md text-left">
+              <form onSubmit={onSubmit} className="space-y-4">
+                
+                <div>
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 block">
+                    Your name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Jane Doe"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 block">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="jane@email.com"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 block">
+                    Message
+                  </label>
+                  <textarea
+                    placeholder="How can we help?"
+                    rows={4}
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400 resize-none"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-3.5 rounded-full font-semibold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
                 >
-                  Lal Bangla Jk puri Kanpur 208010
-                </a>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-red-400">🌐</span>
-                <span>www.blackrosefoundation.org.in</span>
-              </div>
-            </div>
+                  <span>{isLoading ? 'Sending...' : 'Send Message'}</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
 
-            <div className="bg-gray-700 rounded-xl overflow-hidden h-[300px] shadow-lg border border-gray-600">
-              <iframe
-                title="Blackrose Foundation Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3572.170192345062!2d80.40228727453472!3d26.450493079815415!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399c4195602a6f0d%3A0x92304ffba0a77df7!2sBlack%20Rose%20Foundation!5e0!3m2!1sen!2sin!4v1736952000000!5m2!1sen!2sin"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen=""
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="opacity-80 hover:opacity-100 transition-all duration-500"
-              ></iframe>
+              </form>
             </div>
           </div>
 
-          <div>
-            <form onSubmit={onSubmit} className="space-y-6">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  value={contactForm.name}
-                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  value={contactForm.email}
-                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  required
-                />
-              </div>
-              <div>
-                <textarea
-                  placeholder="Your Message"
-                  rows={5}
-                  value={contactForm.message}
-                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Sending...' : 'Send Message'}
-              </button>
-            </form>
-          </div>
         </div>
       </div>
     </section>
   );
 };
 
-export default ContactSection;
+export default ContactSection;

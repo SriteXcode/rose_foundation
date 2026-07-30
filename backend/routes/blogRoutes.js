@@ -5,9 +5,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
 
-// Public Routes (Cached)
-router.get('/', cacheMiddleware(3600000), blogController.getAllPosts); // 1 hour cache
-router.get('/:slug', cacheMiddleware(3600000), blogController.getPostBySlug);
+// Public Routes (Live DB)
+router.get('/', blogController.getAllPosts);
+router.get('/:slug', blogController.getPostBySlug);
 
 // Admin Routes (Protected - Clear cache on change)
 router.post('/', authMiddleware, adminMiddleware, clearCache('blog'), blogController.createPost);
