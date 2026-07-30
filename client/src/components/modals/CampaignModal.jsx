@@ -9,7 +9,7 @@ const CampaignModal = ({ scrollToSection }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [campaignsList, setCampaignsList] = useState();
+  const [campaignsList, setCampaignsList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -43,9 +43,13 @@ const CampaignModal = ({ scrollToSection }) => {
           setCurrentIndex(randomIdx);
         } else {
           // Fallback to settings
-          const settingsRes = await axiosInstance.get('/settings');
-          if (settingsRes.data?.activeCampaign) {
-            setCampaignsList([{...settingsRes.data.activeCampaign }]);
+          try {
+            const settingsRes = await axiosInstance.get('/settings');
+            if (settingsRes.data?.activeCampaign) {
+              setCampaignsList([{ ...settingsRes.data.activeCampaign }]);
+            }
+          } catch (e) {
+            console.error('Failed to get settings active campaign', e);
           }
         }
       } catch (error) {
@@ -79,20 +83,16 @@ const CampaignModal = ({ scrollToSection }) => {
 
   // Auto advance carousel every 6 seconds if modal is open and multiple campaigns exist
   useEffect(() => {
-    if (!isOpen || campaignsList.length <= 1) return;
+    if (!isOpen || !campaignsList || campaignsList.length <= 1) return;
 
     const autoSlide = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % campaignsList.length);
     }, 6000);
 
     return () => clearInterval(autoSlide);
-  }, [isOpen, campaignsList.length]);
+  }, [isOpen, campaignsList?.length]);
 
-  const campaign = campaignsList[currentIndex];
-
-  if (campaign.status === 'completed' && campaignsList.length === 1) {
-    // If only 1 completed campaign, don't show auto popup
-  }
+  const campaign = campaignsList?.[currentIndex];
 
   const handleClose = () => {
     setIsOpen(false);
@@ -117,25 +117,27 @@ const CampaignModal = ({ scrollToSection }) => {
 
   const handlePrevSlide = (e) => {
     e.stopPropagation();
+    if (!campaignsList || campaignsList.length === 0) return;
     setCurrentIndex((prev) => (prev === 0 ? campaignsList.length - 1 : prev - 1));
   };
 
   const handleNextSlide = (e) => {
     e.stopPropagation();
+    if (!campaignsList || campaignsList.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % campaignsList.length);
   };
 
-  const target = campaign.targetAmount || 100000;
-  const current = campaign.currentAmount || 0;
+  const target = campaign?.targetAmount || 100000;
+  const current = campaign?.currentAmount || 0;
   const percentage = Math.min(100, Math.round((current / target) * 100));
 
-  const bannerImg = getOptimizedImageUrl(campaign.imageUrl ,{ width: 800, height: 450 });
+  const bannerImg = campaign?.imageUrl ? getOptimizedImageUrl(campaign.imageUrl, { width: 800, height: 450 }) : '';
 
   return (
     <>
       {/* Sticky Floating Campaign Button (User can hide/dismiss with ✕) */}
       <AnimatePresence>
-        {isMinimized && !isOpen && !isDismissed && (
+        {isMinimized && !isOpen && !isDismissed && campaign && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -151,7 +153,7 @@ const CampaignModal = ({ scrollToSection }) => {
                   <Sparkles className="w-3 h-3 fill-amber-500 text-amber-500 animate-pulse" />
                 </div>
                 <span>Campaigns</span>
-                {campaignsList.length > 1 && (
+                {campaignsList?.length > 1 && (
                   <span className="bg-amber-500 text-zinc-950 font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
                     {campaignsList.length}
                   </span>
@@ -177,7 +179,7 @@ const CampaignModal = ({ scrollToSection }) => {
 
       {/* Main Campaign Popup Modal with Carousel */}
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && campaign && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Glassmorphic Backdrop */}
             <motion.div
@@ -198,16 +200,18 @@ const CampaignModal = ({ scrollToSection }) => {
             >
               {/* Header Image Banner Carousel */}
               <div className="aspect-[9/16] sm:aspect-square lg:aspect-[16/9] max-h-[200px] sm:max-h-[220px] lg:max-h-[200px] w-full relative overflow-hidden bg-gray-100 dark:bg-zinc-800 shrink-0 group">
-                <img
-                  key={campaign._id || currentIndex}
-                  src={bannerImg}
-                  alt={campaign.title}
-                  className="w-full h-full object-cover transition-opacity duration-500"
-                />
+                {bannerImg && (
+                  <img
+                    key={campaign._id || currentIndex}
+                    src={bannerImg}
+                    alt={campaign.title || 'Campaign'}
+                    className="w-full h-full object-cover transition-opacity duration-500"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                 {/* Carousel Arrow Controls (If multiple active campaigns) */}
-                {campaignsList.length > 1 && (
+                {campaignsList?.length > 1 && (
                   <>
                     <button
                       onClick={handlePrevSlide}
