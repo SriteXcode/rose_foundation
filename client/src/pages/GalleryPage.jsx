@@ -142,7 +142,7 @@ const GalleryPage = () => {
                     src={optimizedUrl} 
                     alt={item.title || 'Gallery Moment'} 
                     loading="lazy" 
-                    className="w-full h-auto max-h-[220px] sm:max-h-[190px] md:max-h-[170px] lg:max-h-[180px] object-cover transform group-hover:scale-105 transition-transform duration-700 block" 
+                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 sm:p-4">
                     <span className="text-white font-bold text-xs">

@@ -7,7 +7,7 @@ const VolunteerSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String },
   aadhar: { type: String },
-  role: { type: String, enum: ['Volunteer', 'Intern'], default: 'Volunteer' },
+  role: { type: String, enum: ['Volunteer', 'Intern', 'Team Leader'], default: 'Volunteer' },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   createdAt: { type: Date, default: Date.now }
 });

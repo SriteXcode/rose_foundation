@@ -22,21 +22,39 @@ const Navigation = ({
   const isHomePage = location.pathname === '/';
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
-      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+      return document.documentElement.classList.contains('dark') || 
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
   });
 
-  useEffect(() => {
-    if (isDarkMode) {
+  const toggleTheme = (e) => {
+    if (e) e.stopPropagation();
+    const isDark = document.documentElement.classList.contains('dark');
+    if (!isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
     }
-  }, [isDarkMode]);
+  };
 
-  const toggleTheme = () => setIsDarkMode(prev => !prev);
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    const isDark = saved ? saved === 'dark' : document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    setIsDarkMode(isDark);
+  }, []);
 
   const navigationItems = [
     { id: 'home', label: 'Home' },
@@ -136,7 +154,21 @@ const Navigation = ({
           </div>
 
           {/* Right Action Items */}
-          <div className="hidden lg:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-3">
+            {/* Light / Dark Mode Toggle Button */}
+            {/* <button
+              onClick={toggleTheme}
+              aria-label="Toggle Light and Dark Mode"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-gray-200 dark:border-zinc-700 flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+            >
+              {isDarkMode ? (
+                <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+              ) : (
+                <Moon className="w-4 h-4 text-zinc-700 fill-zinc-700/20" />
+              )}
+            </button> */}
+
             {/* Auth / Donate Button */}
             {user ? (
               <div className="flex items-center space-x-3">
@@ -177,6 +209,19 @@ const Navigation = ({
 
           {/* Mobile Right Controls */}
           <div className="flex lg:hidden items-center space-x-2">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle Theme"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              {isDarkMode ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-zinc-700" />
+              )}
+            </button>
+
             <button
               className="p-2 text-zinc-900 dark:text-white cursor-pointer"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -278,4 +323,4 @@ const Navigation = ({
   );
 };
 
-export default Navigation;
+export default Navigation;

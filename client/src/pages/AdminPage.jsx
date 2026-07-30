@@ -922,7 +922,32 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 )}
               </div>
               <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{volunteer.name}</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mb-3">{volunteer.role || volunteer.designation}</p>
+              
+              {/* Quick Role Change Selector */}
+              <div className="my-2">
+                <select
+                  value={volunteer.role || 'Volunteer'}
+                  onChange={async (e) => {
+                    const newRole = e.target.value;
+                    try {
+                      await axiosInstance.put(`/volunteers/${volunteer._id}`, {
+                        ...volunteer,
+                        role: newRole,
+                        designation: newRole === 'Team Leader' ? 'Team Leader' : volunteer.designation
+                      });
+                      toast.success(`Updated ${volunteer.name}'s role to ${newRole}`);
+                      fetchVolunteers();
+                    } catch (err) {
+                      toast.error('Failed to update volunteer role');
+                    }
+                  }}
+                  className="w-full text-[11px] font-semibold bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-lg px-2 py-1 text-zinc-900 dark:text-white cursor-pointer"
+                >
+                  <option value="Volunteer">Volunteer</option>
+                  <option value="Intern">Intern</option>
+                  <option value="Team Leader">⭐ Team Leader</option>
+                </select>
+              </div>
               
               <div className="flex justify-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
                 <button 
@@ -1416,11 +1441,16 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 <input type="text" placeholder="Aadhar" value={editingVolunteer?.aadhar||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, aadhar: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
                 <select 
                   value={editingVolunteer?.role || 'Volunteer'} 
-                  onChange={(e) => setEditingVolunteer({...editingVolunteer, role: e.target.value})} 
+                  onChange={(e) => setEditingVolunteer({
+                    ...editingVolunteer, 
+                    role: e.target.value,
+                    designation: e.target.value === 'Team Leader' ? 'Team Leader' : (editingVolunteer?.designation || e.target.value)
+                  })} 
                   className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
                 >
                   <option value="Volunteer">Volunteer</option>
                   <option value="Intern">Intern</option>
+                  <option value="Team Leader">⭐ Team Leader</option>
                 </select>
               </div>
 

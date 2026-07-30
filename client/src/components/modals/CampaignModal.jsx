@@ -64,11 +64,27 @@ const CampaignModal = ({ scrollToSection }) => {
     };
     fetchActiveCampaigns();
 
-    const timer = setTimeout(() => {
-      setIsOpen(true);
-    }, 3000);
+    const hasSeen = sessionStorage.getItem('hasSeenCampaignPopup');
+    let timer;
 
-    return () => clearTimeout(timer);
+    if (!hasSeen) {
+      timer = setTimeout(() => {
+        setIsOpen(true);
+        sessionStorage.setItem('hasSeenCampaignPopup', 'true');
+      }, 3000);
+    }
+
+    const handleOpenModal = () => {
+      setIsDismissed(false);
+      setIsMinimized(false);
+      setIsOpen(true);
+    };
+    window.addEventListener('openCampaignModal', handleOpenModal);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('openCampaignModal', handleOpenModal);
+    };
   }, []);
 
   // Auto advance carousel every 6 seconds if modal is open and multiple campaigns exist
@@ -90,17 +106,20 @@ const CampaignModal = ({ scrollToSection }) => {
 
   const handleClose = () => {
     setIsOpen(false);
-    setIsMinimized(true);
+    setIsMinimized(false);
+    setIsDismissed(true);
   };
 
   const handleOpen = () => {
     setIsMinimized(false);
+    setIsDismissed(false);
     setIsOpen(true);
   };
 
   const handleDonateClick = () => {
     setIsOpen(false);
-    setIsMinimized(true);
+    setIsMinimized(false);
+    setIsDismissed(true);
     if (scrollToSection) {
       scrollToSection('donate');
     }
@@ -124,29 +143,44 @@ const CampaignModal = ({ scrollToSection }) => {
 
   return (
     <>
-      {/* Sticky Floating Donate Button */}
+      {/* Sticky Floating Campaign Button (User can hide/dismiss with ✕) */}
       <AnimatePresence>
-        {isMinimized && !isOpen && (
+        {isMinimized && !isOpen && !isDismissed && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
-            className="fixed bottom-36 right-6 z-40"
+            className="fixed bottom-36 right-6 z-40 flex items-center group/btn"
           >
-            <button
-              onClick={handleOpen}
-              className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2.5 rounded-full shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2.5 text-xs font-bold tracking-wide border border-zinc-700/50 dark:border-zinc-300/50 cursor-pointer group"
-            >
-              <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
-                <Sparkles className="w-3.5 h-3.5 fill-amber-500 text-amber-500 animate-pulse" />
-              </div>
-              <span>Campaigns</span>
-              {campaignsList.length > 1 && (
-                <span className="bg-amber-500 text-zinc-950 font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
-                  {campaignsList.length}
-                </span>
-              )}
-            </button>
+            <div className="relative flex items-center gap-1.5">
+              <button
+                onClick={handleOpen}
+                className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2.5 rounded-full shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2.5 text-xs font-bold tracking-wide border border-zinc-700/50 dark:border-zinc-300/50 cursor-pointer"
+              >
+                <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3 h-3 fill-amber-500 text-amber-500 animate-pulse" />
+                </div>
+                <span>Campaigns</span>
+                {campaignsList.length > 1 && (
+                  <span className="bg-amber-500 text-zinc-950 font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
+                    {campaignsList.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Hide / Dismiss Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDismissed(true);
+                }}
+                aria-label="Hide campaign button"
+                title="Hide campaign button"
+                className="w-6 h-6 rounded-full bg-zinc-800 dark:bg-zinc-200 text-zinc-400 dark:text-zinc-600 hover:text-white dark:hover:text-black flex items-center justify-center transition-colors cursor-pointer border border-zinc-700 dark:border-zinc-300 shadow-sm"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
