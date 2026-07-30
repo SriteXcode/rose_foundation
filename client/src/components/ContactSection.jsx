@@ -6,7 +6,7 @@ const ContactSection = ({ contactForm, setContactForm, isLoading, setIsLoading }
   const onSubmit = (e) => handleContactSubmit(e, contactForm, setContactForm, setIsLoading);
 
   return (
-    <section id="contact" className="py-4 md:py-6 bg-white dark:bg-zinc-900/50 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
+    <section id="contact" className="py-4 md:py-6 bg-white dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           
@@ -147,4 +147,4 @@ const ContactSection = ({ contactForm, setContactForm, isLoading, setIsLoading }
   );
 };
 
-export default ContactSection;
+export default ContactSection;

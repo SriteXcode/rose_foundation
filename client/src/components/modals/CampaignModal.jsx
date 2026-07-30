@@ -146,7 +146,6 @@ const CampaignModal = ({ scrollToSection }) => {
                   {campaignsList.length}
                 </span>
               )}
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
             </button>
           </motion.div>
         )}

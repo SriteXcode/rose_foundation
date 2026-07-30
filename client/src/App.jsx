@@ -60,6 +60,7 @@ const AppContent = () => {
   const [donationAmount, setDonationAmount] = useState('');
   const [newsletter, setNewsletter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Auth states and functions
   const {
@@ -111,7 +112,7 @@ const AppContent = () => {
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
     setIsMenuOpen(false);
-    
+
     if (location.pathname !== '/') {
       navigate('/', { state: { scrollTo: sectionId } });
     } else {
@@ -132,7 +133,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/admin" element={null} />
         <Route path="*" element={
-          <Navigation 
+          <Navigation
             activeSection={activeSection}
             isMenuOpen={isMenuOpen}
             setIsMenuOpen={setIsMenuOpen}
@@ -149,7 +150,7 @@ const AppContent = () => {
       <Suspense fallback={<Loader forceShow={true} text="Loading Page..." type="spinner" />}>
         <Routes>
           <Route path="/" element={
-            <HomePage 
+            <HomePage
               scrollToSection={scrollToSection}
               donationAmount={donationAmount}
               setDonationAmount={setDonationAmount}
@@ -163,20 +164,20 @@ const AppContent = () => {
               setNewsletter={setNewsletter}
             />
           } />
-          
+
           <Route path="/admin" element={
-            <AdminPage 
-              user={user} 
-              adminData={adminData} 
+            <AdminPage
+              user={user}
+              adminData={adminData}
               loadAdminData={loadAdminData}
               authLoading={authLoading}
             />
           } />
-          
+
           <Route path="/profile" element={
             <ProfilePage user={user} setUser={setUser} authLoading={authLoading} handleLogout={handleLogout} />
           } />
-          
+
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/newsletter-history" element={<NewsletterHistoryPage />} />
@@ -192,7 +193,7 @@ const AppContent = () => {
 
       <Suspense fallback={null}>
         {showLogin && (
-          <LoginModal 
+          <LoginModal
             showLogin={showLogin}
             setShowLogin={setShowLogin}
             setShowRegister={setShowRegister}
@@ -202,9 +203,9 @@ const AppContent = () => {
             isLoading={isLoading}
           />
         )}
-        
+
         {showRegister && (
-          <RegisterModal 
+          <RegisterModal
             showRegister={showRegister}
             setShowRegister={setShowRegister}
             setShowLogin={setShowLogin}
@@ -216,9 +217,27 @@ const AppContent = () => {
         )}
       </Suspense>
 
-      <WhatsAppButton />
+      {/* <WhatsAppButton />
       <DonateStickyButton scrollToSection={scrollToSection} />
-      <Toaster position="top-center" />
+      <Toaster position="top-center" /> */}
+
+
+      <div className="fixed bottom-6 right-22 z-50 flex flex-col items-end gap-3">
+        {isOpen && (
+          <>
+            <WhatsAppButton />
+            <CampaignModal scrollToSection={scrollToSection} />
+            <DonateStickyButton scrollToSection={scrollToSection} />
+          </>
+        )}
+
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="h-12 w-12 rounded-full bg-rose-600 text-white shadow-lg flex items-center justify-center z-200"
+        >
+          {isOpen ? "x" : "+"}
+        </button>
+      </div>
     </div>
   );
 };

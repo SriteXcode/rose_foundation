@@ -84,7 +84,7 @@ const TeamSection = ({ limit = 10 }) => {
   const displayMembers = teamMembers.length > 0 ? teamMembers : defaultTeam;
 
   return (
-    <section id="team" className="py-4 md:py-6 bg-white dark:bg-zinc-900/50 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
+    <section id="team" className="py-4 md:py-6 bg-white dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
@@ -196,4 +196,4 @@ const TeamSection = ({ limit = 10 }) => {
 
 export default TeamSection;
 
-
+
