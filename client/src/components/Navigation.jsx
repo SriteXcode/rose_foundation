@@ -209,7 +209,7 @@ const Navigation = ({
 
           {/* Mobile Right Controls */}
           <div className="flex lg:hidden items-center space-x-2">
-            <button
+            {/* <button
               onClick={toggleTheme}
               aria-label="Toggle Theme"
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
@@ -220,7 +220,7 @@ const Navigation = ({
               ) : (
                 <Moon className="w-4 h-4 text-zinc-700" />
               )}
-            </button>
+            </button> */}
 
             <button
               className="p-2 text-zinc-900 dark:text-white cursor-pointer"
