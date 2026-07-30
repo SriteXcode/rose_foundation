@@ -4,22 +4,12 @@ import { X, Heart, Sparkles, ArrowRight, Target, ChevronLeft, ChevronRight } fro
 import { getOptimizedImageUrl } from '../../utils/imageUtils';
 import axiosInstance from '../../utils/api';
 
-const defaultCampaign = {
-  title: 'Emergency Relief & Empowerment Drive',
-  subtitle: 'Featured Initiative',
-  description: 'Help us provide emergency winter kits, clean drinking water filtration systems, and educational supplies to underprivileged families.',
-  imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
-  targetAmount: 100000,
-  currentAmount: 45000,
-  buttonText: 'Donate Now',
-  isActive: true
-};
 
 const CampaignModal = ({ scrollToSection }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [campaignsList, setCampaignsList] = useState([defaultCampaign]);
+  const [campaignsList, setCampaignsList] = useState();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -55,7 +45,7 @@ const CampaignModal = ({ scrollToSection }) => {
           // Fallback to settings
           const settingsRes = await axiosInstance.get('/settings');
           if (settingsRes.data?.activeCampaign) {
-            setCampaignsList([{ ...defaultCampaign, ...settingsRes.data.activeCampaign }]);
+            setCampaignsList([{...settingsRes.data.activeCampaign }]);
           }
         }
       } catch (error) {
@@ -98,7 +88,7 @@ const CampaignModal = ({ scrollToSection }) => {
     return () => clearInterval(autoSlide);
   }, [isOpen, campaignsList.length]);
 
-  const campaign = campaignsList[currentIndex] || defaultCampaign;
+  const campaign = campaignsList[currentIndex];
 
   if (campaign.status === 'completed' && campaignsList.length === 1) {
     // If only 1 completed campaign, don't show auto popup
@@ -139,7 +129,7 @@ const CampaignModal = ({ scrollToSection }) => {
   const current = campaign.currentAmount || 0;
   const percentage = Math.min(100, Math.round((current / target) * 100));
 
-  const bannerImg = getOptimizedImageUrl(campaign.imageUrl || defaultCampaign.imageUrl, { width: 800, height: 450 });
+  const bannerImg = getOptimizedImageUrl(campaign.imageUrl ,{ width: 800, height: 450 });
 
   return (
     <>
