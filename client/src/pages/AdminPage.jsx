@@ -1454,6 +1454,34 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 </select>
               </div>
 
+              <input type="text" placeholder="Qualification (e.g. B.Tech CS, MSW)" value={editingVolunteer?.qualification||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, qualification: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+              
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Short Bio</label>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {editingVolunteer?.bio?.trim() ? editingVolunteer.bio.trim().split(/\s+/).length : 0} / 20 words
+                  </span>
+                </div>
+                <textarea 
+                  placeholder="Short Bio (Max 20 words)" 
+                  rows="2" 
+                  value={editingVolunteer?.bio||''} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const words = val.trim() ? val.trim().split(/\s+/) : [];
+                    const truncated = words.length > 20 ? words.slice(0, 20).join(' ') : val;
+                    setEditingVolunteer({...editingVolunteer, bio: truncated});
+                  }} 
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <input type="url" placeholder="LinkedIn URL" value={editingVolunteer?.socialMedia?.linkedin || editingVolunteer?.linkedin || ''} onChange={(e) => setEditingVolunteer({...editingVolunteer, socialMedia: { ...(editingVolunteer?.socialMedia || {}), linkedin: e.target.value }})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+                <input type="url" placeholder="Instagram URL" value={editingVolunteer?.socialMedia?.instagram || editingVolunteer?.instagram || ''} onChange={(e) => setEditingVolunteer({...editingVolunteer, socialMedia: { ...(editingVolunteer?.socialMedia || {}), instagram: e.target.value }})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Avatar Photo</label>
                 <ImageUpload 

@@ -93,7 +93,7 @@ const Navigation = ({
               />
             </div>
             <span className="text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
-              Blackrose
+              Blackrose Foundation
             </span>
           </div>
 

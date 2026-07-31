@@ -16,6 +16,10 @@ const JoinUsModal = ({ isOpen, onClose }) => {
     aadhar: '',
     email: '',
     phone: '',
+    qualification: '',
+    bio: '',
+    linkedin: '',
+    instagram: '',
     image: null
   });
 
@@ -38,6 +42,22 @@ const JoinUsModal = ({ isOpen, onClose }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const getWordCount = (text) => {
+    if (!text || !text.trim()) return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
+  const handleBioChange = (e) => {
+    const value = e.target.value;
+    const words = value.trim() ? value.trim().split(/\s+/) : [];
+    if (words.length > 20) {
+      const truncated = words.slice(0, 20).join(' ');
+      setFormData(prev => ({ ...prev, bio: truncated }));
+    } else {
+      setFormData(prev => ({ ...prev, bio: value }));
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -51,7 +71,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
     setLoading(true);
 
     if (!formData.name || !formData.aadhar || !formData.email || !formData.phone || !formData.image) {
-      toast.error("Please fill all fields and upload an image.");
+      toast.error("Please fill all required fields and upload an image.");
       setLoading(false);
       return;
     }
@@ -62,6 +82,10 @@ const JoinUsModal = ({ isOpen, onClose }) => {
       data.append('aadhar', formData.aadhar);
       data.append('email', formData.email);
       data.append('phone', formData.phone);
+      data.append('qualification', formData.qualification);
+      data.append('bio', formData.bio);
+      data.append('linkedin', formData.linkedin);
+      data.append('instagram', formData.instagram);
       data.append('role', role);
       data.append('image', formData.image);
 
@@ -71,7 +95,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
 
       toast.success("Sent successfully! We will contact you soon...");
       
-      setFormData({ name: '', aadhar: '', email: '', phone: '', image: null });
+      setFormData({ name: '', aadhar: '', email: '', phone: '', qualification: '', bio: '', linkedin: '', instagram: '', image: null });
       setPreview(null);
       setStep('selection');
       onClose();
@@ -97,11 +121,11 @@ const JoinUsModal = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-zinc-800 text-left"
+        className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border border-gray-100 dark:border-zinc-800 text-left"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 sm:p-8 pb-4 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800">
+        <div className="p-5 sm:p-6 pb-4 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800 shrink-0">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Get Involved</span>
             <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white">Join Our Mission</h2>
@@ -114,7 +138,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <AnimatePresence mode="wait">
             
             {/* Step 1: Selection */}
@@ -168,7 +192,7 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                   </button>
                 </div>
                 
-                <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-gray-200/70 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2.5 max-h-56 overflow-y-auto">
+                <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-gray-200/70 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2.5 max-h-56 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <p><strong>1. Commitment:</strong> We value dedication. Ensure you can commit the required time for the selected role.</p>
                   <p><strong>2. Conduct:</strong> Maintain professionalism and respect towards all community members and staff.</p>
                   <p><strong>3. Verification:</strong> All provided details (Aadhar, Contact) will be verified.</p>
@@ -275,6 +299,60 @@ const JoinUsModal = ({ isOpen, onClose }) => {
                       className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
                       placeholder="john@example.com"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Qualification / Education</label>
+                    <input 
+                      type="text" 
+                      name="qualification"
+                      value={formData.qualification}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                      placeholder="e.g. B.Tech Computer Science, MSW, College Student"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Short Bio</label>
+                      <span className={`text-[10px] font-semibold transition-colors ${getWordCount(formData.bio) >= 20 ? 'text-amber-500 font-bold' : 'text-zinc-400'}`}>
+                        {getWordCount(formData.bio)} / 20 words
+                      </span>
+                    </div>
+                    <textarea 
+                      name="bio"
+                      rows="2"
+                      value={formData.bio}
+                      onChange={handleBioChange}
+                      className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                      placeholder="Brief description about your background and passion for volunteering..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">LinkedIn Profile (Optional)</label>
+                      <input 
+                        type="url" 
+                        name="linkedin"
+                        value={formData.linkedin}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                        placeholder="https://linkedin.com/in/username"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Instagram Handle (Optional)</label>
+                      <input 
+                        type="text" 
+                        name="instagram"
+                        value={formData.instagram}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white placeholder-zinc-400"
+                        placeholder="https://instagram.com/username"
+                      />
+                    </div>
                   </div>
 
                   <div>
