@@ -55,7 +55,7 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
                 />
               </div>
               <span className="text-base font-bold text-zinc-900 dark:text-white">
-                Blackrose
+                Blackrose Foundation
               </span>
             </div>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6 max-w-sm">

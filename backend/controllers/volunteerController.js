@@ -5,7 +5,7 @@ const fs = require('fs');
 // Add volunteer (Admin Manual Add)
 exports.addVolunteer = async (req, res) => {
   try {
-    const { name, designation, image, role, email, phone, aadhar, status } = req.body;
+    const { name, designation, image, role, email, phone, aadhar, qualification, bio, socialMedia, linkedin, instagram, twitter, github, status } = req.body;
     if (!name || !image) {
       return res.status(400).json({ error: 'Name and image are required' });
     }
@@ -18,6 +18,14 @@ exports.addVolunteer = async (req, res) => {
       email,
       phone,
       aadhar,
+      qualification: qualification || '',
+      bio: bio || '',
+      socialMedia: {
+        linkedin: socialMedia?.linkedin || linkedin || '',
+        instagram: socialMedia?.instagram || instagram || '',
+        twitter: socialMedia?.twitter || twitter || '',
+        github: socialMedia?.github || github || ''
+      },
       status: status || 'approved' // Manually added by admin are approved by default
     });
 
@@ -31,7 +39,7 @@ exports.addVolunteer = async (req, res) => {
 // Apply Volunteer (Public Endpoint)
 exports.applyVolunteer = async (req, res) => {
   try {
-    const { name, email, phone, aadhar, role } = req.body;
+    const { name, email, phone, aadhar, role, qualification, bio, linkedin, instagram, twitter, github } = req.body;
     
     // Check if file was uploaded
     if (!req.file) {
@@ -71,6 +79,14 @@ exports.applyVolunteer = async (req, res) => {
       email,
       phone,
       aadhar,
+      qualification: qualification || '',
+      bio: bio || '',
+      socialMedia: {
+        linkedin: linkedin || '',
+        instagram: instagram || '',
+        twitter: twitter || '',
+        github: github || ''
+      },
       role: role || 'Volunteer',
       designation: role || 'Volunteer', // Default designation to role
       image: imageUrl, // Save Cloudinary URL
@@ -94,10 +110,17 @@ exports.getVolunteers = async (req, res) => {
     const query = {};
     if (status) {
       query.status = status;
+    } else {
+      // Default to approved for public view, including existing members created before status field was introduced
+      query.$or = [{ status: 'approved' }, { status: { $exists: false } }];
     }
 
+    // Pending applications in admin panel are sorted newest-first (-1).
+    // Approved team members are sorted createdAt ascending (1) so new members are placed at the end (far right side).
+    const sortOrder = status === 'pending' ? { createdAt: -1 } : { createdAt: 1 };
+
     const volunteers = await Volunteer.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sortOrder)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
