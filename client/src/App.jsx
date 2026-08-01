@@ -33,6 +33,8 @@ const AnalyticsTracker = () => {
   return null;
 };
 
+import { YouTubeSpinner } from './components/SkeletonLoader';
+
 // Lazy loading components
 const LoginModal = lazy(() => import('./components/modals/LoginModal'));
 const RegisterModal = lazy(() => import('./components/modals/RegisterModal'));
@@ -148,7 +150,7 @@ const AppContent = () => {
         } />
       </Routes>
 
-      <Suspense fallback={<Loader forceShow={true} text="Loading Page..." type="spinner" />}>
+      <Suspense fallback={<YouTubeSpinner text="Loading Page..." />}>
         <Routes>
           <Route path="/" element={
             <HomePage

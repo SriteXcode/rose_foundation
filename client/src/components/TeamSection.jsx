@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, GraduationCap, X } from 'lucide-react';
+import { CardSkeleton } from './SkeletonLoader';
 
 const LinkedinIcon = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -62,7 +63,7 @@ const TeamSection = ({ limit = 10 }) => {
   const fetchTeam = async (pageNum) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/volunteers?page=${pageNum}&limit=${limit}&status=approved`);
+      const response = await axiosInstance.get(`/volunteers?page=${pageNum}&limit=${limit}&status=approved&_t=${Date.now()}`);
       const { volunteers, totalPages } = response.data;
       
       if (volunteers && volunteers.length > 0) {
@@ -83,6 +84,18 @@ const TeamSection = ({ limit = 10 }) => {
 
   useEffect(() => {
     fetchTeam(page);
+
+    const handleTeamUpdate = () => {
+      fetchTeam(1);
+    };
+
+    window.addEventListener('team-updated', handleTeamUpdate);
+    window.addEventListener('focus', handleTeamUpdate);
+
+    return () => {
+      window.removeEventListener('team-updated', handleTeamUpdate);
+      window.removeEventListener('focus', handleTeamUpdate);
+    };
   }, [page]);
 
   useEffect(() => {
@@ -108,6 +121,16 @@ const TeamSection = ({ limit = 10 }) => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: 240, behavior: 'smooth' });
     }
+  };
+
+  const getMemberDisplayRole = (member) => {
+    if (!member) return 'Volunteer';
+    const role = member?.role;
+    const des = member?.designation;
+    if (!des || des === role || ['Volunteer', 'Intern', 'Team Leader'].includes(des)) {
+      return role || des || 'Volunteer';
+    }
+    return des;
   };
 
   const isLeader = (member) => {
@@ -147,7 +170,10 @@ const TeamSection = ({ limit = 10 }) => {
         </div>
 
         {/* Carousel Container */}
-        <div className="relative group">
+        {loading ? (
+          <CardSkeleton count={4} columns="grid-cols-2 sm:grid-cols-4" />
+        ) : (
+          <div className="relative group">
 
           {canScrollLeft && (
             <button
@@ -210,7 +236,7 @@ const TeamSection = ({ limit = 10 }) => {
                       </h3>
                       
                       <p className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium truncate mt-0.5">
-                        {member.designation || member.role || 'Volunteer'}
+                        {getMemberDisplayRole(member)}
                       </p>
                     </div>
                   </div>
@@ -224,8 +250,8 @@ const TeamSection = ({ limit = 10 }) => {
               );
             })}
           </div>
-
         </div>
+        )}
 
         {/* Action Buttons */}
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
@@ -278,7 +304,7 @@ const TeamSection = ({ limit = 10 }) => {
             
             <div className="flex items-center justify-center gap-1.5 mt-0.5">
               <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                {selectedMember.designation || selectedMember.role || 'Volunteer'}
+                {getMemberDisplayRole(selectedMember)}
               </span>
               {isLeader(selectedMember) && (
                 <span className="bg-amber-500 text-zinc-950 font-extrabold text-[7px] uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-xs">

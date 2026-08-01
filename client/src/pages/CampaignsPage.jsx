@@ -4,6 +4,7 @@ import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Sparkles, Target, ArrowRight, BookOpen, Filter, Search, Heart } from 'lucide-react';
 import Footer from '../components/Footer';
+import { CardSkeleton } from '../components/SkeletonLoader';
 
 const CampaignsPage = ({ scrollToSection }) => {
   const navigate = useNavigate();
@@ -114,9 +115,7 @@ const CampaignsPage = ({ scrollToSection }) => {
 
         {/* Campaigns Grid */}
         {loading ? (
-          <div className="py-20 text-center text-sm font-medium text-zinc-400">
-            Loading campaigns...
-          </div>
+          <CardSkeleton count={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
         ) : displayCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
             {displayCampaigns.map((camp, index) => {

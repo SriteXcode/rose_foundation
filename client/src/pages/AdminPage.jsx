@@ -99,9 +99,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     
     if (activeTab === 'dashboard') {
       loadAdminData();
-      fetchDonationsList();
     }
-    if (activeTab === 'donations') fetchDonationsList();
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
     if (activeTab === 'volunteers') {
@@ -373,6 +371,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       setEditingVolunteer(null);
       fetchVolunteers();
       fetchApplications();
+      window.dispatchEvent(new Event('team-updated'));
     } catch (error) {
        toast.error('Unable to save volunteer details.');
     } finally {
@@ -387,6 +386,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       toast.success('Volunteer deleted successfully');
       setVolunteers(prev => prev.filter(v => v._id !== id));
       fetchVolunteers();
+      window.dispatchEvent(new Event('team-updated'));
     } catch (error) {
       toast.error('Unable to delete volunteer.');
     }
@@ -398,6 +398,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           await axiosInstance.put(`/volunteers/${application._id}`, { status: 'approved' });
           toast.success(`${application.name} approved as ${application.role}`);
           fetchApplications();
+          window.dispatchEvent(new Event('team-updated'));
       } catch (error) {
           toast.error("Failed to approve application");
       }
@@ -410,6 +411,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       toast.success('Application rejected');
       setApplications(prev => prev.filter(app => app._id !== id));
       fetchApplications();
+      window.dispatchEvent(new Event('team-updated'));
     } catch (error) {
       toast.error('Unable to reject application.');
     }
@@ -655,7 +657,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // Nav Items Definition
   const sidebarItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
-    { id: 'donations', icon: Heart, label: 'Donations' },
     { id: 'campaigns', icon: Sparkles, label: 'Campaign Popup' },
     { id: 'blog', icon: FileText, label: 'Blog Posts' },
     { id: 'volunteers', icon: UserCheck, label: 'Volunteers' },
@@ -1055,9 +1056,8 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                   value={volunteer.role || 'Volunteer'}
                   onChange={async (e) => {
                     const newRole = e.target.value;
-                    const newDesignation = newRole === 'Team Leader' 
-                      ? 'Team Leader' 
-                      : (volunteer.designation === 'Team Leader' || !volunteer.designation ? newRole : volunteer.designation);
+                    const isGeneric = !volunteer.designation || ['Volunteer', 'Intern', 'Team Leader'].includes(volunteer.designation);
+                    const newDesignation = isGeneric ? newRole : volunteer.designation;
                     try {
                       await axiosInstance.put(`/volunteers/${volunteer._id}`, {
                         ...volunteer,
@@ -1066,6 +1066,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                       });
                       toast.success(`Updated ${volunteer.name}'s role to ${newRole}`);
                       fetchVolunteers();
+                      window.dispatchEvent(new Event('team-updated'));
                     } catch (err) {
                       toast.error('Failed to update volunteer role');
                     }
@@ -1451,7 +1452,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
           {activeTab === 'dashboard' && renderDashboard()}
-          {activeTab === 'donations' && renderDonations()}
           {activeTab === 'campaigns' && renderCampaigns()}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'volunteers' && renderVolunteers()}
@@ -1571,11 +1571,16 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 <input type="text" placeholder="Aadhar" value={editingVolunteer?.aadhar||''} onChange={(e) => setEditingVolunteer({...editingVolunteer, aadhar: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" />
                 <select 
                   value={editingVolunteer?.role || 'Volunteer'} 
-                  onChange={(e) => setEditingVolunteer({
-                    ...editingVolunteer, 
-                    role: e.target.value,
-                    designation: e.target.value === 'Team Leader' ? 'Team Leader' : (editingVolunteer?.designation || e.target.value)
-                  })} 
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    const isGeneric = !editingVolunteer?.designation || ['Volunteer', 'Intern', 'Team Leader'].includes(editingVolunteer?.designation);
+                    const newDesignation = isGeneric ? newRole : editingVolunteer?.designation;
+                    setEditingVolunteer({
+                      ...editingVolunteer, 
+                      role: newRole,
+                      designation: newDesignation
+                    });
+                  }} 
                   className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
                 >
                   <option value="Volunteer">Volunteer</option>

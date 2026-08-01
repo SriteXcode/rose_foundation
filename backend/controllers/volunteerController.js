@@ -105,6 +105,10 @@ exports.applyVolunteer = async (req, res) => {
 // Get volunteers (Admin supports filtering)
 exports.getVolunteers = async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     const { page = 1, limit = 10, status } = req.query;
     
     const query = {};

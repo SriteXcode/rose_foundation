@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Search, X, Filter } from 'lucide-react';
+import { GallerySkeleton } from '../components/SkeletonLoader';
 
 const GalleryPage = () => {
   const navigate = useNavigate();
@@ -111,9 +112,7 @@ const GalleryPage = () => {
 
         {/* Loading State */}
         {loading ? (
-          <div className="py-20 text-center text-sm font-medium text-zinc-400">
-            Loading moments...
-          </div>
+          <GallerySkeleton count={8} />
         ) : (
           /* Masonry Layout across all screen sizes */
           displayItems.length > 0 ? (

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { ArrowRight, X } from 'lucide-react';
+import { GallerySkeleton } from './SkeletonLoader';
 
 const GallerySection = ({ limit = 6 }) => {
   const navigate = useNavigate();
@@ -53,7 +54,9 @@ const GallerySection = ({ limit = 6 }) => {
         </div>
 
         {/* Responsive Masonry Layout */}
-        {displayItems.length > 0 ? (
+        {loading ? (
+          <GallerySkeleton count={limit} />
+        ) : displayItems.length > 0 ? (
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
             {displayItems.map((item, index) => {
               const rawUrl = item.imageUrl;
