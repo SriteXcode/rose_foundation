@@ -65,6 +65,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [editingCampaignItem, setEditingCampaignItem] = useState(null);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
 
+  const [donationsList, setDonationsList] = useState([]);
+  const [donationSearchTerm, setDonationSearchTerm] = useState('');
+
   const [newsletterForm, setNewsletterForm] = useState({ subject: '', message: '' });
   const [settingsForm, setSettingsForm] = useState({
     siteName: '',
@@ -94,6 +97,11 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (authLoading) return;
     if (!user || user.role !== 'admin') return;
     
+    if (activeTab === 'dashboard') {
+      loadAdminData();
+      fetchDonationsList();
+    }
+    if (activeTab === 'donations') fetchDonationsList();
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
     if (activeTab === 'volunteers') {
@@ -108,6 +116,27 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
     if (activeTab === 'settings') fetchSettings();
   }, [activeTab, user, authLoading]);
+
+  const fetchDonationsList = async () => {
+    try {
+      const response = await axiosInstance.get('/admin/donations');
+      setDonationsList(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch donations list', error);
+    }
+  };
+
+  const handleDeleteDonation = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this donation record?')) return;
+    try {
+      await axiosInstance.delete(`/admin/donations/${id}`);
+      toast.success('Donation record deleted');
+      fetchDonationsList();
+      if (loadAdminData) loadAdminData();
+    } catch (error) {
+      toast.error('Failed to delete donation record');
+    }
+  };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -626,6 +655,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // Nav Items Definition
   const sidebarItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'donations', icon: Heart, label: 'Donations' },
     { id: 'campaigns', icon: Sparkles, label: 'Campaign Popup' },
     { id: 'blog', icon: FileText, label: 'Blog Posts' },
     { id: 'volunteers', icon: UserCheck, label: 'Volunteers' },
@@ -817,6 +847,102 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     );
   };
 
+  const renderDonations = () => {
+    const filteredDonations = donationsList.filter(d => 
+      (d.donorName && d.donorName.toLowerCase().includes(donationSearchTerm.toLowerCase())) ||
+      (d.donorEmail && d.donorEmail.toLowerCase().includes(donationSearchTerm.toLowerCase())) ||
+      (d.transactionId && d.transactionId.toLowerCase().includes(donationSearchTerm.toLowerCase()))
+    );
+
+    const totalDonationSum = donationsList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+
+    return (
+      <div className="space-y-6 text-left">
+        {/* Header Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Total Collected</p>
+            <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">₹{totalDonationSum.toLocaleString()}</h3>
+          </div>
+          <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">Total Donation Records</p>
+            <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{donationsList.length}</h3>
+          </div>
+        </div>
+
+        {/* Search & Actions Bar */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input 
+              type="text" 
+              placeholder="Search donor, email or TXN ID..." 
+              value={donationSearchTerm} 
+              onChange={(e) => setDonationSearchTerm(e.target.value)} 
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
+            />
+          </div>
+          <button 
+            onClick={() => { fetchDonationsList(); loadAdminData(); }} 
+            className="text-xs font-semibold px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl hover:opacity-90 transition-opacity"
+          >
+            Refresh List
+          </button>
+        </div>
+
+        {/* Donations Table */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-zinc-600 dark:text-zinc-400">
+              <thead className="bg-gray-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 font-semibold border-b border-gray-200/80 dark:border-zinc-800">
+                <tr>
+                  <th className="py-3 px-4">Donor Name</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Payment Method / TXN</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                {filteredDonations.length > 0 ? (
+                  filteredDonations.map((don) => (
+                    <tr key={don._id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/40">
+                      <td className="py-3 px-4 font-bold text-zinc-900 dark:text-white">{don.donorName || 'Anonymous'}</td>
+                      <td className="py-3 px-4">{don.donorEmail || '-'}</td>
+                      <td className="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400">₹{Number(don.amount)?.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-mono text-[11px]">{don.paymentMethod || 'Online'}<br/><span className="text-zinc-400 text-[10px]">{don.transactionId || '-'}</span></td>
+                      <td className="py-3 px-4">{don.createdAt ? new Date(don.createdAt).toLocaleDateString() : '-'}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${don.status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'}`}>
+                          {don.status || 'completed'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button 
+                          onClick={() => handleDeleteDonation(don._id)} 
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          title="Delete Record"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="py-8 text-center text-zinc-400">No donations found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderProjects = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -929,11 +1055,14 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                   value={volunteer.role || 'Volunteer'}
                   onChange={async (e) => {
                     const newRole = e.target.value;
+                    const newDesignation = newRole === 'Team Leader' 
+                      ? 'Team Leader' 
+                      : (volunteer.designation === 'Team Leader' || !volunteer.designation ? newRole : volunteer.designation);
                     try {
                       await axiosInstance.put(`/volunteers/${volunteer._id}`, {
                         ...volunteer,
                         role: newRole,
-                        designation: newRole === 'Team Leader' ? 'Team Leader' : volunteer.designation
+                        designation: newDesignation
                       });
                       toast.success(`Updated ${volunteer.name}'s role to ${newRole}`);
                       fetchVolunteers();
@@ -1322,6 +1451,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
           {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'donations' && renderDonations()}
           {activeTab === 'campaigns' && renderCampaigns()}
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'volunteers' && renderVolunteers()}

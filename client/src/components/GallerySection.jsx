@@ -4,15 +4,6 @@ import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { ArrowRight, X } from 'lucide-react';
 
-const defaultGallery = [
-  { imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800', title: 'Community Distribution' },
-  { imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=800', title: 'Youth Skill Building' },
-  { imageUrl: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800', title: 'Empowerment Workshop' },
-  { imageUrl: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=800', title: 'Education Camp' },
-  { imageUrl: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?auto=format&fit=crop&q=80&w=800', title: 'Relief Drive' },
-  { imageUrl: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=800', title: 'Health Support' }
-];
-
 const GallerySection = ({ limit = 6 }) => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState([]);
@@ -31,12 +22,12 @@ const GallerySection = ({ limit = 6 }) => {
           setGalleryItems(items);
           setHasMore(totalItems > limit || items.length >= limit);
         } else {
-          setGalleryItems(defaultGallery);
-          setHasMore(defaultGallery.length >= limit);
+          setGalleryItems([]);
+          setHasMore(false);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
-        setGalleryItems(defaultGallery);
+        setGalleryItems([]);
       } finally {
         setLoading(false);
       }
@@ -45,7 +36,7 @@ const GallerySection = ({ limit = 6 }) => {
     fetchGallery();
   }, [limit]);
 
-  const displayItems = galleryItems.length > 0 ? galleryItems : defaultGallery;
+  const displayItems = galleryItems;
 
   return (
     <section id="gallery" className="py-4 md:py-6 bg-fafafa dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
@@ -62,32 +53,38 @@ const GallerySection = ({ limit = 6 }) => {
         </div>
 
         {/* Responsive Masonry Layout */}
-        <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
-          {displayItems.map((item, index) => {
-            const rawUrl = item.imageUrl || defaultGallery[index % defaultGallery.length].imageUrl;
-            const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
+        {displayItems.length > 0 ? (
+          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
+            {displayItems.map((item, index) => {
+              const rawUrl = item.imageUrl;
+              const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
 
-            return (
-              <div
-                key={`${item._id || index}-${index}`}
-                onClick={() => setSelectedImage(item)}
-                className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
-              >
-                <img 
-                  src={optimizedUrl} 
-                  alt={item.title || 'Gallery Moment'} 
-                  loading="lazy" 
-                  className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
-                  <span className="text-white font-semibold text-xs">
-                    {item.title || 'Rose Foundation'}
-                  </span>
+              return (
+                <div
+                  key={`${item._id || index}-${index}`}
+                  onClick={() => setSelectedImage(item)}
+                  className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
+                >
+                  <img 
+                    src={optimizedUrl} 
+                    alt={item.title || 'Gallery Moment'} 
+                    loading="lazy" 
+                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                    <span className="text-white font-semibold text-xs">
+                      {item.title || 'Rose Foundation'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-12 text-center text-xs text-zinc-400">
+            No gallery images available at this time.
+          </div>
+        )}
 
         {(hasMore || displayItems.length >= 6) && (
           <div className="text-center mt-8">
@@ -114,7 +111,7 @@ const GallerySection = ({ limit = 6 }) => {
           </button>
           <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-              <img src={selectedImage.imageUrl || defaultGallery[0].imageUrl} alt={selectedImage.title} className="w-full h-full object-contain" />
+              <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full h-full object-contain" />
             </div>
             <div className="p-6 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">{selectedImage.title || 'Gallery Image'}</h3>

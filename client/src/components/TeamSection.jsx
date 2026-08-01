@@ -31,12 +31,7 @@ const GithubIcon = ({ className = "w-3.5 h-3.5" }) => (
 
 const JoinUsModal = lazy(() => import('./modals/JoinUsModal'));
 
-const defaultTeam = [
-  { name: 'Priscilla Sekar', designation: 'Founder & Director', qualification: 'M.A. Social Work', bio: 'Passionate about community empowerment and sustainable development.', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600' },
-  { name: 'Karan Mehta', designation: 'Program Lead', qualification: 'B.Tech Computer Science', bio: 'Driving technology and operational logistics across social initiatives.', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600' },
-  { name: 'Priya Nair', designation: 'Outreach Manager', qualification: 'B.A. Public Policy', bio: 'Building corporate partnerships and youth volunteer chapters.', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=600' },
-  { name: 'Rohan Kumar', designation: 'Field Coordinator', qualification: 'B.Sc Rural Development', bio: 'Coordinating ground activities and community welfare distribution.', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600' },
-];
+const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
 
 const truncateBio = (text, limit = 20) => {
   if (!text) return '';
@@ -74,12 +69,12 @@ const TeamSection = ({ limit = 10 }) => {
         setTeamMembers(prev => pageNum === 1 ? volunteers : [...prev, ...volunteers]);
         setHasMore(pageNum < totalPages);
       } else {
-        setTeamMembers(defaultTeam);
+        setTeamMembers([]);
         setHasMore(false);
       }
     } catch (error) {
       console.error('Failed to fetch team members', error);
-      setTeamMembers(defaultTeam);
+      setTeamMembers([]);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -116,12 +111,12 @@ const TeamSection = ({ limit = 10 }) => {
   };
 
   const isLeader = (member) => {
-    if (member?.isTeamLeader || member?.isLeader) return true;
+    if (member?.role === 'Team Leader' || member?.isTeamLeader || member?.isLeader) return true;
+    if (member?.role === 'Volunteer' || member?.role === 'Intern') return false;
     const roleStr = `${member?.role || ''} ${member?.designation || ''}`.toLowerCase();
     return (
       roleStr.includes('founder') ||
       roleStr.includes('director') ||
-      roleStr.includes('leader') ||
       roleStr.includes('president') ||
       roleStr.includes('head') ||
       roleStr.includes('lead') ||
@@ -129,9 +124,7 @@ const TeamSection = ({ limit = 10 }) => {
     );
   };
 
-  const rawMembers = teamMembers.length > 0 ? teamMembers : defaultTeam;
-
-  const displayMembers = [...rawMembers].sort((a, b) => {
+  const displayMembers = [...teamMembers].sort((a, b) => {
     const aLeader = isLeader(a);
     const bLeader = isLeader(b);
     if (aLeader && !bLeader) return -1;
@@ -185,7 +178,7 @@ const TeamSection = ({ limit = 10 }) => {
             {displayMembers.map((member, index) => {
               const imgSrc = member.image?.startsWith('http') 
                 ? getOptimizedImageUrl(member.image, { width: 250, height: 250 })
-                : member.image || defaultTeam[index % defaultTeam.length].image;
+                : member.image || DEFAULT_AVATAR;
               const leader = isLeader(member);
 
               return (
@@ -272,7 +265,7 @@ const TeamSection = ({ limit = 10 }) => {
             {/* Profile Avatar Photo */}
             <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 mb-3 relative shadow-xs ring-2 ring-amber-400/30">
               <img 
-                src={selectedMember.image?.startsWith('http') ? selectedMember.image : defaultTeam[0].image} 
+                src={selectedMember.image?.startsWith('http') ? selectedMember.image : DEFAULT_AVATAR} 
                 alt={selectedMember.name}
                 className="w-full h-full object-cover"
               />
