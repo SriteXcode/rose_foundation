@@ -53,6 +53,16 @@ body {
   animation: shimmer 1.6s infinite ease-in-out;
 }
 
+/* Blink / Fade In Fade Out Animation */
+@keyframes pulseFade {
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.01); }
+}
+
+.animate-pulse-fade {
+  animation: pulseFade 3s infinite ease-in-out;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
