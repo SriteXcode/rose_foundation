@@ -90,3 +90,24 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ error: 'Failed to update user' });
   }
 };
+
+exports.getAllDonations = async (req, res) => {
+  try {
+    const donations = await Donation.find().sort({ createdAt: -1 });
+    res.json(donations);
+  } catch (error) {
+    console.error('Fetch all donations error:', error);
+    res.status(500).json({ error: 'Failed to fetch donations' });
+  }
+};
+
+exports.deleteDonation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Donation.findByIdAndDelete(id);
+    res.json({ message: 'Donation deleted successfully' });
+  } catch (error) {
+    console.error('Delete donation error:', error);
+    res.status(500).json({ error: 'Failed to delete donation' });
+  }
+};

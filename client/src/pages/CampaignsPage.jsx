@@ -4,31 +4,7 @@ import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Sparkles, Target, ArrowRight, BookOpen, Filter, Search, Heart } from 'lucide-react';
 import Footer from '../components/Footer';
-
-const defaultCampaignsList = [
-  {
-    _id: 'camp-1',
-    title: 'Emergency Relief & Empowerment Drive',
-    subtitle: 'Urgent Campaign',
-    description: 'Providing emergency winter blankets, food ration kits, and medical care for underprivileged families across rural communities.',
-    imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
-    targetAmount: 150000,
-    currentAmount: 85000,
-    status: 'active',
-    buttonText: 'Donate Now'
-  },
-  {
-    _id: 'camp-2',
-    title: 'Clean Water Filtration Station setup in Rural Schools',
-    subtitle: 'Health & Hygiene',
-    description: 'Setting up high-capacity clean drinking water filtration units to prevent water-borne illnesses among school children.',
-    imageUrl: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=800',
-    targetAmount: 80000,
-    currentAmount: 80000,
-    status: 'completed',
-    buttonText: 'Goal Achieved'
-  }
-];
+import { CardSkeleton } from '../components/SkeletonLoader';
 
 const CampaignsPage = ({ scrollToSection }) => {
   const navigate = useNavigate();
@@ -47,13 +23,13 @@ const CampaignsPage = ({ scrollToSection }) => {
           setCampaigns(response.data);
           setFilteredCampaigns(response.data);
         } else {
-          setCampaigns(defaultCampaignsList);
-          setFilteredCampaigns(defaultCampaignsList);
+          setCampaigns([]);
+          setFilteredCampaigns([]);
         }
       } catch (error) {
         console.error('Failed to fetch campaigns', error);
-        setCampaigns(defaultCampaignsList);
-        setFilteredCampaigns(defaultCampaignsList);
+        setCampaigns([]);
+        setFilteredCampaigns([]);
       } finally {
         setLoading(false);
       }
@@ -77,7 +53,7 @@ const CampaignsPage = ({ scrollToSection }) => {
     setFilteredCampaigns(result);
   }, [activeFilter, searchTerm, campaigns]);
 
-  const displayCampaigns = filteredCampaigns.length > 0 ? filteredCampaigns : (campaigns.length > 0 ? campaigns : defaultCampaignsList);
+  const displayCampaigns = filteredCampaigns;
 
   const handleDonateToCampaign = (campaign) => {
     if (scrollToSection) {
@@ -139,16 +115,14 @@ const CampaignsPage = ({ scrollToSection }) => {
 
         {/* Campaigns Grid */}
         {loading ? (
-          <div className="py-20 text-center text-sm font-medium text-zinc-400">
-            Loading campaigns...
-          </div>
+          <CardSkeleton count={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
         ) : displayCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
             {displayCampaigns.map((camp, index) => {
               const target = camp.targetAmount || 100000;
               const current = camp.currentAmount || 0;
               const percentage = Math.min(100, Math.round((current / target) * 100));
-              const coverImg = getOptimizedImageUrl(camp.imageUrl || defaultCampaignsList[index % defaultCampaignsList.length].imageUrl, { width: 600, height: 400 });
+              const coverImg = getOptimizedImageUrl(camp.imageUrl || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800', { width: 600, height: 400 });
               const isCompleted = camp.status === 'completed' || percentage >= 100;
 
               return (

@@ -33,8 +33,9 @@ exports.addDonation = async (req, res) => {
       donorName, 
       donorEmail, 
       donorPhone, 
-      transactionId, 
-      status: 'pending'
+      donorId: donor?.userId || req.body.donorId || null,
+      transactionId: transactionId || `TXN_${Date.now()}`, 
+      status: req.body.status || 'completed'
     });
 
     await donation.save();

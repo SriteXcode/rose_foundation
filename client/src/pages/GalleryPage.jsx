@@ -3,17 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Search, X, Filter } from 'lucide-react';
-
-const defaultGallery = [
-  { imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800', title: 'Community Distribution', category: 'Outreach' },
-  { imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=800', title: 'Youth Skill Building', category: 'Education' },
-  { imageUrl: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800', title: 'Empowerment Workshop', category: 'Workshop' },
-  { imageUrl: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=800', title: 'Education Camp', category: 'Education' },
-  { imageUrl: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?auto=format&fit=crop&q=80&w=800', title: 'Relief Drive', category: 'Relief' },
-  { imageUrl: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=800', title: 'Health Support', category: 'Health' },
-  { imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800', title: 'Leadership Seminar', category: 'Workshop' },
-  { imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800', title: 'Volunteer Orientation', category: 'Outreach' },
-];
+import { GallerySkeleton } from '../components/SkeletonLoader';
 
 const GalleryPage = () => {
   const navigate = useNavigate();
@@ -35,13 +25,13 @@ const GalleryPage = () => {
           setGalleryItems(data);
           setFilteredItems(data);
         } else {
-          setGalleryItems(defaultGallery);
-          setFilteredItems(defaultGallery);
+          setGalleryItems([]);
+          setFilteredItems([]);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
-        setGalleryItems(defaultGallery);
-        setFilteredItems(defaultGallery);
+        setGalleryItems([]);
+        setFilteredItems([]);
       } finally {
         setLoading(false);
       }
@@ -61,7 +51,7 @@ const GalleryPage = () => {
     setFilteredItems(result);
   }, [activeFilter, searchTerm, galleryItems]);
 
-  const displayItems = filteredItems.length > 0 ? filteredItems : (galleryItems.length > 0 ? galleryItems : defaultGallery);
+  const displayItems = filteredItems;
   
   // Extract unique valid categories
   const categories = ['All', ...new Set(galleryItems.map(item => item.category).filter(Boolean))];
@@ -122,42 +112,46 @@ const GalleryPage = () => {
 
         {/* Loading State */}
         {loading ? (
-          <div className="py-20 text-center text-sm font-medium text-zinc-400">
-            Loading moments...
-          </div>
+          <GallerySkeleton count={8} />
         ) : (
           /* Masonry Layout across all screen sizes */
-          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
-            {displayItems.map((item, index) => {
-              const rawUrl = item.imageUrl || defaultGallery[index % defaultGallery.length].imageUrl;
-              const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
+          displayItems.length > 0 ? (
+            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
+              {displayItems.map((item, index) => {
+                const rawUrl = item.imageUrl;
+                const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
 
-              return (
-                <div 
-                  key={`${item._id || index}-${index}`} 
-                  onClick={() => setSelectedImage(item)}
-                  className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
-                >
-                  <img 
-                    src={optimizedUrl} 
-                    alt={item.title || 'Gallery Moment'} 
-                    loading="lazy" 
-                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 sm:p-4">
-                    <span className="text-white font-bold text-xs">
-                      {item.title || 'Rose Foundation'}
-                    </span>
-                    {item.category && (
-                      <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-300 mt-0.5 block">
-                        {item.category}
+                return (
+                  <div 
+                    key={`${item._id || index}-${index}`} 
+                    onClick={() => setSelectedImage(item)}
+                    className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <img 
+                      src={optimizedUrl} 
+                      alt={item.title || 'Gallery Moment'} 
+                      loading="lazy" 
+                      className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 sm:p-4">
+                      <span className="text-white font-bold text-xs">
+                        {item.title || 'Rose Foundation'}
                       </span>
-                    )}
+                      {item.category && (
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-300 mt-0.5 block">
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-16 text-center text-xs text-zinc-400">
+              No gallery images found.
+            </div>
+          )
         )}
       </div>
 
@@ -180,7 +174,7 @@ const GalleryPage = () => {
           >
             <div className="flex-1 bg-black flex items-center justify-center overflow-hidden min-h-[300px]">
               <img 
-                src={selectedImage.imageUrl || defaultGallery[0].imageUrl} 
+                src={selectedImage.imageUrl} 
                 alt={selectedImage.title} 
                 className="w-full h-full max-h-[70vh] object-contain" 
               />
