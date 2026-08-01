@@ -1,64 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 
-const defaultAboutImages = [
-  "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=1000",
-  "https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=1000",
-  "https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=1000",
-  "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=1000"
-];
-
 const AboutSection = () => {
-  const [aboutImage, setAboutImage] = useState(defaultAboutImages[0]);
+  const [images, setImages] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRandomGalleryImage = async () => {
+    const fetchGalleryImages = async () => {
       try {
         const response = await axiosInstance.get('/gallery?limit=1000');
-        const data = response.data.items || response.data;
+        const data = Array.isArray(response.data) ? response.data : (response.data.items || []);
         
         if (Array.isArray(data) && data.length > 0) {
-          const validImages = data.map(item => item.imageUrl).filter(img => img && img.startsWith('http'));
+          const validImages = data
+            .map(item => item.imageUrl)
+            .filter(img => img && typeof img === 'string' && img.startsWith('http'));
+          
           if (validImages.length > 0) {
-            const randomIndex = Math.floor(Math.random() * validImages.length);
-            setAboutImage(validImages[randomIndex]);
-            return;
+            setImages(validImages);
           }
         }
-        
-        // Fallback to random default image
-        const randomIndex = Math.floor(Math.random() * defaultAboutImages.length);
-        setAboutImage(defaultAboutImages[randomIndex]);
       } catch (error) {
         console.error('Failed to fetch gallery image for About section', error);
-        const randomIndex = Math.floor(Math.random() * defaultAboutImages.length);
-        setAboutImage(defaultAboutImages[randomIndex]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchRandomGalleryImage();
+    fetchGalleryImages();
   }, []);
 
-  const displaySrc = getOptimizedImageUrl(aboutImage, { width: 1000 });
+  // Automatic slideshow with smooth fade-in fade-out transition
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % images.length);
+        setIsFading(false);
+      }, 500); // 500ms fade out transition duration
+    }, 4000); // Change image every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [images]);
+
+  const currentImage = images[currentIndex] 
+    ? getOptimizedImageUrl(images[currentIndex], { width: 1000 })
+    : null;
 
   return (
     <section id="about" className="py-4 md:py-6 bg-white dark:bg-zinc-950 transition-colors border-t border-gray-100 dark:border-zinc-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column Image */}
+          {/* Left Column Image with Fade Animation */}
           <div className="lg:col-span-5 order-2 lg:order-1 w-full max-w-md lg:max-w-none mx-auto">
-            <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-100 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800 aspect-[4/3] max-h-[300px] md:max-h-[340px] lg:max-h-[360px] relative">
-              <img 
-                key={displaySrc}
-                src={displaySrc} 
-                alt="Volunteers helping communities" 
-                loading="lazy" 
-                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" 
-              />
+            <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-100 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-900 aspect-[4/3] max-h-[300px] md:max-h-[340px] lg:max-h-[360px] relative">
+              {currentImage ? (
+                <img 
+                  src={currentImage} 
+                  alt="Volunteers helping communities" 
+                  loading="lazy" 
+                  className={`w-full h-full object-cover transform hover:scale-105 transition-all duration-700 ${
+                    isFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                  }`} 
+                />
+              ) : (
+                /* Blink / Fade In Fade Out Animation Frame when no image is loaded */
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 via-gray-200/60 to-gray-100 dark:from-zinc-900 dark:via-zinc-800/70 dark:to-zinc-900 p-6 text-center animate-pulse-fade">
+                  <div className="w-14 h-14 rounded-full bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3 border border-rose-500/20 shadow-xs">
+                    <ImageIcon className="w-7 h-7" />
+                  </div>
+                  <span className="text-xs font-extrabold text-zinc-700 dark:text-zinc-300 uppercase tracking-widest">
+                    Blackrose Foundation
+                  </span>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
+                    Empowering Communities Together
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -98,13 +124,13 @@ const AboutSection = () => {
               ))}
             </div>
 
-            {/* Action Link */}
-            <Link 
-              to="/legal" 
-              className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-white hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors group cursor-pointer"
+            {/* CTA Button */}
+            <Link
+              to="/campaigns"
+              className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-6 py-3 rounded-full text-xs font-semibold transition-all shadow-sm group"
             >
-              <span>View Legal Documents</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>Explore Our Work</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </Link>
 
           </div>
@@ -116,4 +142,3 @@ const AboutSection = () => {
 };
 
 export default AboutSection;
-
