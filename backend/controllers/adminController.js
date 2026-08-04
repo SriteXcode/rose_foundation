@@ -44,9 +44,31 @@ exports.getDashboard = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-password').sort({ createdAt: -1 });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await User.countDocuments();
+    
+    // Sort so role 'admin' comes first ('admin' < 'user' in alphabetical order), then newest first
+    const users = await User.find({}, '-password')
+      .sort({ role: 1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    if (req.query.page || req.query.limit) {
+      return res.json({
+        users,
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+        currentPage: page
+      });
+    }
+
+    // Default fallback: return users list with admins prioritized
     res.json(users);
   } catch (error) {
+    console.error('Fetch users error:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 };
