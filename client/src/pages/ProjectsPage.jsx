@@ -4,39 +4,10 @@ import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Search, ArrowRight, Filter, FolderHeart } from 'lucide-react';
 import Footer from '../components/Footer';
+import { CardSkeleton } from '../components/SkeletonLoader';
 
 // Lazy load ProjectDetailsModal
 const ProjectDetailsModal = lazy(() => import('../components/modals/ProjectDetailsModal'));
-
-const defaultWorks = [
-  {
-    _id: 'work-1',
-    title: 'Youth Skill Development & Vocational Center',
-    category: 'Education',
-    status: 'Ongoing',
-    description: 'Providing computer literacy, tailoring, and soft skills training for young adults to enhance employment opportunities.',
-    images: ['https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800'],
-    beneficiaries: 350
-  },
-  {
-    _id: 'work-2',
-    title: 'Clean Water & Hygiene Station Setup',
-    category: 'Health',
-    status: 'Completed',
-    description: 'Installing clean drinking water filtration systems and sanitation stations across underserved schools.',
-    images: ['https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&q=80&w=800'],
-    beneficiaries: 1200
-  },
-  {
-    _id: 'work-3',
-    title: 'Winter Clothing & Warmth Drive',
-    category: 'Relief',
-    status: 'Completed',
-    description: 'Distributing warm blankets, jackets, and essential winter supplies to vulnerable families during cold weather.',
-    images: ['https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800'],
-    beneficiaries: 500
-  }
-];
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
@@ -58,13 +29,13 @@ const ProjectsPage = () => {
           setWorks(data);
           setFilteredWorks(data);
         } else {
-          setWorks(defaultWorks);
-          setFilteredWorks(defaultWorks);
+          setWorks([]);
+          setFilteredWorks([]);
         }
       } catch (error) {
         console.error('Failed to fetch works:', error);
-        setWorks(defaultWorks);
-        setFilteredWorks(defaultWorks);
+        setWorks([]);
+        setFilteredWorks([]);
       } finally {
         setLoading(false);
       }
@@ -88,7 +59,7 @@ const ProjectsPage = () => {
     setFilteredWorks(result);
   }, [activeFilter, searchTerm, works]);
 
-  const displayWorks = filteredWorks.length > 0 ? filteredWorks : (works.length > 0 ? works : defaultWorks);
+  const displayWorks = filteredWorks;
   const categories = ['All', ...new Set(works.map(work => work.category).filter(Boolean))];
 
   return (
@@ -147,16 +118,14 @@ const ProjectsPage = () => {
 
         {/* Projects Grid */}
         {loading ? (
-          <div className="py-20 text-center text-sm font-medium text-zinc-400">
-            Loading projects...
-          </div>
+          <CardSkeleton count={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" aspectRatio="aspect-[16/9]" />
         ) : displayWorks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
             {displayWorks.map((work, index) => {
-              const mainImg = (work.images?.[0] || work.icon || defaultWorks[index % defaultWorks.length].images[0]);
+              const mainImg = (work.images?.[0] || work.icon || work.image || '');
               const imgSrc = mainImg?.startsWith('http')
                 ? getOptimizedImageUrl(mainImg, { width: 600, height: 400 })
-                : defaultWorks[index % defaultWorks.length].images[0];
+                : mainImg;
 
               return (
                 <div 
@@ -165,12 +134,18 @@ const ProjectsPage = () => {
                   className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group flex flex-col cursor-pointer"
                 >
                   <div className="aspect-[16/9] max-h-[190px] md:max-h-[180px] lg:max-h-[190px] overflow-hidden bg-gray-100 dark:bg-zinc-800 relative">
-                    <img 
-                      src={imgSrc} 
-                      alt={work.title} 
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {imgSrc ? (
+                      <img 
+                        src={imgSrc} 
+                        alt={work.title} 
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">
+                        No image
+                      </div>
+                    )}
                   </div>
                   
                   <div className="p-5 flex flex-col flex-1">
