@@ -37,6 +37,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
+  const [usersPage, setUsersPage] = useState(1);
+  const [totalUsersPages, setTotalUsersPages] = useState(1);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [works, setWorks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -247,10 +250,34 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     try {
-      const response = await axiosInstance.get('/admin/users');
-      setUsers(response.data);
+      const response = await axiosInstance.get(`/admin/users?page=${page}&limit=10`);
+      let userList = [];
+      let totalP = 1;
+      let totalC = 0;
+
+      if (Array.isArray(response.data)) {
+        userList = response.data;
+        totalC = userList.length;
+        totalP = Math.ceil(totalC / 10);
+      } else {
+        userList = response.data.users || [];
+        totalP = response.data.totalPages || 1;
+        totalC = response.data.totalUsers || userList.length;
+      }
+
+      // Prioritize admins first (role === 'admin' at top)
+      const sorted = [...userList].sort((a, b) => {
+        if (a.role === 'admin' && b.role !== 'admin') return -1;
+        if (a.role !== 'admin' && b.role === 'admin') return 1;
+        return 0;
+      });
+
+      setUsers(sorted);
+      setUsersPage(page);
+      setTotalUsersPages(totalP);
+      setTotalUsersCount(totalC);
     } catch (error) {
       console.error('Failed to fetch users', error);
     }
@@ -282,7 +309,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     try {
       await axiosInstance.delete(`/admin/users/${userId}`);
       toast.success('User deleted');
-      fetchUsers();
+      fetchUsers(usersPage);
     } catch (error) {
       toast.error('Failed to delete user');
     }
@@ -301,7 +328,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
       toast.success('User details updated successfully');
       setEditingUser(null);
-      fetchUsers();
+      fetchUsers(usersPage);
     } catch (error) {
       toast.error('Failed to update user details.');
     } finally {
@@ -791,7 +818,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h3 className="text-lg font-bold text-zinc-900 dark:text-white">User Accounts</h3>
-            <p className="text-xs text-zinc-500">Manage registered user credentials and permission roles</p>
+            <p className="text-xs text-zinc-500">Manage registered user credentials (10 per page, Admins prioritized)</p>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -820,7 +847,14 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/80">
                 {filteredUsersList.map((u) => (
                   <tr key={u._id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-6 py-3.5 font-medium text-zinc-900 dark:text-white">{u.name}</td>
+                    <td className="px-6 py-3.5 font-medium text-zinc-900 dark:text-white flex items-center gap-2">
+                      <span>{u.name}</span>
+                      {u.role === 'admin' && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold px-1.5 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-wider">
+                          Admin Priority
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-3.5 text-zinc-600 dark:text-zinc-400">{u.email}</td>
                     <td className="px-6 py-3.5">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'bg-gray-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}>
@@ -837,12 +871,38 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 ))}
                 {filteredUsersList.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="px-6 py-8 text-center text-zinc-400 text-xs">No users found matching query.</td>
+                    <td colSpan="4" className="px-6 py-8 text-center text-zinc-400 text-xs">No users found.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalUsersPages > 1 && (
+            <div className="px-6 py-3.5 border-t border-gray-100 dark:border-zinc-800/80 flex items-center justify-between gap-4 text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">
+                Page <span className="font-bold text-zinc-900 dark:text-white">{usersPage}</span> of <span className="font-bold text-zinc-900 dark:text-white">{totalUsersPages}</span> ({totalUsersCount} total users)
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={usersPage <= 1}
+                  onClick={() => fetchUsers(usersPage - 1)}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={usersPage >= totalUsersPages}
+                  onClick={() => fetchUsers(usersPage + 1)}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
