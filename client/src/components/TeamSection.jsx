@@ -32,7 +32,7 @@ const GithubIcon = ({ className = "w-3.5 h-3.5" }) => (
 
 const JoinUsModal = lazy(() => import('./modals/JoinUsModal'));
 
-const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="%23e4e4e7"/><path fill="%23a1a1aa" d="M64 28a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM32 98c0-17.7 14.3-30 32-30s32 12.3 32 30v6H32v-6z"/></svg>`;
 
 const truncateBio = (text, limit = 20) => {
   if (!text) return '';
@@ -211,7 +211,7 @@ const TeamSection = ({ limit = 10 }) => {
                 <div 
                   key={`${member._id || index}-${index}`} 
                   onClick={() => setSelectedMember(member)}
-                  className={`bg-white dark:bg-zinc-900 border rounded-xl p-2 shadow-xs hover:shadow-md transition-all group shrink-0 w-28 sm:w-36 snap-start flex flex-col justify-between cursor-pointer ${
+                  className={`bg-white dark:bg-zinc-900 border rounded-xl p-2 shadow-xs hover:shadow-md transition-all duration-300 transform hover:scale-[1.04] group shrink-0 w-[calc((100%-12px)/1.75)] md:w-[calc((100%-30px)/3.5)] lg:w-[calc((100%-36px)/4)] snap-start flex flex-col justify-between cursor-pointer ${
                     leader ? 'border-amber-400/80 dark:border-amber-500/50 shadow-amber-500/5 hover:border-amber-500' : 'border-gray-200/70 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600'
                   }`}
                 >
@@ -291,7 +291,7 @@ const TeamSection = ({ limit = 10 }) => {
             {/* Profile Avatar Photo */}
             <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 mb-3 relative shadow-xs ring-2 ring-amber-400/30">
               <img 
-                src={selectedMember.image?.startsWith('http') ? selectedMember.image : DEFAULT_AVATAR} 
+                src={selectedMember.image?.startsWith('http') ? selectedMember.image : (selectedMember.image || DEFAULT_AVATAR)} 
                 alt={selectedMember.name}
                 className="w-full h-full object-cover"
               />
