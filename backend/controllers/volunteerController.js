@@ -313,6 +313,53 @@ exports.getVolunteers = async (req, res) => {
   }
 };
 
+// Lookup volunteer by email, phone, code, or name for auto-fetching profile image & details
+exports.lookupVolunteer = async (req, res) => {
+  try {
+    const { search } = req.query;
+    if (!search || !search.trim()) {
+      return res.status(400).json({ error: 'Search parameter is required' });
+    }
+
+    const term = search.trim();
+    const volunteer = await Volunteer.findOne({
+      $or: [
+        { email: term.toLowerCase() },
+        { phone: term },
+        { volunteerCode: term.toUpperCase() },
+        { fundraiserCode: term.toUpperCase() },
+        { name: { $regex: term, $options: 'i' } }
+      ]
+    });
+
+    if (!volunteer) {
+      return res.status(404).json({ error: 'No matching volunteer profile found' });
+    }
+
+    res.json({
+      found: true,
+      volunteer: {
+        _id: volunteer._id,
+        name: volunteer.name,
+        email: volunteer.email,
+        phone: volunteer.phone,
+        image: volunteer.image,
+        designation: volunteer.designation,
+        role: volunteer.role,
+        bio: volunteer.bio,
+        volunteerCode: volunteer.volunteerCode,
+        fundraiserCode: volunteer.fundraiserCode,
+        upiId: volunteer.upiId,
+        razorpayQrId: volunteer.razorpayQrId,
+        directPaymentQrImage: volunteer.directPaymentQrImage
+      }
+    });
+  } catch (error) {
+    console.error('Lookup volunteer error:', error);
+    res.status(500).json({ error: 'Failed to lookup volunteer profile' });
+  }
+};
+
 // Toggle Home Page public visibility for a volunteer
 exports.toggleShowOnHome = async (req, res) => {
   try {
