@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
-import { User, LogOut, FileText, Receipt, Heart, ShieldCheck, Phone, Mail } from 'lucide-react';
+import { User, LogOut, FileText, Receipt, Heart, ShieldCheck, Phone, Mail, QrCode } from 'lucide-react';
 
 const ProfilePage = ({ user, setUser, authLoading, handleLogout }) => {
   const navigate = useNavigate();
@@ -86,13 +86,22 @@ const ProfilePage = ({ user, setUser, authLoading, handleLogout }) => {
               </div>
             </div>
 
-            <button 
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 bg-transparent hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-gray-300 dark:border-zinc-700 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => navigate('/volunteer/dashboard')}
+                className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 px-4 py-2.5 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>Volunteer Portal</span>
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 bg-transparent hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-gray-300 dark:border-zinc-700 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            </div>
 
           </div>
         </div>

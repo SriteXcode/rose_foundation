@@ -70,7 +70,7 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
 };
 
 // Donation handler
-export const handleDonation = async (donationAmount, setIsLoading, user, onSuccess) => {
+export const handleDonation = async (donationAmount, setIsLoading, user, onSuccess, volunteerInfo = null) => {
   if (!donationAmount || donationAmount <= 0) {
     toast.error('Please enter a valid donation amount');
     return;
@@ -101,7 +101,7 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
       amount: orderData.amount,
       currency: "INR",
       name: "Blackrose Foundation",
-      description: "Donation for social cause",
+      description: volunteerInfo?.volunteerName ? `Donation via Volunteer ${volunteerInfo.volunteerName}` : "Donation for social cause",
       order_id: orderData.orderId,
       modal: {
         ondismiss: function() {
@@ -121,10 +121,14 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
             amount: parseFloat(donationAmount),
-            donorName: user?.name || 'Anonymous',
-            donorEmail: user?.email || 'anonymous@example.com',
-            donorPhone: user?.phone,
-            donorId: user?._id
+            donorName: volunteerInfo?.donorName || user?.name || 'Anonymous',
+            donorEmail: volunteerInfo?.donorEmail || user?.email || 'anonymous@example.com',
+            donorPhone: volunteerInfo?.donorPhone || user?.phone || '',
+            donorId: user?._id || null,
+            volunteerId: volunteerInfo?.volunteerId || null,
+            volunteerCode: volunteerInfo?.volunteerCode || null,
+            fundraiserCode: volunteerInfo?.fundraiserCode || null,
+            volunteerName: volunteerInfo?.volunteerName || null
           });
 
           toast.success('Thank you for your generous donation!');
@@ -132,9 +136,10 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
           const donationResult = {
             donationId: verifyResponse.data.donationId,
             amount: donationAmount,
-            donorName: user?.name || 'Anonymous',
+            donorName: volunteerInfo?.donorName || user?.name || 'Anonymous',
             date: new Date().toISOString(),
-            transactionId: response.razorpay_payment_id
+            transactionId: response.razorpay_payment_id,
+            volunteerName: volunteerInfo?.volunteerName || null
           };
 
           // Save for anonymous users to prevent loss on refresh
@@ -160,9 +165,9 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
         }
       },
       prefill: {
-        name: user?.name || "",
-        email: user?.email || "",
-        contact: user?.phone || ""
+        name: volunteerInfo?.donorName || user?.name || "",
+        email: volunteerInfo?.donorEmail || user?.email || "",
+        contact: volunteerInfo?.donorPhone || user?.phone || ""
       },
       theme: {
         color: "#9F7AEA"
@@ -200,10 +205,14 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
     try {
       const response = await axiosInstance.post('/donations', {
         amount: parseFloat(donationAmount),
-        donorName: user?.name || 'Anonymous',
-        donorEmail: user?.email || 'anonymous@example.com',
-        donorPhone: user?.phone || '',
+        donorName: volunteerInfo?.donorName || user?.name || 'Anonymous',
+        donorEmail: volunteerInfo?.donorEmail || user?.email || 'anonymous@example.com',
+        donorPhone: volunteerInfo?.donorPhone || user?.phone || '',
         donorId: user?._id || null,
+        volunteerId: volunteerInfo?.volunteerId || null,
+        volunteerCode: volunteerInfo?.volunteerCode || null,
+        fundraiserCode: volunteerInfo?.fundraiserCode || null,
+        volunteerName: volunteerInfo?.volunteerName || null,
         status: 'completed'
       });
 
@@ -211,9 +220,10 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
       const donationResult = {
         donationId: response.data.donationId,
         amount: donationAmount,
-        donorName: user?.name || 'Anonymous',
+        donorName: volunteerInfo?.donorName || user?.name || 'Anonymous',
         date: new Date().toISOString(),
-        transactionId: `TXN_${Date.now()}`
+        transactionId: `TXN_${Date.now()}`,
+        volunteerName: volunteerInfo?.volunteerName || null
       };
 
       if (!user) {

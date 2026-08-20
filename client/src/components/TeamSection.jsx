@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, GraduationCap, X } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, GraduationCap, X, QrCode, Heart } from 'lucide-react';
 import { CardSkeleton } from './SkeletonLoader';
 
 const LinkedinIcon = ({ className = "w-3.5 h-3.5" }) => (
@@ -42,6 +43,7 @@ const truncateBio = (text, limit = 20) => {
 };
 
 const TeamSection = ({ limit = 10 }) => {
+  const navigate = useNavigate();
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -63,7 +65,7 @@ const TeamSection = ({ limit = 10 }) => {
   const fetchTeam = async (pageNum) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/volunteers?page=${pageNum}&limit=${limit}&status=approved&_t=${Date.now()}`);
+      const response = await axiosInstance.get(`/volunteers?page=${pageNum}&limit=${limit}&status=approved&showOnHome=true&_t=${Date.now()}`);
       const { volunteers, totalPages } = response.data;
       
       if (volunteers && volunteers.length > 0) {
@@ -360,6 +362,18 @@ const TeamSection = ({ limit = 10 }) => {
                 </a>
               )}
             </div>
+
+            {/* Support via Volunteer QR Button */}
+            <button
+              onClick={() => {
+                navigate(`/v/${selectedMember.volunteerCode || selectedMember._id}`);
+                setSelectedMember(null);
+              }}
+              className="w-full mt-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all"
+            >
+              <QrCode className="w-3.5 h-3.5 text-amber-400" />
+              <span>Donate via {selectedMember.name.split(' ')[0]}'s QR</span>
+            </button>
           </div>
         </div>
       )}
