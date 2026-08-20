@@ -1,8 +1,8 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import axiosInstance from '../utils/api';
 import { handleDonation } from '../utils/apiHandlers';
-import { useNavigate } from 'react-router-dom';
-import { Heart, GraduationCap, Utensils, Building2, ChevronDown, CheckCircle2, History, AlertCircle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Heart, GraduationCap, Utensils, Building2, ChevronDown, CheckCircle2, History, AlertCircle, ShieldCheck } from 'lucide-react';
 
 const PostDonationModal = lazy(() => import('./modals/PostDonationModal'));
 
@@ -13,7 +13,25 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
   const [cause, setCause] = useState('Education');
   const [activeCampaigns, setActiveCampaigns] = useState([]);
   const [sendUpdates, setSendUpdates] = useState(true);
+  const [volunteerInfo, setVolunteerInfo] = useState(null);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const volunteerCodeParam = searchParams.get('volunteer');
+
+  useEffect(() => {
+    if (volunteerCodeParam) {
+      axiosInstance.get(`/volunteers/code/${volunteerCodeParam}`)
+        .then(res => {
+          setVolunteerInfo({
+            volunteerId: res.data._id,
+            volunteerCode: res.data.volunteerCode,
+            volunteerName: res.data.name
+          });
+        })
+        .catch(err => console.warn('Could not load volunteer for donation section:', err));
+    }
+  }, [volunteerCodeParam]);
 
   useEffect(() => {
     const fetchActiveCampaigns = async () => {
@@ -50,7 +68,7 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
     handleDonation(amt, setIsLoading, user, (data) => {
       setDonationData(data);
       setShowSuccessModal(true);
-    });
+    }, volunteerInfo);
   };
 
   const presetAmounts = ['500', '1000', '2000', '5000'];
@@ -174,6 +192,30 @@ const DonationSection = ({ donationAmount, setDonationAmount, isLoading, setIsLo
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5">
                 Every gift makes a difference.
               </p>
+
+              {/* Supporting Volunteer Badge if present */}
+              {volunteerInfo && (
+                <div className="mb-5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <div className="text-[11px] font-bold text-amber-900 dark:text-amber-200">
+                        Supporting Volunteer: {volunteerInfo.volunteerName}
+                      </div>
+                      <div className="text-[10px] font-mono text-amber-700 dark:text-amber-400">
+                        ID: {volunteerInfo.volunteerCode}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVolunteerInfo(null)}
+                    className="text-[10px] font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
 
               {/* Choose Cause / Active Running Campaigns - Positioned on Top */}
               <div className="mb-5">

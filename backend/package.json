@@ -76,6 +76,8 @@
 
       "nodemailer": "^6.9.4",
 
+      "qrcode": "^1.5.4",
+
       "razorpay": "^2.9.6",
 
       "streamifier": "^0.1.1",

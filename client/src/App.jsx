@@ -53,6 +53,8 @@ const BlogPage = lazy(() => import('./pages/BlogPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const CampaignsPage = lazy(() => import('./pages/CampaignsPage'));
 const InvoicePage = lazy(() => import('./pages/InvoicePage'));
+const VolunteerDashboardPage = lazy(() => import('./pages/VolunteerDashboardPage'));
+const VolunteerDonationPage = lazy(() => import('./pages/VolunteerDonationPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const AppContent = () => {
@@ -188,6 +190,10 @@ const AppContent = () => {
           <Route path="/invoice/:id" element={<InvoicePage />} />
           <Route path="/legal" element={<LegalDocumentsPage />} />
           <Route path="/campaigns" element={<CampaignsPage scrollToSection={scrollToSection} />} />
+          <Route path="/volunteer/dashboard" element={<VolunteerDashboardPage />} />
+          <Route path="/volunteer/dashboard/:code" element={<VolunteerDashboardPage />} />
+          <Route path="/v/:volunteerCode" element={<VolunteerDonationPage />} />
+          <Route path="/donate" element={<VolunteerDonationPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="*" element={<NotFoundPage />} />

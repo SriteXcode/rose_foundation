@@ -1,10 +1,11 @@
 const Donation = require('../models/Donation');
 const User = require('../models/User');
+const Volunteer = require('../models/Volunteer');
 
 // Record donation
 exports.addDonation = async (req, res) => {
   try {
-    let { amount, donorName, donorEmail, donorPhone, transactionId, donor } = req.body;
+    let { amount, donorName, donorEmail, donorPhone, transactionId, donor, volunteerId, volunteerCode, volunteerName } = req.body;
     
     // Handle frontend payload structure
     if (donor && donor.userId) {
@@ -28,17 +29,60 @@ exports.addDonation = async (req, res) => {
       return res.status(400).json({ error: 'Amount is required' });
     }
 
+    let resolvedVolunteer = null;
+
+    if (volunteerId) {
+      try {
+        resolvedVolunteer = await Volunteer.findById(volunteerId);
+      } catch (err) {}
+    }
+
+    const lookupCode = (volunteerCode || req.body.fundraiserCode || '').trim();
+    if (!resolvedVolunteer && lookupCode) {
+      try {
+        resolvedVolunteer = await Volunteer.findOne({
+          $or: [
+            { volunteerCode: lookupCode.toUpperCase() },
+            { fundraiserCode: lookupCode.toUpperCase() }
+          ]
+        });
+      } catch (volErr) {
+        console.error('Error resolving volunteer in addDonation:', volErr);
+      }
+    }
+
+    const resolvedVolunteerId = resolvedVolunteer ? resolvedVolunteer._id : (volunteerId || null);
+    const resolvedVolunteerCode = resolvedVolunteer ? (resolvedVolunteer.volunteerCode || resolvedVolunteer.fundraiserCode) : (volunteerCode || null);
+    const resolvedFundraiserCode = resolvedVolunteer ? (resolvedVolunteer.fundraiserCode || resolvedVolunteer.volunteerCode) : (req.body.fundraiserCode || null);
+    const resolvedVolunteerName = resolvedVolunteer ? resolvedVolunteer.name : (volunteerName || null);
+
     const donation = new Donation({
-      amount, 
+      amount: Number(amount), 
       donorName, 
       donorEmail, 
       donorPhone, 
       donorId: donor?.userId || req.body.donorId || null,
+      volunteerId: resolvedVolunteerId,
+      volunteerCode: resolvedVolunteerCode,
+      fundraiserCode: resolvedFundraiserCode,
+      volunteerName: resolvedVolunteerName,
+      razorpayQrId: resolvedVolunteer?.razorpayQrId || '',
       transactionId: transactionId || `TXN_${Date.now()}`, 
       status: req.body.status || 'completed'
     });
 
     await donation.save();
+
+    if (resolvedVolunteerId && donation.status === 'completed') {
+      try {
+        await Volunteer.findByIdAndUpdate(resolvedVolunteerId, {
+          $inc: { totalRaised: Number(amount) }
+        });
+      } catch (volUpdateErr) {
+        console.error('Failed to increment volunteer totalRaised:', volUpdateErr);
+      }
+    }
+
     res.status(201).json({ message: 'Donation recorded successfully!', donationId: donation._id });
   } catch (error) {
     console.error('Donation recording error:', error);

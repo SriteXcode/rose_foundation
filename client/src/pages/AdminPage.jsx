@@ -27,10 +27,23 @@ import {
   DollarSign,
   MessageSquare,
   Sparkles,
-  ChevronRight,
   X,
   Menu,
-  Heart
+  Heart,
+  QrCode,
+  ExternalLink,
+  HeartHandshake,
+  Copy,
+  Download,
+  Award,
+  Zap,
+  Loader2,
+  UploadCloud,
+  RefreshCw,
+  Key,
+  AlertTriangle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
@@ -42,6 +55,13 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [works, setWorks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
+  const [fundraisers, setFundraisers] = useState([]);
+  const [fundraiserSearchTerm, setFundraiserSearchTerm] = useState('');
+  const [editingFundraiser, setEditingFundraiser] = useState(null);
+  const [showFundraiserModal, setShowFundraiserModal] = useState(false);
+  const [dualQrFundraiser, setDualQrFundraiser] = useState(null);
+  const [credentialsModalData, setCredentialsModalData] = useState(null);
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [applications, setApplications] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
@@ -57,6 +77,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [volunteerSubTab, setVolunteerSubTab] = useState('approved');
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [qrModalVolunteer, setQrModalVolunteer] = useState(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showBlogModal, setShowBlogModal] = useState(false);
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', imageUrl: '', category: 'General', project: '' });
@@ -105,6 +126,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
+    if (activeTab === 'fundraisers') {
+      fetchFundraisers();
+      fetchVolunteers();
+    }
     if (activeTab === 'volunteers') {
       fetchVolunteers();
       fetchApplications();
@@ -145,6 +170,16 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   };
 
   // --- API Fetch Functions ---
+  const fetchFundraisers = async () => {
+    try {
+      const response = await axiosInstance.get('/volunteers/fundraisers/list');
+      const data = response.data.fundraisers || response.data;
+      setFundraisers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch fundraisers', error);
+    }
+  };
+
   const fetchVolunteers = async () => {
     try {
       const response = await axiosInstance.get('/volunteers?limit=1000&status=approved');
@@ -373,6 +408,135 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       fetchWorks();
     } catch (error) {
       toast.error('Unable to delete project.');
+    }
+  };
+
+  // --- Fundraiser Management ---
+  const handleFundraiserSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      let res;
+      if (editingFundraiser?._id) {
+        res = await axiosInstance.put(`/volunteers/fundraisers/${editingFundraiser._id}`, editingFundraiser);
+      } else {
+        res = await axiosInstance.post('/volunteers/fundraisers', editingFundraiser);
+      }
+
+      if (res.data?.fundraiser) {
+        const fr = res.data.fundraiser;
+        setCredentialsModalData({
+          name: fr.name,
+          email: fr.email,
+          password: res.data.generatedPassword || null,
+          accountExists: res.data.accountExists,
+          accountCreated: res.data.accountCreated,
+          fundraiserCode: fr.fundraiserCode || fr.volunteerCode
+        });
+
+        if (res.data.accountExists) {
+          toast.success(`Linked to existing user account (${fr.email}). Existing password retained.`, { duration: 5000 });
+        } else {
+          toast.success(`Fundraiser created! New login credentials generated.`, { duration: 5000 });
+        }
+      } else {
+        toast.success(res.data?.message || 'Fundraiser saved successfully!');
+      }
+
+      setShowFundraiserModal(false);
+      setEditingFundraiser(null);
+      fetchFundraisers();
+      fetchVolunteers();
+      window.dispatchEvent(new Event('team-updated'));
+    } catch (error) {
+      console.error('Save fundraiser error:', error);
+      toast.error(error.response?.data?.error || 'Unable to save fundraiser details.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoteFundraiser = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove official fundraiser status from ${name}?`)) return;
+    try {
+      await axiosInstance.delete(`/volunteers/fundraisers/${id}/demote`);
+      toast.success(`Fundraiser privileges removed for ${name}`);
+      fetchFundraisers();
+      fetchVolunteers();
+      window.dispatchEvent(new Event('team-updated'));
+    } catch (error) {
+      toast.error('Unable to demote fundraiser.');
+    }
+  };
+
+  const handleSyncQrPayments = async (fundraiserId, fundraiserName) => {
+    try {
+      toast.loading(`Syncing QR payments for ${fundraiserName}...`, { id: 'sync-qr' });
+      const response = await axiosInstance.post(`/payment/sync-qr/${fundraiserId}`);
+      toast.success(response.data.message || 'QR Payments synced!', { id: 'sync-qr' });
+      fetchFundraisers();
+    } catch (error) {
+      console.error('Sync QR error:', error);
+      toast.error(error.response?.data?.error || 'Failed to sync QR payments', { id: 'sync-qr' });
+    }
+  };
+
+  const handleToggleHomeVisibility = async (targetVolunteer) => {
+    try {
+      const response = await axiosInstance.put(`/volunteers/${targetVolunteer._id}/toggle-home`);
+      toast.success(response.data.message || 'Updated Home Page visibility!');
+      fetchVolunteers();
+      fetchFundraisers();
+      window.dispatchEvent(new Event('team-updated'));
+    } catch (error) {
+      console.error('Toggle home error:', error);
+      toast.error('Failed to toggle Home Page visibility.');
+    }
+  };
+
+  const handleAutoGenerateRazorpayQr = async (targetFundraiser) => {
+    const target = targetFundraiser || editingFundraiser;
+    if (!target?.name?.trim()) {
+      toast.error('Please enter the Fundraiser full name first.');
+      return;
+    }
+
+    setIsGeneratingQr(true);
+    try {
+      const res = await axiosInstance.post('/volunteers/fundraisers/generate-razorpay-qr', {
+        name: target.name,
+        fundraiserCode: target.fundraiserCode,
+        volunteerId: target.volunteerId || target._id
+      });
+
+      if (res.data.success) {
+        if (targetFundraiser) {
+          // Updating directly from grid card
+          await axiosInstance.put(`/volunteers/fundraisers/${targetFundraiser._id}`, {
+            razorpayQrId: res.data.razorpayQrId,
+            directPaymentQrImage: res.data.directPaymentQrImage,
+            fundraiserCode: res.data.fundraiserCode,
+            upiId: res.data.upiId
+          });
+        } else {
+          // In modal form
+          setEditingFundraiser(prev => ({
+            ...prev,
+            razorpayQrId: res.data.razorpayQrId,
+            directPaymentQrImage: res.data.directPaymentQrImage,
+            upiId: res.data.upiId || prev?.upiId
+          }));
+        }
+        toast.success(`Razorpay QR & Unique UPI ID generated (${res.data.upiId || res.data.razorpayQrId})`);
+        fetchFundraisers();
+        fetchVolunteers();
+      }
+    } catch (error) {
+      console.error('Failed to generate Razorpay QR:', error);
+      const msg = error.response?.data?.error || error.message || 'Failed to auto-generate Razorpay QR Code';
+      toast.error(msg);
+    } finally {
+      setIsGeneratingQr(false);
     }
   };
 
@@ -685,8 +849,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const sidebarItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
     { id: 'campaigns', icon: Sparkles, label: 'Campaign Popup' },
-    { id: 'blog', icon: FileText, label: 'Blog Posts' },
+    { id: 'fundraisers', icon: HeartHandshake, label: 'Fundraisers' },
     { id: 'volunteers', icon: UserCheck, label: 'Volunteers' },
+    { id: 'blog', icon: FileText, label: 'Blog Posts' },
     { id: 'users', icon: Users, label: 'Users' },
     { id: 'projects', icon: FolderKanban, label: 'Projects' },
     { id: 'gallery', icon: ImageIcon, label: 'Gallery' },
@@ -1064,6 +1229,319 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     </div>
   );
 
+  const renderFundraisers = () => {
+    const filteredFundraisers = fundraisers.filter(f => {
+      const term = fundraiserSearchTerm.toLowerCase();
+      return (
+        (f.name || '').toLowerCase().includes(term) ||
+        (f.fundraiserCode || '').toLowerCase().includes(term) ||
+        (f.volunteerCode || '').toLowerCase().includes(term) ||
+        (f.email || '').toLowerCase().includes(term) ||
+        (f.razorpayQrId || '').toLowerCase().includes(term)
+      );
+    });
+
+    const totalRaisedAllFundraisers = fundraisers.reduce((sum, f) => sum + (f.totalRaised || 0), 0);
+    const configuredQrCount = fundraisers.filter(f => f.razorpayQrId || f.directPaymentQrImage).length;
+
+    return (
+      <div className="space-y-6">
+        {/* Top Header & Action */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <span>Fundraisers & Dual QR Management</span>
+              <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-full border border-amber-300/50">
+                {fundraisers.length} Active
+              </span>
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Authorized fundraisers with personal Razorpay Direct UPI QR codes & Live Transparency Ledgers.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-56">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search by name or code..."
+                value={fundraiserSearchTerm}
+                onChange={(e) => setFundraiserSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                setEditingFundraiser({
+                  name: '',
+                  email: '',
+                  phone: '',
+                  designation: 'Fundraiser Lead',
+                  bio: '',
+                  image: '',
+                  razorpayQrId: '',
+                  directPaymentQrImage: '',
+                  fundraiserGoal: 50000
+                });
+                setShowFundraiserModal(true);
+              }}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Fundraiser</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick KPI Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Fundraisers</span>
+            <div className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{fundraisers.length}</div>
+            <span className="text-[10px] text-zinc-400">Authorized campaign leaders</span>
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Funds Raised</span>
+            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+              ₹{totalRaisedAllFundraisers.toLocaleString()}
+            </div>
+            <span className="text-[10px] text-zinc-400">Across all fundraiser campaigns</span>
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Razorpay QRs Linked</span>
+            <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+              {configuredQrCount} / {fundraisers.length}
+            </div>
+            <span className="text-[10px] text-zinc-400">Direct webhook-enabled QRs</span>
+          </div>
+        </div>
+
+        {/* Fundraisers Grid */}
+        {filteredFundraisers.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredFundraisers.map((fundraiser) => {
+              const code = fundraiser.fundraiserCode || fundraiser.volunteerCode;
+              const hasRazorpayQr = Boolean(fundraiser.razorpayQrId || fundraiser.directPaymentQrImage);
+
+              return (
+                <div
+                  key={fundraiser._id}
+                  className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-sm flex flex-col justify-between relative group hover:border-amber-400/60 transition-all"
+                >
+                  <div>
+                    <div className="flex items-start gap-3.5 mb-3">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-amber-400 shadow-sm shrink-0">
+                        {fundraiser.image?.startsWith('http') ? (
+                          <img src={fundraiser.image} alt={fundraiser.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="font-mono text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900/50 truncate">
+                            {code}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-zinc-900 dark:text-white truncate">
+                          {fundraiser.name}
+                        </h4>
+                        <div className="mt-1">
+                          <select
+                            value={fundraiser.designation || 'Fundraiser Lead'}
+                            onChange={async (e) => {
+                              const newDesig = e.target.value;
+                              try {
+                                await axiosInstance.put(`/volunteers/fundraisers/${fundraiser._id}`, {
+                                  ...fundraiser,
+                                  designation: newDesig
+                                });
+                                toast.success(`Updated designation for ${fundraiser.name}`);
+                                fetchFundraisers();
+                                fetchVolunteers();
+                                window.dispatchEvent(new Event('team-updated'));
+                              } catch (err) {
+                                toast.error('Failed to update designation');
+                              }
+                            }}
+                            className="w-full text-[10px] font-semibold bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-md px-1.5 py-0.5 text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <option value="Fundraiser Lead">Fundraiser Lead</option>
+                            <option value="Campaign Manager">Campaign Manager</option>
+                            <option value="Social Welfare Ambassador">Social Welfare Ambassador</option>
+                            <option value="Community Outreach Lead">Community Outreach Lead</option>
+                            <option value="Volunteer Fundraiser">Volunteer Fundraiser</option>
+                            <option value="Senior Fundraiser">Senior Fundraiser</option>
+                            <option value="Youth Ambassador">Youth Ambassador</option>
+                            <option value="Executive Trustee / Director">Executive Trustee / Director</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Performance & Status Pills */}
+                    <div className="space-y-2 mb-4 bg-gray-50 dark:bg-zinc-800/60 p-3 rounded-xl border border-gray-100 dark:border-zinc-800">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-500 font-medium">Total Raised:</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                          ₹{(fundraiser.totalRaised || 0).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-500 font-medium">Razorpay Direct QR:</span>
+                        {hasRazorpayQr ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{fundraiser.razorpayQrId || 'QR Image Active'}</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAutoGenerateRazorpayQr(fundraiser);
+                            }}
+                            disabled={isGeneratingQr}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/70 px-2.5 py-0.5 rounded-full cursor-pointer transition-colors border border-amber-300/50"
+                            title="Auto-Generate Razorpay QR via API & Upload to Cloudinary"
+                          >
+                            <Zap className="w-2.5 h-2.5 fill-amber-500" />
+                            <span>{isGeneratingQr ? 'Generating...' : '⚡ Generate QR'}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {fundraiser.upiId && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-500 font-medium">Unique UPI ID:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(fundraiser.upiId);
+                              toast.success('UPI ID copied!');
+                            }}
+                            className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-zinc-800 dark:text-zinc-200 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 px-2 py-0.5 rounded-full border border-gray-200 dark:border-zinc-700 cursor-pointer"
+                            title="Click to copy UPI ID"
+                          >
+                            <span>{fundraiser.upiId}</span>
+                            <Copy className="w-2.5 h-2.5 text-zinc-400" />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-200/50 dark:border-zinc-700/50">
+                        <span className="text-zinc-500 font-medium">Home Page:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHomeVisibility(fundraiser)}
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition-colors border ${
+                            fundraiser.showOnHome !== false
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300/50'
+                              : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 border-gray-200'
+                          }`}
+                          title={fundraiser.showOnHome !== false ? "Visible on Home Page (Click to hide)" : "Hidden from Home Page (Click to show)"}
+                        >
+                          {fundraiser.showOnHome !== false ? <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <EyeOff className="w-3 h-3 text-gray-400" />}
+                          <span>{fundraiser.showOnHome !== false ? 'Visible' : 'Hidden'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800 gap-2">
+                    <button
+                      onClick={() => setDualQrFundraiser(fundraiser)}
+                      className="flex-1 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-amber-200 dark:border-amber-900/50"
+                      title="View Dual QRs & ID Badge"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Dual QRs</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleSyncQrPayments(fundraiser._id, fundraiser.name)}
+                      className="bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900/50"
+                      title="Fetch & sync latest QR payments straight from Razorpay API"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Sync QR</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditingFundraiser(fundraiser);
+                        setShowFundraiserModal(true);
+                      }}
+                      className="p-2 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer transition-colors"
+                      title="Edit Fundraiser & QR Setup"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => navigate(`/volunteer/dashboard/${code}`)}
+                      className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl cursor-pointer transition-colors"
+                      title="Open Live Ledger"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleDemoteFundraiser(fundraiser._id, fundraiser.name)}
+                      className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl cursor-pointer transition-colors"
+                      title="Remove Fundraiser Status"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center mx-auto mb-3">
+              <HeartHandshake className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-bold text-zinc-900 dark:text-white mb-1">No Fundraisers Found</h4>
+            <p className="text-xs text-zinc-500 mb-5">
+              {fundraiserSearchTerm 
+                ? 'No matching fundraiser found for your search query.' 
+                : 'You have not authorized any fundraisers yet. Add a new fundraiser or promote an existing volunteer.'}
+            </p>
+            <button
+              onClick={() => {
+                setEditingFundraiser({
+                  name: '',
+                  email: '',
+                  phone: '',
+                  designation: 'Fundraiser Lead',
+                  bio: '',
+                  image: '',
+                  razorpayQrId: '',
+                  directPaymentQrImage: '',
+                  fundraiserGoal: 50000
+                });
+                setShowFundraiserModal(true);
+              }}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add First Fundraiser</span>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderVolunteers = () => (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -1100,46 +1578,103 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       {volunteerSubTab === 'approved' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {volunteers.map((volunteer) => (
-            <div key={volunteer._id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 text-center relative group">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
-                {volunteer.image?.startsWith('http') ? (
-                  <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
+            <div key={volunteer._id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 text-center relative group flex flex-col justify-between">
+              <div>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2.5 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-amber-400/80 shadow-xs relative">
+                  {volunteer.image?.startsWith('http') ? (
+                    <img src={volunteer.image} alt={volunteer.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
+                  )}
+                </div>
+
+                <div className="font-mono text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md inline-block mb-1">
+                  {volunteer.volunteerCode || `BRF-VOL-${volunteer._id.slice(-4).toUpperCase()}`}
+                </div>
+
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{volunteer.name}</h4>
+                
+                {/* Fundraiser status indicator */}
+                {volunteer.isFundraiser && (
+                  <div className="my-1 inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-300/50">
+                    <span>Official Fundraiser ★</span>
+                  </div>
                 )}
-              </div>
-              <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{volunteer.name}</h4>
-              
-              {/* Quick Role Change Selector */}
-              <div className="my-2">
-                <select
-                  value={volunteer.role || 'Volunteer'}
-                  onChange={async (e) => {
-                    const newRole = e.target.value;
-                    const isGeneric = !volunteer.designation || ['Volunteer', 'Intern', 'Team Leader'].includes(volunteer.designation);
-                    const newDesignation = isGeneric ? newRole : volunteer.designation;
-                    try {
-                      await axiosInstance.put(`/volunteers/${volunteer._id}`, {
-                        ...volunteer,
-                        role: newRole,
-                        designation: newDesignation
-                      });
-                      toast.success(`Updated ${volunteer.name}'s role to ${newRole}`);
-                      fetchVolunteers();
-                      window.dispatchEvent(new Event('team-updated'));
-                    } catch (err) {
-                      toast.error('Failed to update volunteer role');
-                    }
-                  }}
-                  className="w-full text-[11px] font-semibold bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-lg px-2 py-1 text-zinc-900 dark:text-white cursor-pointer"
+
+                {/* Quick Role Change Selector */}
+                <div className="my-2">
+                  <select
+                    value={volunteer.role || 'Volunteer'}
+                    onChange={async (e) => {
+                      const newRole = e.target.value;
+                      const isGeneric = !volunteer.designation || ['Volunteer', 'Intern', 'Team Leader'].includes(volunteer.designation);
+                      const newDesignation = isGeneric ? newRole : volunteer.designation;
+                      try {
+                        await axiosInstance.put(`/volunteers/${volunteer._id}`, {
+                          ...volunteer,
+                          role: newRole,
+                          designation: newDesignation
+                        });
+                        toast.success(`Updated ${volunteer.name}'s role to ${newRole}`);
+                        fetchVolunteers();
+                        window.dispatchEvent(new Event('team-updated'));
+                      } catch (err) {
+                        toast.error('Failed to update volunteer role');
+                      }
+                    }}
+                    className="w-full text-[11px] font-semibold bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-lg px-2 py-1 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value="Volunteer">Volunteer</option>
+                    <option value="Intern">Intern</option>
+                    <option value="Team Leader">⭐ Team Leader</option>
+                  </select>
+                </div>
+                {/* Home Page Visibility Toggle Button */}
+                <button
+                  onClick={() => handleToggleHomeVisibility(volunteer)}
+                  className={`w-full my-1 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
+                    volunteer.showOnHome !== false
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-100'
+                      : 'bg-gray-100 dark:bg-zinc-800/80 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-700 hover:bg-gray-200'
+                  }`}
+                  title={volunteer.showOnHome !== false ? "Visible on Home Page (Click to hide)" : "Hidden from Home Page (Click to show)"}
                 >
-                  <option value="Volunteer">Volunteer</option>
-                  <option value="Intern">Intern</option>
-                  <option value="Team Leader">⭐ Team Leader</option>
-                </select>
+                  {volunteer.showOnHome !== false ? (
+                    <>
+                      <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>Visible on Home Page</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3 h-3 text-gray-500" />
+                      <span>Hidden from Home Page</span>
+                    </>
+                  )}
+                </button>
               </div>
               
-              <div className="flex justify-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
+              <div className="flex justify-center items-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
+                <button 
+                  onClick={() => {
+                    setEditingFundraiser({
+                      volunteerId: volunteer._id,
+                      name: volunteer.name,
+                      email: volunteer.email || '',
+                      phone: volunteer.phone || '',
+                      designation: volunteer.designation || 'Fundraiser Lead',
+                      image: volunteer.image,
+                      bio: volunteer.bio || '',
+                      fundraiserGoal: 50000,
+                      razorpayQrId: volunteer.razorpayQrId || '',
+                      directPaymentQrImage: volunteer.directPaymentQrImage || ''
+                    });
+                    setShowFundraiserModal(true);
+                  }}
+                  className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg cursor-pointer transition-colors"
+                  title="Promote to Official Fundraiser"
+                >
+                  <HeartHandshake className="w-3.5 h-3.5" />
+                </button>
                 <button 
                   onClick={() => { setEditingVolunteer(volunteer); setShowVolunteerModal(true); }}
                   className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
@@ -1513,8 +2048,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         <div className="flex-1 min-w-0">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'campaigns' && renderCampaigns()}
-          {activeTab === 'users' && renderUsers()}
+          {activeTab === 'fundraisers' && renderFundraisers()}
           {activeTab === 'volunteers' && renderVolunteers()}
+          {activeTab === 'users' && renderUsers()}
           {activeTab === 'projects' && renderProjects()}
           {activeTab === 'gallery' && renderGallery()}
           {activeTab === 'blog' && renderBlog()} 
@@ -1690,6 +2226,626 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Save Volunteer</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Fundraiser Add/Edit Modal */}
+      {showFundraiserModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-zinc-800">
+              <div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                  {editingFundraiser?._id ? 'Edit Official Fundraiser' : 'Add / Promote Fundraiser'}
+                </h3>
+                <p className="text-xs text-zinc-500">Assign Razorpay Direct QR code and fundraising permissions</p>
+              </div>
+              <button 
+                onClick={() => { setShowFundraiserModal(false); setEditingFundraiser(null); }}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleFundraiserSubmit} className="space-y-4">
+              {/* Option to link existing volunteer */}
+              {!editingFundraiser?._id && (
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Select From Approved Volunteers (Optional)
+                  </label>
+                  <select
+                    value={editingFundraiser?.volunteerId || ''}
+                    onChange={(e) => {
+                      const selectedVolId = e.target.value;
+                      if (!selectedVolId) {
+                        setEditingFundraiser({
+                          ...editingFundraiser,
+                          volunteerId: '',
+                          name: '',
+                          email: '',
+                          phone: '',
+                          designation: 'Fundraiser Lead',
+                          image: ''
+                        });
+                        return;
+                      }
+                      const vol = volunteers.find(v => v._id === selectedVolId);
+                      if (vol) {
+                        setEditingFundraiser({
+                          ...editingFundraiser,
+                          volunteerId: vol._id,
+                          name: vol.name,
+                          email: vol.email || '',
+                          phone: vol.phone || '',
+                          designation: vol.designation || 'Fundraiser Lead',
+                          image: vol.image || '',
+                          bio: vol.bio || '',
+                          razorpayQrId: vol.razorpayQrId || '',
+                          directPaymentQrImage: vol.directPaymentQrImage || ''
+                        });
+                      }
+                    }}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value="">-- Create Fresh Fundraiser or Select Volunteer --</option>
+                    {volunteers.map(v => (
+                      <option key={v._id} value={v._id}>
+                        {v.name} ({v.volunteerCode || v.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={editingFundraiser?.name || ''}
+                    onChange={(e) => setEditingFundraiser({...editingFundraiser, name: e.target.value})}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Designation / Title
+                  </label>
+                  <select
+                    value={
+                      ['Fundraiser Lead', 'Campaign Manager', 'Social Welfare Ambassador', 'Community Outreach Lead', 'Volunteer Fundraiser', 'Senior Fundraiser', 'Youth Ambassador', 'Executive Trustee / Director'].includes(editingFundraiser?.designation)
+                        ? editingFundraiser.designation
+                        : (editingFundraiser?.designation ? 'Other' : 'Fundraiser Lead')
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setEditingFundraiser({ ...editingFundraiser, designation: 'Custom Title' });
+                      } else {
+                        setEditingFundraiser({ ...editingFundraiser, designation: val });
+                      }
+                    }}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white cursor-pointer font-medium"
+                    required
+                  >
+                    <option value="Fundraiser Lead">Fundraiser Lead</option>
+                    <option value="Campaign Manager">Campaign Manager</option>
+                    <option value="Social Welfare Ambassador">Social Welfare Ambassador</option>
+                    <option value="Community Outreach Lead">Community Outreach Lead</option>
+                    <option value="Volunteer Fundraiser">Volunteer Fundraiser</option>
+                    <option value="Senior Fundraiser">Senior Fundraiser</option>
+                    <option value="Youth Ambassador">Youth Ambassador</option>
+                    <option value="Executive Trustee / Director">Executive Trustee / Director</option>
+                    <option value="Other">✏️ Other / Custom Title...</option>
+                  </select>
+
+                  {/* If custom is selected or typed */}
+                  {!['Fundraiser Lead', 'Campaign Manager', 'Social Welfare Ambassador', 'Community Outreach Lead', 'Volunteer Fundraiser', 'Senior Fundraiser', 'Youth Ambassador', 'Executive Trustee / Director'].includes(editingFundraiser?.designation) && (
+                    <input
+                      type="text"
+                      placeholder="Enter custom title..."
+                      value={editingFundraiser?.designation === 'Custom Title' ? '' : (editingFundraiser?.designation || '')}
+                      onChange={(e) => setEditingFundraiser({ ...editingFundraiser, designation: e.target.value })}
+                      className="w-full mt-1.5 bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700/80 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-white"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={editingFundraiser?.email || ''}
+                    onChange={(e) => setEditingFundraiser({...editingFundraiser, email: e.target.value})}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={editingFundraiser?.phone || ''}
+                    onChange={(e) => setEditingFundraiser({...editingFundraiser, phone: e.target.value})}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Fundraising Target Goal (₹)</label>
+                <input
+                  type="number"
+                  placeholder="Target Amount (e.g. 50000)"
+                  value={editingFundraiser?.fundraiserGoal || ''}
+                  onChange={(e) => setEditingFundraiser({...editingFundraiser, fundraiserGoal: e.target.value})}
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              {/* Razorpay QR Integration Section */}
+              <div className="bg-amber-50/70 dark:bg-amber-950/40 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/50 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
+                    <QrCode className="w-4 h-4" />
+                    <span>Razorpay Direct UPI QR Configuration</span>
+                  </div>
+                  <span className="text-[9px] font-mono bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded font-bold">
+                    Real-Time Webhook
+                  </span>
+                </div>
+
+                {/* 1-Click Auto Generator Button */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-amber-300/80 dark:border-amber-900/60 shadow-xs">
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>1-Click Auto-Generate with Razorpay API</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      Calls Razorpay API, generates unique UPI QR ID, and automatically saves to Cloudinary.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAutoGenerateRazorpayQr()}
+                    disabled={isGeneratingQr || !editingFundraiser?.name?.trim()}
+                    className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-zinc-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0"
+                  >
+                    {isGeneratingQr ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 fill-zinc-950" />
+                        <span>{editingFundraiser?.razorpayQrId ? 'Regenerate QR' : 'Generate QR Now'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Status / Cloudinary Preview */}
+                {editingFundraiser?.directPaymentQrImage && (
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900/50">
+                    <img 
+                      src={editingFundraiser.directPaymentQrImage} 
+                      alt="Generated Direct UPI QR" 
+                      className="w-16 h-16 rounded-lg bg-white p-1 object-contain border border-gray-200 shadow-xs shrink-0" 
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Cloudinary QR Ready & Linked</span>
+                      </div>
+                      <div className="font-mono text-[10px] text-zinc-600 dark:text-zinc-400 truncate mt-0.5">
+                        ID: {editingFundraiser.razorpayQrId || 'Auto-generated'}
+                      </div>
+                      <a 
+                        href={editingFundraiser.directPaymentQrImage} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 underline font-semibold mt-0.5 inline-block"
+                      >
+                        View Full Image
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual Override Fields */}
+                <div className="pt-2 border-t border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                  <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
+                    <span>Or Custom / Manual Override (Optional)</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Razorpay QR Code ID (e.g. qr_O7xXYZ123456)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="qr_..."
+                      value={editingFundraiser?.razorpayQrId || ''}
+                      onChange={(e) => setEditingFundraiser({...editingFundraiser, razorpayQrId: e.target.value})}
+                      className="w-full bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono text-zinc-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                        Unique UPI ID / VPA
+                      </label>
+                      {editingFundraiser?.upiId?.trim() ? (
+                        /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(editingFundraiser.upiId.trim()) ? (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900/50">
+                            ✓ Valid UPI Format
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-900/50">
+                            ✕ Invalid Format (Missing @bank)
+                          </span>
+                        )
+                      ) : null}
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. blackrose.fundraiser@razorpay or 9876543210@paytm"
+                      value={editingFundraiser?.upiId || ''}
+                      onChange={(e) => setEditingFundraiser({...editingFundraiser, upiId: e.target.value})}
+                      className={`w-full bg-white dark:bg-zinc-900 border rounded-xl px-3 py-2 text-xs font-mono text-zinc-900 dark:text-white ${
+                        editingFundraiser?.upiId?.trim() && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(editingFundraiser.upiId.trim())
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300 dark:border-zinc-700'
+                      }`}
+                    />
+
+                    {editingFundraiser?.upiId?.trim() && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(editingFundraiser.upiId.trim()) && (
+                      <p className="text-[10px] font-semibold text-red-500 mt-1">
+                        ⚠️ Must follow <code>handle@bank</code> format (e.g. <code>ngo@icici</code> or <code>9876543210@paytm</code>). Invalid UPI IDs cannot be saved.
+                      </p>
+                    )}
+
+                    {/* Quick Suggestion Chips */}
+                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-zinc-400 font-medium">Suggestions:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = editingFundraiser?.fundraiserCode || 'fr';
+                          setEditingFundraiser({ ...editingFundraiser, upiId: `brf.${code.toLowerCase()}@razorpay` });
+                        }}
+                        className="text-[9px] font-mono font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 cursor-pointer"
+                      >
+                        + brf.{editingFundraiser?.fundraiserCode ? editingFundraiser.fundraiserCode.toLowerCase() : 'code'}@razorpay
+                      </button>
+
+                      {editingFundraiser?.name && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nameHandle = editingFundraiser.name.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.');
+                            setEditingFundraiser({ ...editingFundraiser, upiId: `${nameHandle}@okaxis` });
+                          }}
+                          className="text-[9px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-100 cursor-pointer"
+                        >
+                          + {editingFundraiser.name.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.')}@okaxis
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Upload Custom QR Image to Cloudinary
+                    </label>
+                    <ImageUpload
+                      currentImage={editingFundraiser?.directPaymentQrImage}
+                      onUpload={(url) => setEditingFundraiser({ ...editingFundraiser, directPaymentQrImage: url })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Avatar / Photo</label>
+                <ImageUpload
+                  currentImage={editingFundraiser?.image}
+                  onUpload={(url) => setEditingFundraiser({ ...editingFundraiser, image: url })}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => { setShowFundraiserModal(false); setEditingFundraiser(null); }}
+                  className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer shadow-sm"
+                >
+                  {isLoading ? 'Saving...' : 'Save Fundraiser'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Fundraiser Credentials Created Modal Popup */}
+      {credentialsModalData && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-xs" onClick={() => setCredentialsModalData(null)}>
+          <div 
+            className="bg-white dark:bg-zinc-900 border border-amber-400/50 dark:border-amber-600/50 rounded-3xl p-6 sm:p-7 w-full max-w-md shadow-2xl relative text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setCredentialsModalData(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 rounded-2xl border border-amber-300/50">
+                <Key className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-white">
+                  {credentialsModalData.accountExists ? 'Fundraiser Profile Linked 👤' : 'Fundraiser Account Credentials 🔑'}
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  {credentialsModalData.accountExists 
+                    ? 'Linked to an existing user account.' 
+                    : 'New account credentials generated successfully.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Warning / Informational Alert Box */}
+            <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/60 p-3.5 rounded-2xl mb-5 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="font-extrabold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{credentialsModalData.accountExists ? 'EXISTING ACCOUNT DETECTED' : 'IMPORTANT PRIVACY NOTICE'}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed font-medium">
+                {credentialsModalData.accountExists ? (
+                  <>This email belongs to an existing user account. <strong>Their existing password and login credentials have been kept intact without modification.</strong></>
+                ) : (
+                  <>Please keep these login credentials private and safe. <strong>Once lost, they cannot be regained!</strong> Share them securely with the fundraiser.</>
+                )}
+              </p>
+            </div>
+
+            {/* Credentials Fields */}
+            <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700/80 rounded-2xl p-4 space-y-3 mb-5 font-mono text-xs">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-zinc-700">
+                <span className="text-zinc-500 font-sans text-[11px] font-semibold">Fundraiser Name:</span>
+                <span className="font-bold text-zinc-900 dark:text-white">{credentialsModalData.name}</span>
+              </div>
+
+              {credentialsModalData.fundraiserCode && (
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-zinc-700">
+                  <span className="text-zinc-500 font-sans text-[11px] font-semibold">Fundraiser ID:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">{credentialsModalData.fundraiserCode}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-zinc-700">
+                <span className="text-zinc-500 font-sans text-[11px] font-semibold">Login Email:</span>
+                <span className="font-bold text-zinc-900 dark:text-white select-all">{credentialsModalData.email}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 font-sans text-[11px] font-semibold">Password:</span>
+                {credentialsModalData.accountExists ? (
+                  <span className="font-sans text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300/50">
+                    [Existing User Password Retained]
+                  </span>
+                ) : (
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/50 select-all">
+                    {credentialsModalData.password}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const passInfo = credentialsModalData.accountExists ? '[Existing Password Retained]' : credentialsModalData.password;
+                  const text = `🌹 Black Rose Foundation Fundraiser Account Info\n\nName: ${credentialsModalData.name}\nFundraiser ID: ${credentialsModalData.fundraiserCode || '-'}\nLogin Email: ${credentialsModalData.email}\nPassword: ${passInfo}\n\nNote: ${credentialsModalData.accountExists ? 'Linked to existing user account. Existing password kept as it is.' : 'Please keep these login credentials private and safe. Once lost, they cannot be regained!'}`;
+                  navigator.clipboard.writeText(text);
+                  toast.success('Account info copied to clipboard!');
+                }}
+                className="flex-1 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy Details</span>
+              </button>
+
+              <button
+                onClick={() => setCredentialsModalData(null)}
+                className="px-4 py-2.5 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-full text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dual QR Code Display Modal */}
+      {dualQrFundraiser && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs" onClick={() => setDualQrFundraiser(null)}>
+          <div 
+            className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-7 w-full max-w-2xl shadow-2xl relative text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setDualQrFundraiser(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+              <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-sm shrink-0">
+                <img src={dualQrFundraiser.image} alt={dualQrFundraiser.name} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-mono text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 px-2.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/50">
+                    ID: {dualQrFundraiser.fundraiserCode || dualQrFundraiser.volunteerCode}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                    Official Fundraiser
+                  </span>
+                </div>
+                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-white">
+                  {dualQrFundraiser.name}
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  {dualQrFundraiser.designation || 'Fundraiser Lead'} • Total Raised: <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{(dualQrFundraiser.totalRaised || 0).toLocaleString()}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Dual QR Grid */}
+            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+              {/* QR 1: Direct Razorpay UPI Payment */}
+              <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700/80 rounded-2xl p-4 flex flex-col justify-between text-center">
+                <div>
+                  <div className="inline-block bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-2">
+                    QR 1 • Direct UPI Payment
+                  </div>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
+                    Razorpay Direct Payment QR
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 mb-3">
+                    Scan with PhonePe, GPay, Paytm, BHIM to transfer directly to NGO bank account
+                  </p>
+
+                  <div className="bg-white p-2 rounded-xl border border-gray-200 max-w-[180px] mx-auto shadow-xs mb-3">
+                    {dualQrFundraiser.directPaymentQrImage ? (
+                      <img src={dualQrFundraiser.directPaymentQrImage} alt="Direct UPI QR" className="w-full h-auto object-contain" />
+                    ) : (
+                      <div className="w-36 h-36 flex flex-col items-center justify-center text-zinc-400 text-[11px] p-2">
+                        <QrCode className="w-8 h-8 mb-1 text-zinc-300" />
+                        <span>No UPI QR uploaded yet</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  {dualQrFundraiser.directPaymentQrImage && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(dualQrFundraiser.directPaymentQrImage);
+                        toast.success('Direct QR image URL copied!');
+                      }}
+                      className="w-full bg-white dark:bg-zinc-800 hover:bg-gray-100 text-zinc-800 dark:text-zinc-200 border border-gray-200 dark:border-zinc-700 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy QR Link</span>
+                    </button>
+                  )}
+                  {dualQrFundraiser.razorpayQrId && (
+                    <div className="text-[10px] font-mono text-zinc-500">
+                      Razorpay ID: {dualQrFundraiser.razorpayQrId}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* QR 2: Personal Transparency Ledger */}
+              <div className="bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700/80 rounded-2xl p-4 flex flex-col justify-between text-center">
+                <div>
+                  <div className="inline-block bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-2">
+                    QR 2 • Transparency & Ledger
+                  </div>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
+                    Live Ledger & Web Portal QR
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 mb-3">
+                    Scan with Camera to view Live Audit Trail, 80G Tax Receipts & Cards
+                  </p>
+
+                  <div className="bg-white p-2 rounded-xl border border-gray-200 max-w-[180px] mx-auto shadow-xs mb-3">
+                    {dualQrFundraiser.ledgerQrCode ? (
+                      <img src={dualQrFundraiser.ledgerQrCode} alt="Ledger Portal QR" className="w-full h-auto object-contain" />
+                    ) : (
+                      <div className="w-36 h-36 flex items-center justify-center text-zinc-400 text-xs">
+                        Loading QR...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/v/${dualQrFundraiser.fundraiserCode || dualQrFundraiser.volunteerCode}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success('Public donation link copied!');
+                    }}
+                    className="w-full bg-white dark:bg-zinc-800 hover:bg-gray-100 text-zinc-800 dark:text-zinc-200 border border-gray-200 dark:border-zinc-700 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Web URL</span>
+                  </button>
+                  <div className="text-[10px] font-mono text-zinc-500">
+                    /v/{dualQrFundraiser.fundraiserCode || dualQrFundraiser.volunteerCode}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => {
+                  navigate(`/volunteer/dashboard/${dualQrFundraiser.fundraiserCode || dualQrFundraiser.volunteerCode}`);
+                  setDualQrFundraiser(null);
+                }}
+                className="flex-1 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Live Transparency Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate(`/v/${dualQrFundraiser.fundraiserCode || dualQrFundraiser.volunteerCode}`);
+                  setDualQrFundraiser(null);
+                }}
+                className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 text-zinc-900 dark:text-white py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors border border-gray-200 dark:border-zinc-700"
+              >
+                <span>Open Public Donation Page</span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}
