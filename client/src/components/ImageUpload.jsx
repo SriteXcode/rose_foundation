@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -7,6 +7,10 @@ const ImageUpload = ({ onUpload, currentImage }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage || '');
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setPreview(currentImage || '');
+  }, [currentImage]);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -111,6 +115,9 @@ const ImageUpload = ({ onUpload, currentImage }) => {
               src={preview} 
               alt="Preview" 
               className="w-full h-full object-contain rounded-md" 
+              onError={(e) => {
+                e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+              }}
             />
             {isUploading && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">

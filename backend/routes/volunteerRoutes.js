@@ -7,6 +7,7 @@ const upload = require('../middleware/uploadMiddleware'); // Import upload middl
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
 
 router.get('/', volunteerController.getVolunteers);
+router.get('/lookup', volunteerController.lookupVolunteer);
 router.get('/code/:code', volunteerController.getVolunteerByCode);
 router.get('/dashboard/:code', volunteerController.getVolunteerDashboard);
 router.get('/my-portal', authMiddleware, volunteerController.getMyVolunteerPortal);

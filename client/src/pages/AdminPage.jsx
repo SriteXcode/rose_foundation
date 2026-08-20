@@ -494,6 +494,41 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
   };
 
+  const handleAutoFetchVolunteerImage = async (searchQuery, targetState, setTargetState) => {
+    const query = (searchQuery || targetState?.email || targetState?.name || '').trim();
+    if (!query) {
+      toast.error('Please enter an email or name first to auto-fetch profile photo.');
+      return;
+    }
+
+    try {
+      toast.loading('Auto-fetching volunteer profile photo...', { id: 'fetch-img' });
+      const response = await axiosInstance.get(`/volunteers/lookup?search=${encodeURIComponent(query)}`);
+      if (response.data?.found && response.data.volunteer) {
+        const vol = response.data.volunteer;
+        setTargetState(prev => ({
+          ...prev,
+          image: vol.image || prev?.image,
+          name: prev?.name || vol.name,
+          email: prev?.email || vol.email,
+          phone: prev?.phone || vol.phone,
+          designation: prev?.designation || vol.designation,
+          upiId: prev?.upiId || vol.upiId,
+          volunteerId: prev?.volunteerId || vol._id
+        }));
+        toast.success(`Auto-fetched profile photo for ${vol.name}!`, { id: 'fetch-img' });
+      } else {
+        const fallbackAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(query)}`;
+        setTargetState(prev => ({ ...prev, image: fallbackAvatar }));
+        toast.success('Generated profile initials avatar!', { id: 'fetch-img' });
+      }
+    } catch (error) {
+      const fallbackAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(query)}`;
+      setTargetState(prev => ({ ...prev, image: fallbackAvatar }));
+      toast.success('Generated profile initials avatar!', { id: 'fetch-img' });
+    }
+  };
+
   const handleAutoGenerateRazorpayQr = async (targetFundraiser) => {
     const target = targetFundraiser || editingFundraiser;
     if (!target?.name?.trim()) {
@@ -2214,7 +2249,18 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Avatar Photo</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Avatar Photo</label>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoFetchVolunteerImage(editingVolunteer?.email || editingVolunteer?.name, editingVolunteer, setEditingVolunteer)}
+                    className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 px-2.5 py-0.5 rounded-full border border-amber-300/50 flex items-center gap-1 cursor-pointer"
+                    title="Auto-fetch profile photo from database or generate avatar"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>⚡ Auto-Fetch Photo</span>
+                  </button>
+                </div>
                 <ImageUpload 
                   currentImage={editingVolunteer?.image}
                   onUpload={(url) => setEditingVolunteer({ ...editingVolunteer, image: url })}
@@ -2297,6 +2343,41 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {/* Live Volunteer Profile Preview Box */}
+              {(editingFundraiser?.volunteerId || editingFundraiser?.image || editingFundraiser?.name) && (
+                <div className="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-xs">
+                  <div className="relative shrink-0">
+                    <img
+                      src={editingFundraiser.image || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(editingFundraiser.name || 'BRF')}`}
+                      alt={editingFundraiser.name || 'Volunteer Preview'}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-400 shadow-xs bg-white"
+                      onError={(e) => {
+                        e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(editingFundraiser.name || 'BRF')}`;
+                      }}
+                    />
+                    <span className="absolute -bottom-1 -right-1 bg-amber-500 text-zinc-950 p-0.5 rounded-full shadow-xs">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">
+                        {editingFundraiser.name || 'Selected Volunteer'}
+                      </h4>
+                      <span className="text-[9px] font-mono font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-300/50">
+                        Profile & Photo Ready
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 space-y-0.5 font-medium">
+                      {editingFundraiser.email && <div className="truncate">📧 {editingFundraiser.email}</div>}
+                      {editingFundraiser.phone && <div>📞 {editingFundraiser.phone}</div>}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2561,7 +2642,18 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Avatar / Photo</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Avatar / Photo</label>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoFetchVolunteerImage(editingFundraiser?.email || editingFundraiser?.name, editingFundraiser, setEditingFundraiser)}
+                    className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 px-2.5 py-0.5 rounded-full border border-amber-300/50 flex items-center gap-1 cursor-pointer"
+                    title="Auto-fetch profile photo from database or generate avatar"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>⚡ Auto-Fetch Photo</span>
+                  </button>
+                </div>
                 <ImageUpload
                   currentImage={editingFundraiser?.image}
                   onUpload={(url) => setEditingFundraiser({ ...editingFundraiser, image: url })}
