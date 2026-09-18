@@ -29,14 +29,45 @@ const BlogPostSchema = new mongoose.Schema({
     type: String,
     default: 'Admin'
   },
+  authorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  authorRole: {
+    type: String,
+    enum: ['admin', 'fundraiser', 'volunteer'],
+    default: 'admin'
+  },
+  volunteerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Volunteer'
+  },
+  volunteerCode: {
+    type: String,
+    index: true
+  },
+  volunteerName: {
+    type: String
+  },
+  volunteerImage: {
+    type: String
+  },
+  volunteerUpiId: {
+    type: String
+  },
+  showDonationCard: {
+    type: Boolean,
+    default: true
+  },
   tags: [{
     type: String,
     trim: true
   }],
   status: {
     type: String,
-    enum: ['draft', 'published'],
-    default: 'published'
+    enum: ['draft', 'pending', 'published', 'rejected'],
+    default: 'published',
+    index: true
   },
   createdAt: {
     type: Date,

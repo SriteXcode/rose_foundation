@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axiosInstance from '../utils/api';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 
-const ImageUpload = ({ onUpload, currentImage }) => {
+const ImageUpload = ({ onUpload, onRemove, currentImage }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage || '');
@@ -81,7 +82,7 @@ const ImageUpload = ({ onUpload, currentImage }) => {
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
-      const msg = error.response?.data?.error || 'Upload failed';
+      const msg = error.response?.data?.error || error.response?.data?.message || error.message || 'Upload failed';
       toast.error(msg);
       setPreview(currentImage || '');
     } finally {
@@ -120,12 +121,29 @@ const ImageUpload = ({ onUpload, currentImage }) => {
               }}
             />
             {isUploading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md z-20">
                 <span className="text-white font-semibold">Uploading...</span>
               </div>
             )}
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Click or Drag to Replace
+            <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+              <span className="bg-black/60 backdrop-blur-xs text-white text-xs px-2.5 py-1 rounded-md font-medium shadow-xs">
+                Click or Drag to Replace
+              </span>
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreview('');
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                    onRemove();
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-md transition-colors cursor-pointer shadow-xs flex items-center justify-center"
+                  title="Remove this photo"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         ) : (

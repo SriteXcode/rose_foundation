@@ -55,6 +55,7 @@ const CampaignsPage = lazy(() => import('./pages/CampaignsPage'));
 const InvoicePage = lazy(() => import('./pages/InvoicePage'));
 const VolunteerDashboardPage = lazy(() => import('./pages/VolunteerDashboardPage'));
 const VolunteerDonationPage = lazy(() => import('./pages/VolunteerDonationPage'));
+const WriteFieldStoryPage = lazy(() => import('./pages/WriteFieldStoryPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const AppContent = () => {
@@ -192,6 +193,8 @@ const AppContent = () => {
           <Route path="/campaigns" element={<CampaignsPage scrollToSection={scrollToSection} />} />
           <Route path="/volunteer/dashboard" element={<VolunteerDashboardPage />} />
           <Route path="/volunteer/dashboard/:code" element={<VolunteerDashboardPage />} />
+          <Route path="/volunteer/story/new" element={<WriteFieldStoryPage />} />
+          <Route path="/volunteer/story/edit/:id" element={<WriteFieldStoryPage />} />
           <Route path="/v/:volunteerCode" element={<VolunteerDonationPage />} />
           <Route path="/donate" element={<VolunteerDonationPage />} />
           <Route path="/blog" element={<BlogPage />} />

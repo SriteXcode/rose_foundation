@@ -65,6 +65,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [applications, setApplications] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
+  const [blogStatusFilter, setBlogStatusFilter] = useState('all');
+  const [blogCounts, setBlogCounts] = useState({ total: 0, pending: 0, published: 0, draft: 0, rejected: 0 });
+  const [blogSearchTerm, setBlogSearchTerm] = useState('');
   
   // Newsletter Progress State
   const [newsletterProgress, setNewsletterProgress] = useState({ isSending: false, total: 0, current: 0 });
@@ -121,6 +124,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     if (authLoading) return;
     if (!user || user.role !== 'admin') return;
     
+    // Fetch blog post counts for sidebar indicator
+    fetchBlogPosts();
+
     if (activeTab === 'dashboard') {
       loadAdminData();
     }
@@ -200,10 +206,19 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     }
   };
 
-  const fetchBlogPosts = async () => {
+  const fetchBlogPosts = async (filterOverride, searchOverride) => {
     try {
-      const response = await axiosInstance.get('/blog?limit=1000');
+      const statusToUse = filterOverride !== undefined ? filterOverride : blogStatusFilter;
+      const searchToUse = searchOverride !== undefined ? searchOverride : blogSearchTerm;
+      const params = new URLSearchParams();
+      if (statusToUse && statusToUse !== 'all') params.append('status', statusToUse);
+      if (searchToUse) params.append('search', searchToUse);
+
+      const response = await axiosInstance.get(`/blog/admin/all?${params.toString()}`);
       setBlogPosts(response.data.posts || []);
+      if (response.data.counts) {
+        setBlogCounts(response.data.counts);
+      }
     } catch (error) {
       console.error('Failed to fetch blog posts', error);
     }
@@ -664,6 +679,29 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       toast.error('Unable to save post.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleApprovePost = async (id) => {
+    try {
+      await axiosInstance.put(`/blog/${id}/approve`);
+      toast.success('Article approved and published live!');
+      fetchBlogPosts();
+    } catch (error) {
+      console.error('Approve post error:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve article');
+    }
+  };
+
+  const handleRejectPost = async (id) => {
+    if (!window.confirm('Reject this article submission? It will be marked as rejected.')) return;
+    try {
+      await axiosInstance.put(`/blog/${id}/reject`);
+      toast.success('Article marked as rejected.');
+      fetchBlogPosts();
+    } catch (error) {
+      console.error('Reject post error:', error);
+      toast.error(error.response?.data?.error || 'Failed to reject article');
     }
   };
 
@@ -1787,56 +1825,212 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   );
 
   const renderBlog = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
         <div>
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Blog Articles</h3>
-          <p className="text-xs text-zinc-500">Publish stories and ground updates</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-amber-300/50 dark:border-amber-800/60">
+              Editorial CMS & Review
+            </span>
+          </div>
+          <h3 className="text-xl font-extrabold text-zinc-900 dark:text-white">Blog Articles & Volunteer Field Stories</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Review volunteer submitted articles, approve for publication, or write official foundation stories.</p>
         </div>
         <button 
           onClick={() => { 
-            setEditingPost({ title: '', summary: '', content: '', coverImage: '', tags: '' }); 
+            setEditingPost({ title: '', summary: '', content: '', coverImage: '', tags: '', status: 'published', showDonationCard: true }); 
             setShowBlogModal(true); 
           }}
-          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+          className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
         >
-          <Plus className="w-3.5 h-3.5" /> New Article
+          <Plus className="w-4 h-4" /> New Article
         </button>
       </div>
 
-      <div className="space-y-3">
-        {blogPosts.map((post) => (
-          <div key={post._id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
-                 {post.coverImage ? (
-                   <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
-                 ) : (
-                   <div className="w-full h-full flex items-center justify-center text-base">📝</div>
-                 )}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-zinc-900 dark:text-white">{post.title}</h4>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{new Date(post.createdAt).toLocaleDateString()} • {post.summary?.substring(0, 70)}...</p>
-              </div>
-            </div>
+      {/* Filter Tabs & Search Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        {/* Status Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { id: 'all', label: 'All Articles', count: blogCounts.total },
+            { id: 'pending', label: 'Pending Review', count: blogCounts.pending, alert: blogCounts.pending > 0 },
+            { id: 'published', label: 'Published', count: blogCounts.published },
+            { id: 'draft', label: 'Drafts', count: blogCounts.draft },
+            { id: 'rejected', label: 'Rejected', count: blogCounts.rejected }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setBlogStatusFilter(tab.id);
+                fetchBlogPosts(tab.id, blogSearchTerm);
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                blogStatusFilter === tab.id
+                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-gray-200 dark:border-zinc-800 hover:bg-gray-50'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                tab.alert 
+                  ? 'bg-amber-500 text-zinc-950 font-extrabold animate-pulse'
+                  : blogStatusFilter === tab.id
+                    ? 'bg-zinc-700 text-white dark:bg-zinc-200 dark:text-zinc-900'
+                    : 'bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
 
-            <div className="flex items-center gap-2 self-end md:self-auto">
-              <button 
-                onClick={() => { setEditingPost(post); setShowBlogModal(true); }}
-                className="text-xs font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800"
-              >
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDeletePost(post._id)}
-                className="text-xs font-semibold text-red-500 hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-red-100 dark:border-red-950 bg-red-50 dark:bg-red-950/30"
-              >
-                Delete
-              </button>
-            </div>
+        {/* Search */}
+        <div className="relative w-full md:w-64">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Search title, author..."
+            value={blogSearchTerm}
+            onChange={(e) => {
+              setBlogSearchTerm(e.target.value);
+              fetchBlogPosts(blogStatusFilter, e.target.value);
+            }}
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Articles List */}
+      <div className="space-y-3">
+        {blogPosts.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900 p-12 rounded-2xl border border-gray-200/80 dark:border-zinc-800 text-center">
+            <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">No articles found</p>
+            <p className="text-xs text-zinc-400 mt-1">There are no articles matching this filter status.</p>
           </div>
-        ))}
+        ) : (
+          blogPosts.map((post) => {
+            const isVolunteerStory = post.authorRole === 'volunteer' || post.authorRole === 'fundraiser' || post.volunteerName;
+            return (
+              <div 
+                key={post._id} 
+                className={`bg-white dark:bg-zinc-900 p-5 rounded-2xl border ${
+                  post.status === 'pending'
+                    ? 'border-amber-300 dark:border-amber-800/80 ring-1 ring-amber-300/50'
+                    : 'border-gray-200/80 dark:border-zinc-800'
+                } shadow-xs flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between`}
+              >
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                  <div className="w-20 h-16 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
+                    {post.coverImage ? (
+                      <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-base">📝</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      {/* Status badge */}
+                      {post.status === 'published' ? (
+                        <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                          Published
+                        </span>
+                      ) : post.status === 'pending' ? (
+                        <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Pending Review
+                        </span>
+                      ) : post.status === 'rejected' ? (
+                        <span className="bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                          Rejected
+                        </span>
+                      ) : (
+                        <span className="bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                          Draft
+                        </span>
+                      )}
+
+                      {/* Author badge */}
+                      {isVolunteerStory ? (
+                        <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                          Volunteer Story: {post.volunteerName || post.author} {post.volunteerCode ? `(${post.volunteerCode})` : ''}
+                        </span>
+                      ) : (
+                        <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                          Admin Article
+                        </span>
+                      )}
+
+                      {/* Donation Card indicator */}
+                      {post.showDonationCard !== false && isVolunteerStory && (
+                        <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold flex items-center gap-1">
+                          <Heart className="w-3 h-3 fill-current" /> Donation Card Active
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">{post.title}</h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1">
+                      {new Date(post.createdAt).toLocaleDateString()} • {post.summary}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap items-center gap-2 self-end lg:self-auto shrink-0">
+                  {/* If pending or rejected, show 1-click Approve */}
+                  {(post.status === 'pending' || post.status === 'rejected') && (
+                    <button 
+                      onClick={() => handleApprovePost(post._id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                      title="Approve and publish live to public blog"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Approve & Publish</span>
+                    </button>
+                  )}
+
+                  {/* If pending, show Reject */}
+                  {post.status === 'pending' && (
+                    <button 
+                      onClick={() => handleRejectPost(post._id)}
+                      className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-900 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                      title="Reject this submission"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>Reject</span>
+                    </button>
+                  )}
+
+                  {/* Preview link */}
+                  <a
+                    href={`/blog/${post.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Preview</span>
+                  </a>
+
+                  <button 
+                    onClick={() => { setEditingPost(post); setShowBlogModal(true); }}
+                    className="text-xs font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800"
+                  >
+                    Edit
+                  </button>
+                  
+                  <button 
+                    onClick={() => handleDeletePost(post._id)}
+                    className="text-xs font-semibold text-red-500 hover:underline cursor-pointer px-3 py-1.5 rounded-full border border-red-100 dark:border-red-950 bg-red-50 dark:bg-red-950/30"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -2066,14 +2260,21 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               <button
                 key={item.id}
                 onClick={() => handleTabChange(item.id)}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   isActive 
                     ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs' 
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <div className="flex items-center space-x-3">
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.label}</span>
+                </div>
+                {item.id === 'blog' && blogCounts.pending > 0 && (
+                  <span className="bg-amber-500 text-zinc-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs">
+                    {blogCounts.pending}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2098,8 +2299,30 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       {/* Blog Modal */}
       {showBlogModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-4xl shadow-2xl h-[90vh] overflow-y-auto">
-            <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingPost?._id ? 'Edit Article' : 'New Article'}</h3>
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 w-full max-w-4xl shadow-2xl h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-zinc-800 mb-4">
+              <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">
+                {editingPost?._id ? 'Edit Article' : 'New Article'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowBlogModal(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* If volunteer attribution exists */}
+            {(editingPost?.volunteerName || editingPost?.volunteerCode) && (
+              <div className="mb-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                <Heart className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>Fundraiser Attribution:</strong> Written by {editingPost.volunteerName} ({editingPost.volunteerCode})
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleBlogSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -2121,6 +2344,34 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                     className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" 
                     placeholder="Education, Health" 
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Article Status</label>
+                  <select
+                    value={editingPost?.status || 'published'}
+                    onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                  >
+                    <option value="published">Published (Live on Public Blog)</option>
+                    <option value="pending">Pending Review</option>
+                    <option value="draft">Draft (Hidden)</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    <input
+                      type="checkbox"
+                      checked={editingPost?.showDonationCard !== false}
+                      onChange={(e) => setEditingPost({ ...editingPost, showDonationCard: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <span>Embed Donation Card Widget</span>
+                  </label>
                 </div>
               </div>
 
@@ -2154,8 +2405,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
               </div>
 
               <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                <button type="button" onClick={() => setShowBlogModal(false)} className="flex-1 px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">Publish Article</button>
+                <button type="button" onClick={() => setShowBlogModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-zinc-700 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 px-4 py-2.5 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full text-xs font-semibold cursor-pointer">
+                  {editingPost?._id ? 'Save Changes' : 'Publish Article'}
+                </button>
               </div>
             </form>
           </div>
