@@ -1,6 +1,7 @@
 const Volunteer = require('../models/Volunteer');
 const Donation = require('../models/Donation');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -997,6 +998,32 @@ exports.getVolunteerByCode = async (req, res) => {
       await volunteer.save();
     }
 
+    // Check if requester is authorized to view the Transparency Ledger (Admin or this Fundraiser)
+    let canViewLedger = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        if (decoded && decoded.role === 'admin') {
+          canViewLedger = true;
+        } else if (decoded && volunteer.userId && volunteer.userId.toString() === decoded.id.toString()) {
+          canViewLedger = true;
+        } else if (decoded && decoded.id) {
+          const currentUser = await User.findById(decoded.id);
+          if (currentUser && volunteer.email && currentUser.email.toLowerCase().trim() === volunteer.email.toLowerCase().trim()) {
+            canViewLedger = true;
+            if (!volunteer.userId) {
+              volunteer.userId = currentUser._id;
+              await volunteer.save();
+            }
+          }
+        }
+      } catch (jwtErr) {
+        // Invalid or expired token, canViewLedger stays false
+      }
+    }
+
     res.json({
       _id: volunteer._id,
       name: volunteer.name,
@@ -1013,7 +1040,8 @@ exports.getVolunteerByCode = async (req, res) => {
       ledgerQrCode: volunteer.ledgerQrCode,
       fundraiserGoal: volunteer.fundraiserGoal,
       totalRaised: volunteer.totalRaised,
-      status: volunteer.status
+      status: volunteer.status,
+      canViewLedger
     });
   } catch (error) {
     console.error('Fetch volunteer by code error:', error);
@@ -1042,6 +1070,33 @@ exports.getVolunteerDashboard = async (req, res) => {
 
     if (!volunteer) {
       return res.status(404).json({ error: 'Fundraiser dashboard not found' });
+    }
+
+    // Access Control: Only the fundraiser owner or an administrator can view this transparency ledger
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required to view this transparency ledger.' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    let isOwner = false;
+
+    if (volunteer.userId && volunteer.userId.toString() === req.user.id.toString()) {
+      isOwner = true;
+    } else if (req.user.id) {
+      const currentUser = await User.findById(req.user.id);
+      if (currentUser && volunteer.email && currentUser.email.toLowerCase().trim() === volunteer.email.toLowerCase().trim()) {
+        isOwner = true;
+        if (!volunteer.userId) {
+          volunteer.userId = currentUser._id;
+          await volunteer.save();
+        }
+      }
+    }
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        error: 'Access denied. The Fundraiser Transparency Ledger can only be viewed by the authorized fundraiser or an administrator.' 
+      });
     }
 
     const activeCode = volunteer.fundraiserCode || volunteer.volunteerCode;

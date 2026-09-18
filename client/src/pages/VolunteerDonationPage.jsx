@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { handleDonation } from '../utils/apiHandlers';
 import { Heart, GraduationCap, Utensils, ShieldCheck, CheckCircle2, QrCode, ArrowLeft, Building2, User, Mail, Phone, ExternalLink } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 const PostDonationModal = lazy(() => import('../components/modals/PostDonationModal'));
@@ -13,6 +14,7 @@ const VolunteerDonationPage = () => {
   const { volunteerCode } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const code = volunteerCode || searchParams.get('volunteer');
 
@@ -21,11 +23,34 @@ const VolunteerDonationPage = () => {
   const [donationAmount, setDonationAmount] = useState('500');
   const [cause, setCause] = useState('Education');
   const [activeCampaigns, setActiveCampaigns] = useState([]);
-  const [donorForm, setDonorForm] = useState({
-    name: '',
-    email: '',
-    phone: ''
+  const [donorForm, setDonorForm] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return {
+          name: u.name || '',
+          email: u.email || '',
+          phone: u.phone || ''
+        };
+      }
+    } catch (e) {
+      // ignore error
+    }
+    return { name: '', email: '', phone: '' };
   });
+
+  // Autofill user details when logged-in user changes or loads
+  useEffect(() => {
+    if (user) {
+      setDonorForm(prev => ({
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || ''
+      }));
+    }
+  }, [user]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [donationData, setDonationData] = useState(null);
@@ -90,7 +115,7 @@ const VolunteerDonationPage = () => {
     handleDonation(
       amt,
       setIsLoading,
-      null, // user session
+      user, // user session
       (data) => {
         setDonationData(data);
         setShowSuccessModal(true);
@@ -116,11 +141,13 @@ const VolunteerDonationPage = () => {
             <span>Back to Home</span>
           </button>
 
-          {volunteer && (
+          {volunteer && volunteer.canViewLedger && (
             <button
               onClick={() => navigate(`/volunteer/dashboard/${activeCode}`)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+              title="Restricted Ledger (Visible to Fundraiser & Admin only)"
             >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
               <span>View Fundraiser's Transparency Ledger</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
@@ -251,9 +278,17 @@ const VolunteerDonationPage = () => {
 
               {/* Donor Details */}
               <div className="pt-2 border-t border-gray-100 dark:border-zinc-800 space-y-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
-                  Donor Information (For 80G Receipt)
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
+                    Donor Information (For 80G Receipt)
+                  </span>
+                  {user && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Autofilled from your account
+                    </span>
+                  )}
+                </div>
 
                 <div>
                   <input

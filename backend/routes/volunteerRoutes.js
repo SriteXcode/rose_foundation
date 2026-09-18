@@ -9,7 +9,7 @@ const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware')
 router.get('/', volunteerController.getVolunteers);
 router.get('/lookup', volunteerController.lookupVolunteer);
 router.get('/code/:code', volunteerController.getVolunteerByCode);
-router.get('/dashboard/:code', volunteerController.getVolunteerDashboard);
+router.get('/dashboard/:code', authMiddleware, volunteerController.getVolunteerDashboard);
 router.get('/my-portal', authMiddleware, volunteerController.getMyVolunteerPortal);
 router.post('/', authMiddleware, adminMiddleware, clearCache('volunteers'), volunteerController.addVolunteer);
 router.put('/:id', authMiddleware, adminMiddleware, clearCache('volunteers'), volunteerController.updateVolunteer);

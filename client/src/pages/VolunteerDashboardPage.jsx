@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
 import { 
   ShieldCheck, 
+  ShieldAlert,
   Download, 
   Share2, 
   Copy, 
@@ -24,6 +25,7 @@ import {
   CheckCircle2,
   Edit3
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { CLOUDINARY_LOGO_URL } from '../utils/constants';
 import localLogo from '../assets/logo.webp';
 
@@ -32,11 +34,13 @@ const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 const VolunteerDashboardPage = () => {
   const { code: routeCode } = useParams();
   const navigate = useNavigate();
+  const { user, authLoading, setShowLogin } = useAuth();
 
   const [volunteerCode, setVolunteerCode] = useState(routeCode || '');
   const [searchInput, setSearchInput] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
@@ -76,6 +80,7 @@ const VolunteerDashboardPage = () => {
   // Fetch dashboard data
   const fetchDashboard = async (codeToFetch) => {
     setLoading(true);
+    setAuthError(null);
     try {
       let endpoint = '';
       if (codeToFetch) {
@@ -103,8 +108,13 @@ const VolunteerDashboardPage = () => {
       setQrDataUrl(qrUrl);
     } catch (error) {
       console.error('Failed to fetch volunteer dashboard:', error);
-      const msg = error.response?.data?.error || 'Unable to load volunteer dashboard. Please check the volunteer code.';
-      toast.error(msg);
+      const status = error.response?.status;
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Unable to load volunteer dashboard.';
+      if (status === 401 || status === 403) {
+        setAuthError({ status, message: errorMsg });
+      } else {
+        toast.error(errorMsg);
+      }
       setDashboardData(null);
     } finally {
       setLoading(false);
@@ -112,8 +122,13 @@ const VolunteerDashboardPage = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     fetchDashboard(routeCode);
-  }, [routeCode]);
+  }, [routeCode, authLoading, user]);
 
   const handleSearchCode = (e) => {
     e.preventDefault();
@@ -214,32 +229,92 @@ const VolunteerDashboardPage = () => {
             <span>Back to Home</span>
           </button>
 
-          {/* Quick Lookup Bar */}
-          <form onSubmit={handleSearchCode} className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="text"
-                placeholder="Enter Volunteer Code (e.g. BRF-VOL-...)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer shadow-sm shrink-0"
-            >
-              Lookup
-            </button>
-          </form>
+          {/* Quick Lookup Bar: Administrators Only */}
+          {user?.role === 'admin' && (
+            <form onSubmit={handleSearchCode} className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Admin: Lookup Code (BRF-VOL-...)"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer shadow-sm shrink-0"
+              >
+                Lookup
+              </button>
+            </form>
+          )}
         </div>
 
-        {loading ? (
+        {authLoading || (loading && user) ? (
           <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center animate-pulse">
             <div className="w-16 h-16 bg-gray-200 dark:bg-zinc-800 rounded-full mx-auto mb-4"></div>
             <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-1/4 mx-auto mb-2"></div>
             <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-1/3 mx-auto"></div>
+          </div>
+        ) : !user ? (
+          <div className="bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700/60 rounded-3xl p-8 sm:p-12 text-center max-w-lg mx-auto shadow-lg relative overflow-hidden">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-xs">
+              <Lock className="w-8 h-8" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 mb-3 inline-block">
+              Fundraiser & Admin Access Only
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white mb-2">
+              Fundraiser's Transparency Ledger
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+              This live collection ledger and real-time donation audit is private. Only the authorized fundraiser and foundation administrators can view this page.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setShowLogin(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Log In to View Ledger
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        ) : authError?.status === 403 ? (
+          <div className="bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-900/50 rounded-3xl p-8 sm:p-12 text-center max-w-lg mx-auto shadow-lg">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-5 shadow-xs">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1 rounded-full border border-red-200 dark:border-red-800 mb-3 inline-block">
+              Access Denied
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white mb-2">
+              Unauthorized Ledger Access
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+              {authError.message || "This transparency ledger belongs to another fundraiser. Only that fundraiser or foundation administrators are authorized to access it."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => navigate('/volunteer/dashboard')}
+                className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Go to My Dashboard
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         ) : dashboardData ? (
           <>
@@ -720,31 +795,37 @@ const VolunteerDashboardPage = () => {
 
             </div>
           </>
+        ) : user?.role === 'admin' ? (
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Administrator Ledger Audit</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
+              Enter any volunteer or fundraiser code in the lookup bar above to view their live transparency ledger, or view all fundraisers in the Admin Panel.
+            </p>
+            <button
+              onClick={() => navigate('/admin')}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-bold cursor-pointer shadow-sm"
+            >
+              Go to Admin Panel
+            </button>
+          </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-sm">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-4">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Volunteer Portal</h3>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">No Fundraiser Profile Linked</h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-              Enter your unique Volunteer Code to view your QR code, printable ID poster, and live transparency collection ledger.
+              Your logged-in account ({user?.email}) is not registered as an active volunteer or fundraiser.
             </p>
-            <form onSubmit={handleSearchCode} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Enter Volunteer Code (e.g. BRF-VOL-...)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full px-4 py-3 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white text-center font-mono font-semibold uppercase"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white py-3 rounded-xl text-xs font-semibold cursor-pointer shadow-sm"
-              >
-                Access Dashboard
-              </button>
-            </form>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-semibold cursor-pointer shadow-sm"
+            >
+              Back to Home
+            </button>
           </div>
         )}
 
