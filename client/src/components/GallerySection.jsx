@@ -66,7 +66,7 @@ const GallerySection = ({ limit = 6 }) => {
                 <div
                   key={`${item._id || index}-${index}`}
                   onClick={() => setSelectedImage(item)}
-                  className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all"
+                  className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all transform scale-[0.80] hover:scale-[0.85] origin-center"
                 >
                   <img 
                     src={optimizedUrl} 

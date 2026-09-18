@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import DOMPurify from 'dompurify';
 import Footer from '../components/Footer';
@@ -24,6 +24,7 @@ const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 const BlogPostPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -43,6 +44,30 @@ const BlogPostPage = () => {
     };
     fetchPost();
   }, [slug, navigate]);
+
+  // Smoothly scroll to the personalized donation card
+  const scrollToDonationCard = () => {
+    const isDesktop = window.innerWidth >= 1280;
+    const targetId = isDesktop ? 'personalized-donation-card-desktop' : 'personalized-donation-card-mobile';
+    const cardEl = document.getElementById(targetId) || document.getElementById('personalized-donation-card-mobile') || document.getElementById('personalized-donation-card-desktop');
+
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cardEl.classList.add('ring-4', 'ring-amber-400', 'rounded-3xl', 'transition-all');
+      setTimeout(() => {
+        cardEl.classList.remove('ring-4', 'ring-amber-400');
+      }, 1800);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && post && (location.hash === '#donate' || location.state?.scrollToDonation)) {
+      const timer = setTimeout(() => {
+        scrollToDonationCard();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, post, location]);
 
   const cleanContent = (html) => {
     if (!html) return '';
@@ -82,22 +107,7 @@ const BlogPostPage = () => {
     directPaymentQrImage: post.volunteerId?.directPaymentQrImage
   } : null);
 
-  const hasDonationCard = post.showDonationCard !== false && volunteer;
-
-  // Smoothly scroll to the personalized donation card
-  const scrollToDonationCard = () => {
-    const isDesktop = window.innerWidth >= 1280;
-    const targetId = isDesktop ? 'personalized-donation-card-desktop' : 'personalized-donation-card-mobile';
-    const cardEl = document.getElementById(targetId) || document.getElementById('personalized-donation-card-mobile') || document.getElementById('personalized-donation-card-desktop');
-
-    if (cardEl) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cardEl.classList.add('ring-4', 'ring-amber-400', 'rounded-3xl', 'transition-all');
-      setTimeout(() => {
-        cardEl.classList.remove('ring-4', 'ring-amber-400');
-      }, 1800);
-    }
-  };
+  const hasDonationCard = post.showDonationCard !== false;
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
