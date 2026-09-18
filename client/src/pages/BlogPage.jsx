@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import Footer from '../components/Footer';
@@ -45,9 +45,9 @@ const BlogPage = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [page, searchTerm]);
+  }, [fetchPosts]);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/blog?page=${page}&limit=10&search=${searchTerm}`);
@@ -65,7 +65,7 @@ const BlogPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   const handleSearch = (e) => {
     e.preventDefault();
