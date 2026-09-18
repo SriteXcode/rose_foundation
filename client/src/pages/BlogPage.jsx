@@ -43,10 +43,6 @@ const BlogPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
@@ -66,6 +62,10 @@ const BlogPage = () => {
       setLoading(false);
     }
   }, [page, searchTerm]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handleSearch = (e) => {
     e.preventDefault();

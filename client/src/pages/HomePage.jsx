@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import HeroSection from '../components/HeroSection';
+import RecentBlogsCarousel from '../components/RecentBlogsCarousel';
 import AboutSection from '../components/AboutSection';
 import VisionMissionSection from '../components/VisionMissionSection';
 import DifferenceSection from '../components/DifferenceSection';
@@ -37,6 +38,7 @@ const HomePage = ({
   return (
     <>
       <HeroSection scrollToSection={scrollToSection} />
+      <RecentBlogsCarousel />
       <AboutSection />
       <VisionMissionSection />
       
