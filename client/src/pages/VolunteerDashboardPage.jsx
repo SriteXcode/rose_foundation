@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
 import { 
   ShieldCheck, 
+  ShieldAlert,
   Download, 
   Share2, 
   Copy, 
@@ -22,8 +23,17 @@ import {
   Lock,
   Building2,
   CheckCircle2,
-  Edit3
+  Edit3,
+  PenLine,
+  Plus,
+  Clock,
+  AlertCircle,
+  Trash2,
+  Eye,
+  BookOpen,
+  X
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { CLOUDINARY_LOGO_URL } from '../utils/constants';
 import localLogo from '../assets/logo.webp';
 
@@ -32,17 +42,25 @@ const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 const VolunteerDashboardPage = () => {
   const { code: routeCode } = useParams();
   const navigate = useNavigate();
+  const { user, authLoading, setShowLogin } = useAuth();
 
   const [volunteerCode, setVolunteerCode] = useState(routeCode || '');
   const [searchInput, setSearchInput] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneratingBadge, setIsGeneratingBadge] = useState(false);
   const [isEditingUpi, setIsEditingUpi] = useState(false);
   const [customUpiInput, setCustomUpiInput] = useState('');
   const [isSavingUpi, setIsSavingUpi] = useState(false);
+
+  // Field Stories & Blog Management State
+  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'stories'
+  const [myPosts, setMyPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [storySearchTerm, setStorySearchTerm] = useState('');
 
   const handleSaveCustomUpi = async () => {
     if (!dashboardData?.volunteer?._id) return;
@@ -76,6 +94,7 @@ const VolunteerDashboardPage = () => {
   // Fetch dashboard data
   const fetchDashboard = async (codeToFetch) => {
     setLoading(true);
+    setAuthError(null);
     try {
       let endpoint = '';
       if (codeToFetch) {
@@ -103,8 +122,13 @@ const VolunteerDashboardPage = () => {
       setQrDataUrl(qrUrl);
     } catch (error) {
       console.error('Failed to fetch volunteer dashboard:', error);
-      const msg = error.response?.data?.error || 'Unable to load volunteer dashboard. Please check the volunteer code.';
-      toast.error(msg);
+      const status = error.response?.status;
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Unable to load volunteer dashboard.';
+      if (status === 401 || status === 403) {
+        setAuthError({ status, message: errorMsg });
+      } else {
+        toast.error(errorMsg);
+      }
       setDashboardData(null);
     } finally {
       setLoading(false);
@@ -112,8 +136,46 @@ const VolunteerDashboardPage = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     fetchDashboard(routeCode);
-  }, [routeCode]);
+    fetchMyPosts();
+  }, [routeCode, authLoading, user]);
+
+  const fetchMyPosts = async () => {
+    setLoadingPosts(true);
+    try {
+      const response = await axiosInstance.get('/blog/my-posts');
+      setMyPosts(response.data.posts || []);
+    } catch (error) {
+      console.error('Failed to fetch volunteer stories:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const handleOpenCreateStory = () => {
+    navigate('/volunteer/story/new');
+  };
+
+  const handleOpenEditStory = (post) => {
+    navigate(`/volunteer/story/edit/${post._id}`);
+  };
+
+  const handleDeleteStory = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this story? This action cannot be undone.')) return;
+    try {
+      await axiosInstance.delete(`/blog/${id}`);
+      toast.success('Story deleted successfully');
+      setMyPosts(prev => prev.filter(p => p._id !== id));
+    } catch (error) {
+      console.error('Failed to delete story:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete story');
+    }
+  };
 
   const handleSearchCode = (e) => {
     e.preventDefault();
@@ -214,32 +276,92 @@ const VolunteerDashboardPage = () => {
             <span>Back to Home</span>
           </button>
 
-          {/* Quick Lookup Bar */}
-          <form onSubmit={handleSearchCode} className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="text"
-                placeholder="Enter Volunteer Code (e.g. BRF-VOL-...)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer shadow-sm shrink-0"
-            >
-              Lookup
-            </button>
-          </form>
+          {/* Quick Lookup Bar: Administrators Only */}
+          {user?.role === 'admin' && (
+            <form onSubmit={handleSearchCode} className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Admin: Lookup Code (BRF-VOL-...)"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer shadow-sm shrink-0"
+              >
+                Lookup
+              </button>
+            </form>
+          )}
         </div>
 
-        {loading ? (
+        {authLoading || (loading && user) ? (
           <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center animate-pulse">
             <div className="w-16 h-16 bg-gray-200 dark:bg-zinc-800 rounded-full mx-auto mb-4"></div>
             <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-1/4 mx-auto mb-2"></div>
             <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-1/3 mx-auto"></div>
+          </div>
+        ) : !user ? (
+          <div className="bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700/60 rounded-3xl p-8 sm:p-12 text-center max-w-lg mx-auto shadow-lg relative overflow-hidden">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-xs">
+              <Lock className="w-8 h-8" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 mb-3 inline-block">
+              Fundraiser & Admin Access Only
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white mb-2">
+              Fundraiser's Transparency Ledger
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+              This live collection ledger and real-time donation audit is private. Only the authorized fundraiser and foundation administrators can view this page.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setShowLogin(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Log In to View Ledger
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        ) : authError?.status === 403 ? (
+          <div className="bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-900/50 rounded-3xl p-8 sm:p-12 text-center max-w-lg mx-auto shadow-lg">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-5 shadow-xs">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1 rounded-full border border-red-200 dark:border-red-800 mb-3 inline-block">
+              Access Denied
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white mb-2">
+              Unauthorized Ledger Access
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+              {authError.message || "This transparency ledger belongs to another fundraiser. Only that fundraiser or foundation administrators are authorized to access it."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => navigate('/volunteer/dashboard')}
+                className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Go to My Dashboard
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         ) : dashboardData ? (
           <>
@@ -388,8 +510,50 @@ const VolunteerDashboardPage = () => {
 
             </div>
 
-            {/* Layout Grid: ID Badge Preview & Transparency Table */}
-            <div className="grid lg:grid-cols-12 gap-8 items-start mb-8">
+            {/* Tab Navigation: Transparency Ledger vs Field Stories */}
+            <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-gray-200 dark:border-zinc-800 pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('ledger')}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'ledger'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800/60'
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                <span>Transparency Ledger & Dual QR Badge</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('stories')}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                  activeTab === 'stories'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800/60'
+                }`}
+              >
+                <PenLine className="w-4 h-4" />
+                <span>My Field Stories & Blogs</span>
+                {myPosts.length > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    activeTab === 'stories' 
+                      ? 'bg-amber-400 text-zinc-950' 
+                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                  }`}>
+                    {myPosts.length}
+                  </span>
+                )}
+                {myPosts.some(p => p.status === 'pending') && (
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Story pending approval" />
+                )}
+              </button>
+            </div>
+
+            {/* Tab 1: Ledger & ID Badge View */}
+            {activeTab === 'ledger' && (
+              <div className="grid lg:grid-cols-12 gap-8 items-start mb-8">
               
               {/* Left Column: Official ID Badge Card (Printable) */}
               <div className="lg:col-span-5 space-y-4">
@@ -719,36 +883,254 @@ const VolunteerDashboardPage = () => {
               </div>
 
             </div>
+            )}
+
+            {/* Tab 2: Field Stories & Blogs View */}
+            {activeTab === 'stories' && (
+              <div className="space-y-6">
+                {/* Header with Info & Actions */}
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-amber-300/50 dark:border-amber-800/60">
+                          Fundraiser Community Journalism
+                        </span>
+                      </div>
+                      <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
+                        My Field Stories & Ground Updates
+                      </h2>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl">
+                        Document your relief drives and grassroots experiences. All submitted stories are reviewed and approved by administrators before appearing live on the public Black Rose blog.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateStory}
+                      className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Write New Story</span>
+                    </button>
+                  </div>
+
+                  {/* Fundraiser Advantage Banner */}
+                  <div className="mt-5 p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-3">
+                    <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-xs text-amber-900 dark:text-amber-200">
+                      <span className="font-bold">Automated Attribution & Personalized Donation Card:</span> When your story is approved and published, it automatically embeds your live Razorpay donation card (with 80G tax deductions and cause selectors) directly in the sidebar/article. All contributions from readers credit immediately to your fundraiser ledger.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search & Story Count Filter */}
+                {myPosts.length > 0 && (
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                      Showing {myPosts.length} {myPosts.length === 1 ? 'story' : 'stories'}
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                      <input
+                        type="text"
+                        placeholder="Search your stories..."
+                        value={storySearchTerm}
+                        onChange={(e) => setStorySearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Stories Grid */}
+                {loadingPosts ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                    {[1, 2, 3].map(n => (
+                      <div key={n} className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 h-64 p-4" />
+                    ))}
+                  </div>
+                ) : myPosts.length === 0 ? (
+                  <div className="bg-white dark:bg-zinc-900 border border-dashed border-gray-300 dark:border-zinc-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-1">
+                      You haven't written any stories yet
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                      Share your firsthand volunteer experiences, community stories, or disaster relief efforts. Every article you publish raises awareness and invites donations to your campaign.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateStory}
+                      className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Write Your First Story</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {myPosts
+                      .filter(p => {
+                        const term = storySearchTerm.toLowerCase();
+                        return (p.title || '').toLowerCase().includes(term) ||
+                               (p.summary || '').toLowerCase().includes(term);
+                      })
+                      .map((post) => (
+                        <div
+                          key={post._id}
+                          className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            {/* Card Image */}
+                            <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                              {post.coverImage ? (
+                                <img
+                                  src={post.coverImage}
+                                  alt={post.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                                  <FileText className="w-10 h-10 opacity-40" />
+                                </div>
+                              )}
+
+                              {/* Status Badge */}
+                              <div className="absolute top-3 left-3">
+                                {post.status === 'published' ? (
+                                  <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                                    <CheckCircle2 className="w-3 h-3" /> Live on Blog
+                                  </span>
+                                ) : post.status === 'pending' ? (
+                                  <span className="inline-flex items-center gap-1 bg-amber-500 text-zinc-950 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                                    <Clock className="w-3 h-3" /> Pending Admin Review
+                                  </span>
+                                ) : post.status === 'rejected' ? (
+                                  <span className="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                                    <AlertCircle className="w-3 h-3" /> Needs Revisions
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 bg-zinc-700 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs">
+                                    <FileText className="w-3 h-3" /> Draft
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="p-5">
+                              <div className="flex items-center gap-2 text-[10px] text-zinc-400 mb-2">
+                                <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                                {post.showDonationCard !== false && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                                      <Heart className="w-3 h-3 fill-current" /> Donation Card Active
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              <h3 className="text-base font-bold text-zinc-900 dark:text-white line-clamp-2 mb-2">
+                                {post.title}
+                              </h3>
+
+                              <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3 leading-relaxed mb-4">
+                                {post.summary}
+                              </p>
+
+                              {Array.isArray(post.tags) && post.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {post.tags.slice(0, 3).map((tag, idx) => (
+                                    <span key={idx} className="text-[10px] bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded-md font-medium">
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="px-5 py-3.5 bg-gray-50/70 dark:bg-zinc-900/60 border-t border-gray-100 dark:border-zinc-800/80 flex items-center justify-between gap-2">
+                            <a
+                              href={`/blog/${post.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </a>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditStory(post)}
+                                className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                title="Edit"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStory(post._id)}
+                                className="p-1.5 rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-semibold flex items-center cursor-pointer"
+                                title="Delete Story"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
+        ) : user?.role === 'admin' ? (
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Administrator Ledger Audit</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
+              Enter any volunteer or fundraiser code in the lookup bar above to view their live transparency ledger, or view all fundraisers in the Admin Panel.
+            </p>
+            <button
+              onClick={() => navigate('/admin')}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-bold cursor-pointer shadow-sm"
+            >
+              Go to Admin Panel
+            </button>
+          </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-sm">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-4">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Volunteer Portal</h3>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">No Fundraiser Profile Linked</h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-              Enter your unique Volunteer Code to view your QR code, printable ID poster, and live transparency collection ledger.
+              Your logged-in account ({user?.email}) is not registered as an active volunteer or fundraiser.
             </p>
-            <form onSubmit={handleSearchCode} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Enter Volunteer Code (e.g. BRF-VOL-...)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full px-4 py-3 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white text-center font-mono font-semibold uppercase"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white py-3 rounded-xl text-xs font-semibold cursor-pointer shadow-sm"
-              >
-                Access Dashboard
-              </button>
-            </form>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 text-white px-6 py-2.5 rounded-full text-xs font-semibold cursor-pointer shadow-sm"
+            >
+              Back to Home
+            </button>
           </div>
         )}
 
       </div>
+
     </div>
   );
 };

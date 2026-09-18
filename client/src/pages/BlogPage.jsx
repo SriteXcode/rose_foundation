@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import Footer from '../components/Footer';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
-import { ArrowLeft, Search, Calendar, Tag, ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, Search, Calendar, Tag, ArrowRight, BookOpen, Sparkles, Heart } from 'lucide-react';
 
 const defaultPosts = [
   {
@@ -45,9 +45,9 @@ const BlogPage = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [page, searchTerm]);
+  }, [fetchPosts]);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`/blog?page=${page}&limit=10&search=${searchTerm}`);
@@ -65,7 +65,7 @@ const BlogPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -144,13 +144,21 @@ const BlogPage = () => {
                   </div>
                   
                   <div className="p-5 flex flex-col flex-1">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 mb-2.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{new Date(post.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400 mb-2.5">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{new Date(post.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
                       <span>•</span>
                       <span className="bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider">
                         {post.tags?.[0] || 'Community'}
                       </span>
+                      {post.volunteerName && (
+                        <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                          Fundraiser Story
+                        </span>
+                      )}
                     </div>
                     
                     <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white mb-2 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors line-clamp-2">
@@ -166,6 +174,12 @@ const BlogPage = () => {
                         <span>Read Article</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </span>
+                      {post.volunteerCode && (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                          <Heart className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                          Support Fundraiser
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
