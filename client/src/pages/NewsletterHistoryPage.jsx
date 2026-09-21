@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../utils/api';
+import SEO from '../components/SEO';
 
 const NewsletterHistoryPage = () => {
   const [newsletters, setNewsletters] = useState([]);
@@ -35,6 +36,10 @@ const NewsletterHistoryPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12">
+      <SEO 
+        title="Newsletter Archive & Community Bulletins" 
+        description="Explore past monthly newsletters, activity updates, and progress reports from Blackrose Foundation." 
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Newsletter Archive</h1>

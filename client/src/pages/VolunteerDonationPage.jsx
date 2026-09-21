@@ -4,6 +4,7 @@ import axiosInstance from '../utils/api';
 import { ShieldCheck, ArrowLeft, Building2, ExternalLink, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import VolunteerDonationCard from '../components/VolunteerDonationCard';
+import SEO from '../components/SEO';
 
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="%23e4e4e7"/><path fill="%23a1a1aa" d="M64 28a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM32 98c0-17.7 14.3-30 32-30s32 12.3 32 30v6H32v-6z"/></svg>`;
 
@@ -43,6 +44,10 @@ const VolunteerDonationPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-zinc-950 pt-20 pb-16 transition-colors text-left">
+      <SEO 
+        title={volunteer ? `Donate via ${volunteer.name}` : 'Donate to Support Social Causes'} 
+        description="Make a secure, tax-exempt donation to Blackrose Foundation to support education, healthcare, and community welfare initiatives." 
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Navigation / Back Button */}

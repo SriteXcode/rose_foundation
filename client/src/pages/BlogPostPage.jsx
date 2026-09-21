@@ -18,6 +18,7 @@ import {
   Heart
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import SEO from '../components/SEO';
 
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="%23e4e4e7"/><path fill="%23a1a1aa" d="M64 28a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM32 98c0-17.7 14.3-30 32-30s32 12.3 32 30v6H32v-6z"/></svg>`;
 
@@ -109,8 +110,40 @@ const BlogPostPage = () => {
 
   const hasDonationCard = post.showDonationCard !== false;
 
+  const articleSchema = post ? {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": post.title,
+    "description": post.summary || post.title,
+    "image": post.coverImage || "https://www.blackrosefoundation.org.in/blackrose_logo.png",
+    "datePublished": post.createdAt,
+    "author": {
+      "@type": "Person",
+      "name": post.volunteerName || post.author || "Blackrose Foundation Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Blackrose Foundation",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.blackrosefoundation.org.in/blackrose_logo.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.blackrosefoundation.org.in/blog/${post.slug || slug}`
+    }
+  } : null;
+
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      <SEO 
+        title={post.title} 
+        description={post.summary || `Read ${post.title} on Blackrose Foundation.`} 
+        ogImage={post.coverImage} 
+        ogType="article" 
+        jsonLd={articleSchema} 
+      />
       
       {/* Pending / Preview Mode Alert Banner */}
       {post.isPreview && (

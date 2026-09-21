@@ -1,5 +1,10 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /admin
+Disallow: /profile
+Disallow: /volunteer/dashboard
+Disallow: /invoice/
+Disallow: /certificate/
 
 Sitemap: https://www.blackrosefoundation.org.in/sitemap.xml
