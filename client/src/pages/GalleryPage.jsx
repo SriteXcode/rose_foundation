@@ -4,6 +4,7 @@ import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Search, X, Filter } from 'lucide-react';
 import { GallerySkeleton } from '../components/SkeletonLoader';
+import SEO from '../components/SEO';
 
 const GalleryPage = () => {
   const navigate = useNavigate();
@@ -58,6 +59,10 @@ const GalleryPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      <SEO 
+        title="Field Gallery & Media Coverage" 
+        description="Browse photos, event highlights, and ground coverage of Blackrose Foundation's social drives across India." 
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header with Parallel Search & Dropdown Filter */}

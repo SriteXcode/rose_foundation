@@ -25,6 +25,7 @@ import {
   Info
 } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import SEO from '../components/SEO';
 
 const documents = [
   {
@@ -159,6 +160,10 @@ const LegalDocumentsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-24 pb-20 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <SEO 
+        title="Legal Documents & 80G Tax Exemption Certificates" 
+        description="Inspect official Section 8 registration, MCA, 12A, and 80G tax deduction compliance certificates for Blackrose Foundation." 
+      />
       
       {/* Toast Notification for Copied ID */}
       <AnimatePresence>

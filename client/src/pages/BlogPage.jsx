@@ -4,6 +4,7 @@ import axiosInstance from '../utils/api';
 import Footer from '../components/Footer';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { ArrowLeft, Search, Calendar, Tag, ArrowRight, BookOpen, Sparkles, Heart } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const defaultPosts = [
   {
@@ -77,6 +78,10 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      <SEO 
+        title="NGO News, Impact Stories & Articles" 
+        description="Read the latest articles, community impact stories, field updates, and news from Blackrose Foundation." 
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header with Parallel Search */}

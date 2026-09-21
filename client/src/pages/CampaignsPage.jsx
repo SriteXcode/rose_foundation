@@ -5,6 +5,7 @@ import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Sparkles, Target, ArrowRight, BookOpen, Filter, Search, Heart } from 'lucide-react';
 import Footer from '../components/Footer';
 import { CardSkeleton } from '../components/SkeletonLoader';
+import SEO from '../components/SEO';
 
 const CampaignsPage = ({ scrollToSection }) => {
   const navigate = useNavigate();
@@ -65,6 +66,10 @@ const CampaignsPage = ({ scrollToSection }) => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      <SEO 
+        title="Fundraising Campaigns &amp; Relief Drives" 
+        description="Support active fundraising campaigns and emergency relief drives led by Blackrose Foundation to bring immediate aid and long-term impact." 
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header with Parallel Search & Dropdown Filter */}

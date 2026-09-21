@@ -6,7 +6,7 @@ import VisionMissionSection from '../components/VisionMissionSection';
 import DifferenceSection from '../components/DifferenceSection';
 import DonationSection from '../components/DonationSection';
 import ContactSection from '../components/ContactSection';
-import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 
 // Lazy loaded components
 const TeamSection = React.lazy(() => import('../components/TeamSection'));
@@ -37,6 +37,10 @@ const HomePage = ({
 }) => {
   return (
     <>
+      <SEO 
+        title="Empowering Communities & Driving Social Welfare" 
+        description="Blackrose Foundation is a dedicated non-profit organization (NGO) committed to education, healthcare, women empowerment, and sustainable community development across India." 
+      />
       <HeroSection scrollToSection={scrollToSection} />
       <RecentBlogsCarousel />
       <AboutSection />

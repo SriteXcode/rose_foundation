@@ -5,6 +5,7 @@ import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Search, ArrowRight, Filter, FolderHeart } from 'lucide-react';
 import Footer from '../components/Footer';
 import { CardSkeleton } from '../components/SkeletonLoader';
+import SEO from '../components/SEO';
 
 // Lazy load ProjectDetailsModal
 const ProjectDetailsModal = lazy(() => import('../components/modals/ProjectDetailsModal'));
@@ -64,6 +65,10 @@ const ProjectsPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors pt-20 sm:pt-24 pb-16">
+      <SEO 
+        title="Our Projects &amp; Social Initiatives" 
+        description="Explore Blackrose Foundation's active community welfare projects spanning education, health drives, environmental sustainability, and women empowerment." 
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header with Parallel Search & Dropdown Filter */}
