@@ -7,6 +7,7 @@ import DifferenceSection from '../components/DifferenceSection';
 import DonationSection from '../components/DonationSection';
 import ContactSection from '../components/ContactSection';
 import SEO from '../components/SEO';
+import Footer from '../components/Footer';
 
 // Lazy loaded components
 const TeamSection = React.lazy(() => import('../components/TeamSection'));

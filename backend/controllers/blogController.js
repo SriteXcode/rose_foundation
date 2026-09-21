@@ -13,11 +13,17 @@ const createSlug = (title) => {
     .replace(/^-+|-+$/g, ''); // Trim hyphens from start/end
 };
 
-// Get all published posts (Public - with pagination, search, and tag filter)
+// Get all published posts (Public - with pagination, search, tag filter, and volunteer filter)
 exports.getAllPosts = async (req, res) => {
   try {
-    const { page = 1, limit = 6, search, tag } = req.query;
+    const { page = 1, limit = 6, search, tag, volunteerId, volunteerCode } = req.query;
     const query = { status: 'published' };
+
+    if (volunteerId) {
+      query.volunteerId = volunteerId;
+    } else if (volunteerCode) {
+      query.volunteerCode = volunteerCode;
+    }
 
     if (search) {
       query.$or = [
@@ -299,14 +305,25 @@ exports.getMyPosts = async (req, res) => {
       $or: [
         { userId: req.user.id },
         { email: currentUser?.email }
-      ]
+      ].filter(cond => Object.values(cond)[0])
     });
 
-    const matchConditions = [{ authorId: req.user.id }];
-    if (volunteer) {
+    const matchConditions = [];
+    if (req.user && req.user.id) {
+      matchConditions.push({ authorId: req.user.id });
+    }
+    if (volunteer && volunteer._id) {
       matchConditions.push({ volunteerId: volunteer._id });
-      if (volunteer.volunteerCode) matchConditions.push({ volunteerCode: volunteer.volunteerCode });
-      if (volunteer.fundraiserCode) matchConditions.push({ volunteerCode: volunteer.fundraiserCode });
+      if (volunteer.volunteerCode && String(volunteer.volunteerCode).trim() !== '') {
+        matchConditions.push({ volunteerCode: String(volunteer.volunteerCode).trim() });
+      }
+      if (volunteer.fundraiserCode && String(volunteer.fundraiserCode).trim() !== '') {
+        matchConditions.push({ volunteerCode: String(volunteer.fundraiserCode).trim() });
+      }
+    }
+
+    if (matchConditions.length === 0) {
+      return res.json({ posts: [] });
     }
 
     const posts = await BlogPost.find({ $or: matchConditions })

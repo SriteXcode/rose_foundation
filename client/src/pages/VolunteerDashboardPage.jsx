@@ -120,6 +120,7 @@ const VolunteerDashboardPage = () => {
         }
       });
       setQrDataUrl(qrUrl);
+      fetchMyPosts(response.data.volunteer);
     } catch (error) {
       console.error('Failed to fetch volunteer dashboard:', error);
       const status = error.response?.status;
@@ -135,27 +136,56 @@ const VolunteerDashboardPage = () => {
     }
   };
 
+  const isOwner = Boolean(
+    user && dashboardData?.volunteer && (
+      !routeCode ||
+      (dashboardData.volunteer.userId && String(user.id) === String(dashboardData.volunteer.userId)) ||
+      (dashboardData.volunteer.email && user.email?.toLowerCase() === dashboardData.volunteer.email?.toLowerCase())
+    )
+  );
+
+  const fetchMyPosts = async (currentVolunteerData) => {
+    setLoadingPosts(true);
+    try {
+      const vol = currentVolunteerData || dashboardData?.volunteer;
+      const ownerCheck = Boolean(
+        user && vol && (
+          !routeCode ||
+          (vol.userId && String(user.id) === String(vol.userId)) ||
+          (vol.email && user.email?.toLowerCase() === vol.email?.toLowerCase())
+        )
+      );
+
+      if (ownerCheck) {
+        const response = await axiosInstance.get('/blog/my-posts');
+        setMyPosts(response.data.posts || []);
+      } else if (vol?._id) {
+        const response = await axiosInstance.get(`/blog?volunteerId=${vol._id}&limit=100`);
+        setMyPosts(response.data.posts || []);
+      } else {
+        setMyPosts([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch volunteer stories:', error);
+      setMyPosts([]);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
+    if (!user && routeCode) {
+      // Unauthenticated visitor looking at a volunteer's public portal
+      fetchDashboard(routeCode);
+      return;
+    }
     if (!user) {
       setLoading(false);
       return;
     }
     fetchDashboard(routeCode);
-    fetchMyPosts();
   }, [routeCode, authLoading, user]);
-
-  const fetchMyPosts = async () => {
-    setLoadingPosts(true);
-    try {
-      const response = await axiosInstance.get('/blog/my-posts');
-      setMyPosts(response.data.posts || []);
-    } catch (error) {
-      console.error('Failed to fetch volunteer stories:', error);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
 
   const handleOpenCreateStory = () => {
     navigate('/volunteer/story/new');
@@ -535,7 +565,7 @@ const VolunteerDashboardPage = () => {
                 }`}
               >
                 <PenLine className="w-4 h-4" />
-                <span>My Field Stories & Blogs</span>
+                <span>{isOwner ? 'My Field Stories & Blogs' : `${dashboardData.volunteer.name}'s Field Stories`}</span>
                 {myPosts.length > 0 && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                     activeTab === 'stories' 
@@ -894,35 +924,54 @@ const VolunteerDashboardPage = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-amber-300/50 dark:border-amber-800/60">
-                          Fundraiser Community Journalism
+                          {isOwner ? 'Fundraiser Community Journalism' : 'Verified Field Updates'}
                         </span>
                       </div>
                       <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
-                        My Field Stories & Ground Updates
+                        {isOwner ? 'My Field Stories & Ground Updates' : `${dashboardData.volunteer.name}'s Field Stories`}
                       </h2>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl">
-                        Document your relief drives and grassroots experiences. All submitted stories are reviewed and approved by administrators before appearing live on the public Black Rose blog.
+                        {isOwner
+                          ? 'Document your relief drives and grassroots experiences. All submitted stories are reviewed and approved by administrators before appearing live on the public Black Rose blog.'
+                          : `Read published ground stories and impact updates written by ${dashboardData.volunteer.name}.`}
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={handleOpenCreateStory}
-                      className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Write New Story</span>
-                    </button>
+                    {isOwner && (
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateStory}
+                        className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Write New Story</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Fundraiser Advantage Banner */}
                   <div className="mt-5 p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-3">
                     <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div className="text-xs text-amber-900 dark:text-amber-200">
-                      <span className="font-bold">Automated Attribution & Personalized Donation Card:</span> When your story is approved and published, it automatically embeds your live Razorpay donation card (with 80G tax deductions and cause selectors) directly in the sidebar/article. All contributions from readers credit immediately to your fundraiser ledger.
+                      <span className="font-bold">Automated Attribution & Personalized Donation Card:</span> When stories are approved and published, they automatically embed the fundraiser's live Razorpay donation card directly in the article. All reader contributions credit immediately to this fundraiser's ledger.
                     </div>
                   </div>
                 </div>
+
+                {/* Review Status Tracker Banner */}
+                {isOwner && (myPosts.some(p => p.status === 'pending') || myPosts.some(p => p.status === 'rejected')) && (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Clock className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                      <span>
+                        <strong>Story Review Status Update:</strong> {myPosts.filter(p => p.status === 'pending').length} story pending admin approval, {myPosts.filter(p => p.status === 'rejected').length} needs revision.
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider bg-amber-200/60 dark:bg-amber-950 px-2.5 py-1 rounded-full border border-amber-300 dark:border-amber-800">
+                      Live Review Tracking
+                    </span>
+                  </div>
+                )}
 
                 {/* Search & Story Count Filter */}
                 {myPosts.length > 0 && (
@@ -1067,26 +1116,28 @@ const VolunteerDashboardPage = () => {
                               <span>Preview</span>
                             </a>
 
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditStory(post)}
-                                className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                                title="Edit"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
+                            {isOwner && (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditStory(post)}
+                                  className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                  title="Edit"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteStory(post._id)}
-                                className="p-1.5 rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-semibold flex items-center cursor-pointer"
-                                title="Delete Story"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteStory(post._id)}
+                                  className="p-1.5 rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-semibold flex items-center cursor-pointer"
+                                  title="Delete Story"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
