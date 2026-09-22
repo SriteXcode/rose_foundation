@@ -94,6 +94,9 @@ const JoinUsModal = ({ isOpen, onClose }) => {
       });
 
       toast.success("Sent successfully! We will contact you soon...");
+      if (window.fbq) {
+        window.fbq('track', 'Lead', { content_name: 'Volunteer Application', role: role });
+      }
       
       setFormData({ name: '', aadhar: '', email: '', phone: '', qualification: '', bio: '', linkedin: '', instagram: '', image: null });
       setPreview(null);

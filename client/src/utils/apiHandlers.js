@@ -16,6 +16,9 @@ export const handleContactSubmit = async (e, contactForm, setContactForm, setIsL
   try {
     await axiosInstance.post('/contact', contactForm);
     toast.success('Thank you for your message! We will get back to you soon.');
+    if (window.fbq) {
+      window.fbq('track', 'Contact');
+    }
     setContactForm({ name: '', email: '', message: '' });
   } catch (error) {
     console.error('Contact form error:', error);
@@ -52,6 +55,9 @@ export const handleNewsletterSubmit = async (e, newsletter, setNewsletter, setIs
   try {
     await axiosInstance.post('/newsletter', { email: newsletter });
     toast.success('Successfully subscribed to our newsletter!');
+    if (window.fbq) {
+      window.fbq('track', 'Subscribe', { content_name: 'Newsletter' });
+    }
     setNewsletter('');
   } catch (error) {
     console.error('Newsletter error:', error);
@@ -133,6 +139,13 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
 
           toast.success('Thank you for your generous donation!');
           
+          if (window.fbq) {
+            window.fbq('track', 'Donate', {
+              value: parseFloat(donationAmount),
+              currency: 'INR'
+            });
+          }
+          
           const donationResult = {
             donationId: verifyResponse.data.donationId,
             amount: donationAmount,
@@ -192,6 +205,12 @@ export const handleDonation = async (donationAmount, setIsLoading, user, onSucce
     // from the main app thread to the payment iframe without crashing/freezing.
     setTimeout(() => {
       try {
+        if (window.fbq) {
+          window.fbq('track', 'InitiateCheckout', {
+            value: parseFloat(donationAmount),
+            currency: 'INR'
+          });
+        }
         rzp1.open();
       } catch (err) {
         console.error('Razorpay open error:', err);

@@ -107,6 +107,9 @@ export const useAuth = () => {
       });
 
       toast.success("Registration successful! Please login.");
+      if (window.fbq) {
+        window.fbq('track', 'CompleteRegistration');
+      }
       setShowRegister(false);
       setShowLogin(true);
       setRegisterForm({ name: "", email: "", password: "", confirmPassword: "", phone: "" });
