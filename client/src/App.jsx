@@ -155,11 +155,15 @@ const AppContent = () => {
   };
 
   useEffect(() => {
-    if (location.pathname === '/' && location.state?.scrollTo) {
+    const params = new URLSearchParams(window.location.search);
+    const redirectPath = params.get('redirect');
+    if (redirectPath) {
+      navigate(redirectPath, { replace: true });
+    } else if (location.pathname === '/' && location.state?.scrollTo) {
       const targetId = location.state.scrollTo;
       performScroll(targetId);
     }
-  }, [location]);
+  }, [location, navigate]);
 
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);

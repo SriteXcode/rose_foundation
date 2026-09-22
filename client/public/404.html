@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 Page Not Found | Blackrose Foundation</title>
+  <link rel="icon" type="image/png" href="/blackrose_logo.png" />
+  <link rel="shortcut icon" href="/blackrose_logo.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #09090b;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      max-width: 440px;
+      width: 100%;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 1.25rem;
+      padding: 2.5rem 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.25rem;
+      border-radius: 50%;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+    p {
+      font-size: 0.875rem;
+      color: #a1a1aa;
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background-color: #ffffff;
+      color: #09090b;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background-color: #e4e4e7;
+      transform: translateY(-1px);
+    }
+  </style>
+  <script>
+    // SPA automatic redirect for direct URL refreshes on static hosts (Render, GitHub Pages, Netlify)
+    (function() {
+      var path = window.location.pathname;
+      if (path && path !== '/' && path !== '/404.html') {
+        window.location.replace('/?redirect=' + encodeURIComponent(path));
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="card">
+    <img src="/blackrose_logo.png" alt="Blackrose Foundation" class="logo" />
+    <div class="badge">Error 404</div>
+    <h1>Page Not Found</h1>
+    <p>The page you are looking for doesn't exist, was moved, or the link may be broken.</p>
+    <a href="/" class="btn">Return to Homepage</a>
+  </div>
+</body>
+</html>
