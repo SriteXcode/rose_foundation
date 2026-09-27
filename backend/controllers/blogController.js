@@ -40,6 +40,7 @@ exports.getAllPosts = async (req, res) => {
 
     const posts = await BlogPost.find(query)
       .populate('volunteerId', 'name image designation role volunteerCode fundraiserCode upiId directPaymentQrImage totalRaised fundraiserGoal')
+      .populate('campaign')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -63,7 +64,8 @@ exports.getAllPosts = async (req, res) => {
 exports.getPostBySlug = async (req, res) => {
   try {
     const post = await BlogPost.findOne({ slug: req.params.slug })
-      .populate('volunteerId', 'name image designation role volunteerCode fundraiserCode upiId directPaymentQrImage totalRaised fundraiserGoal');
+      .populate('volunteerId', 'name image designation role volunteerCode fundraiserCode upiId directPaymentQrImage totalRaised fundraiserGoal')
+      .populate('campaign');
 
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });

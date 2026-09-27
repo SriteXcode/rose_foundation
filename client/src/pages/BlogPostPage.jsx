@@ -4,6 +4,7 @@ import axiosInstance from '../utils/api';
 import DOMPurify from 'dompurify';
 import Footer from '../components/Footer';
 import VolunteerDonationCard from '../components/VolunteerDonationCard';
+import { useAuth } from '../hooks/useAuth';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -15,7 +16,10 @@ import {
   Sparkles, 
   ExternalLink,
   Clock,
-  Heart
+  Heart,
+  Ban,
+  CheckCircle2,
+  Target
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import SEO from '../components/SEO';
@@ -26,7 +30,13 @@ const BlogPostPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const savedUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const isAdmin = user?.role === 'admin' || savedUser?.role === 'admin';
+
   const [post, setPost] = useState(null);
+  const [campaign, setCampaign] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +44,26 @@ const BlogPostPage = () => {
     const fetchPost = async () => {
       try {
         const response = await axiosInstance.get(`/blog/${slug}`);
-        setPost(response.data);
+        const postData = response.data;
+        setPost(postData);
+
+        if (postData.campaign) {
+          setCampaign(postData.campaign);
+        } else {
+          // Check if any campaign is linked to this post
+          try {
+            const campRes = await axiosInstance.get('/campaigns');
+            if (Array.isArray(campRes.data)) {
+              const match = campRes.data.find(c => 
+                (c.relatedBlogPost?._id && String(c.relatedBlogPost._id) === String(postData._id)) ||
+                (c.relatedBlogPost && String(c.relatedBlogPost) === String(postData._id))
+              );
+              if (match) setCampaign(match);
+            }
+          } catch (e) {
+            console.error('Failed to load linked campaign', e);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch post', error);
         toast.error('Article not found or pending admin approval.');
@@ -45,6 +74,25 @@ const BlogPostPage = () => {
     };
     fetchPost();
   }, [slug, navigate]);
+
+  const handleToggleCampaignStatus = async (targetCampaign) => {
+    if (!targetCampaign || !targetCampaign._id) return;
+    setCampaignLoading(true);
+    const isCurrentlyDisabled = targetCampaign.status === 'disabled';
+    const newStatus = isCurrentlyDisabled ? 'active' : 'disabled';
+    try {
+      const res = await axiosInstance.put(`/campaigns/${targetCampaign._id}`, {
+        status: newStatus
+      });
+      toast.success(newStatus === 'disabled' ? 'Campaign disabled by admin!' : 'Campaign re-enabled by admin!');
+      setCampaign(res.data);
+    } catch (error) {
+      console.error('Failed to update campaign status', error);
+      toast.error(error.response?.data?.error || 'Failed to update campaign status');
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
 
   // Smoothly scroll to the personalized donation card
   const scrollToDonationCard = () => {
@@ -284,14 +332,101 @@ const BlogPostPage = () => {
               </div>
             )}
 
+            {/* Campaign Banner & Admin Disable Action (If Campaign Linked) */}
+            {campaign && (
+              <div className={`my-8 p-5 sm:p-6 rounded-2xl border transition-all shadow-sm ${
+                campaign.status === 'disabled' 
+                  ? 'bg-gray-50 dark:bg-zinc-900/50 border-gray-200 dark:border-zinc-800 opacity-80' 
+                  : 'bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900/80 border-amber-200/90 dark:border-amber-800/60'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                      campaign.status === 'disabled'
+                        ? 'bg-gray-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                        : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                    }`}>
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      {campaign.status === 'disabled' ? 'Campaign Disabled' : (campaign.subtitle || 'Active Campaign Initiative')}
+                    </span>
+
+                    {isAdmin && (
+                      <span className="bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Admin Controls
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Admin Action Button to Disable Campaign */}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={campaignLoading}
+                      onClick={() => handleToggleCampaignStatus(campaign)}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                        campaign.status === 'disabled'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                      title={campaign.status === 'disabled' ? 'Re-enable this campaign' : 'Disable this campaign'}
+                    >
+                      {campaign.status === 'disabled' ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Enable Campaign</span>
+                        </>
+                      ) : (
+                        <>
+                          <Ban className="w-3.5 h-3.5" />
+                          <span>Disable Campaign</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <h3 className="text-lg sm:text-xl font-extrabold text-zinc-900 dark:text-white mb-1.5">
+                  {campaign.title}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
+                  {campaign.description}
+                </p>
+
+                {/* Progress Bar */}
+                <div className="bg-white/80 dark:bg-zinc-800/80 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-800 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <span className="text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                      <Target className="w-3.5 h-3.5 text-emerald-500" /> Goal Progress:
+                    </span>
+                    <span className="text-zinc-900 dark:text-white font-bold">
+                      {Math.min(100, Math.round(((campaign.currentAmount || 0) / (campaign.targetAmount || 100000)) * 100))}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${campaign.status === 'disabled' ? 'bg-gray-400' : 'bg-emerald-500'}`}
+                      style={{ width: `${Math.min(100, Math.round(((campaign.currentAmount || 0) / (campaign.targetAmount || 100000)) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-xs pt-0.5">
+                    <span className="font-bold text-zinc-900 dark:text-white">
+                      ₹{(campaign.currentAmount || 0).toLocaleString()} <span className="font-normal text-zinc-500">raised</span>
+                    </span>
+                    <span className="text-zinc-500">Target: ₹{(campaign.targetAmount || 100000).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Article Content Body */}
             <div
               className="blog-content text-zinc-800 dark:text-zinc-200 text-sm sm:text-base leading-relaxed space-y-4 border-b border-gray-100 dark:border-zinc-800 pb-10 clearfix"
               dangerouslySetInnerHTML={{
                 __html: cleanContent(
                   DOMPurify.sanitize(post.content, {
-                    ADD_TAGS: ['figure', 'figcaption', 'img', 'div', 'h3', 'h4', 'p', 'span'],
-                    ADD_ATTR: ['class', 'src', 'alt', 'target', 'href', 'style', 'width', 'height', 'data-width', 'data-placement'],
+                    ADD_TAGS: ['figure', 'figcaption', 'img', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'section', 'article', 'header', 'footer', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'button', 'svg', 'path', 'style'],
+                    ADD_ATTR: ['class', 'src', 'alt', 'target', 'href', 'style', 'width', 'height', 'data-width', 'data-placement', 'id'],
                   })
                 ),
               }}

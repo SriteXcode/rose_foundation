@@ -7,7 +7,7 @@ const campaignSchema = new mongoose.Schema({
   imageUrl: { type: String, default: '' },
   targetAmount: { type: Number, default: 100000 },
   currentAmount: { type: Number, default: 0 },
-  status: { type: String, enum: ['active', 'completed'], default: 'active' },
+  status: { type: String, enum: ['active', 'completed', 'disabled'], default: 'active' },
   relatedBlogPost: { type: mongoose.Schema.Types.ObjectId, ref: 'BlogPost', default: null },
   externalLink: { type: String, default: '' },
   buttonText: { type: String, default: 'Donate Now' },

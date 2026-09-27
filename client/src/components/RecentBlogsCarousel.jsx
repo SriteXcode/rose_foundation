@@ -14,6 +14,17 @@ import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const defaultPosts = [
   {
+    _id: 'default-nepal',
+    slug: 'bring-nepal-back-to-life',
+    title: 'Bring Nepal back to Life',
+    summary: 'Stand With Nepal is a humanitarian awareness and relief campaign created to support communities affected by disaster and help them move from immediate relief toward recovery and rebuilding.',
+    coverImage: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&q=80&w=800',
+    createdAt: new Date('2026-09-22T10:00:00.000Z').toISOString(),
+    tags: ['BEINGTOGETHER', 'HUMANITY'],
+    volunteerName: 'Harsh Yadav',
+    volunteerCode: 'BRF-VOL-HY2026'
+  },
+  {
     _id: 'default-1',
     slug: 'empowering-youth-kanpur',
     title: 'Empowering Youth Through Education & Vocational Training',
@@ -30,15 +41,6 @@ const defaultPosts = [
     coverImage: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
     tags: ['Relief', 'Outreach']
-  },
-  {
-    _id: 'default-3',
-    slug: 'digital-literacy-for-children',
-    title: 'Bridging the Digital Divide for Underprivileged Students',
-    summary: 'How basic computer education and mentorship are opening new doors of learning for primary school children.',
-    coverImage: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-    tags: ['Digital Access', 'Youth']
   }
 ];
 
