@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import Footer from '../components/Footer';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
@@ -10,32 +10,32 @@ import SEO from '../components/SEO';
 
 const defaultPosts = [
   {
-    _id: 'default-nepal',
-    slug: 'bring-nepal-back-to-life',
+    _id: '6ab1992c203cae3930bef17f',
+    slug: 'bring-nepal-back-to-life-1',
     title: 'Bring Nepal back to Life',
     summary: 'Stand With Nepal is a humanitarian awareness and relief campaign created to support communities affected by disaster and help them move from immediate relief toward recovery and rebuilding.',
     coverImage: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date('2026-09-22T10:00:00.000Z').toISOString(),
+    createdAt: '2026-09-21T20:53:00.778Z',
     tags: ['BEINGTOGETHER', 'HUMANITY'],
     volunteerName: 'Harsh Yadav',
     volunteerCode: 'BRF-VOL-HY2026'
   },
   {
-    _id: 'default-1',
-    slug: 'empowering-youth-kanpur',
-    title: 'Empowering Youth Through Education & Vocational Training',
-    summary: 'Discover how our skill-building programs are creating sustainable livelihood opportunities for young adults in Kanpur.',
+    _id: '6989abb3a2d81737b7fd70c0',
+    slug: 'educational-support-study-material-distribution-drive',
+    title: 'Educational Support & Study Material Distribution Drive',
+    summary: 'Empowering students from underserved areas with educational kits, notebooks, and learning essentials.',
     coverImage: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date().toISOString(),
+    createdAt: '2026-02-09T09:41:07.636Z',
     tags: ['Education', 'Community']
   },
   {
-    _id: 'default-2',
-    slug: 'community-relief-drive-2026',
-    title: 'Winter Relief Drive: Reaching 500+ Families in Need',
-    summary: 'A detailed recap of our winter relief drive bringing warmth, essential supplies, and healthcare support to vulnerable households.',
+    _id: '698739ca184ba23407c49746',
+    slug: 'a-day-of-inspiration-with-special-children',
+    title: 'A Day of Inspiration with Special Children',
+    summary: 'A memorable day spent engaging, teaching, and sharing joyous moments with wonderfully gifted children.',
     coverImage: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    createdAt: '2026-02-07T13:10:34.861Z',
     tags: ['Relief', 'Outreach']
   }
 ];
@@ -235,10 +235,10 @@ const BlogPage = () => {
               );
 
               return (
-                <div 
+                <Link 
                   key={post._id || index} 
-                  onClick={() => navigate(`/blog/${post.slug || post._id}`)}
-                  className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col h-full"
+                  to={`/blog/${post.slug || post._id}`}
+                  className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col h-full text-inherit no-underline"
                 >
                   <div className="aspect-[16/9] max-h-[190px] md:max-h-[180px] lg:max-h-[190px] overflow-hidden bg-gray-100 dark:bg-zinc-800 relative">
                     <img 
@@ -277,7 +277,7 @@ const BlogPage = () => {
 
                     {/* Linked Campaign & Admin Control */}
                     {linkedCampaign && (
-                      <div className="mb-3 p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="mb-3 p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                         <div className="flex items-center gap-1.5 min-w-0">
                           <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
                           <span className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 truncate">
@@ -296,7 +296,7 @@ const BlogPage = () => {
                           <button
                             type="button"
                             disabled={campaignLoading}
-                            onClick={(e) => handleToggleCampaign(linkedCampaign, e)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleCampaign(linkedCampaign, e); }}
                             className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-xs ${
                               linkedCampaign.status === 'disabled'
                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -333,7 +333,7 @@ const BlogPage = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

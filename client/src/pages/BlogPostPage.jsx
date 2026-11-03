@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import DOMPurify from 'dompurify';
 import Footer from '../components/Footer';
@@ -26,6 +26,44 @@ import SEO from '../components/SEO';
 
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="%23e4e4e7"/><path fill="%23a1a1aa" d="M64 28a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM32 98c0-17.7 14.3-30 32-30s32 12.3 32 30v6H32v-6z"/></svg>`;
 
+const defaultPostsFallback = [
+  {
+    _id: '6ab1992c203cae3930bef17f',
+    slug: 'bring-nepal-back-to-life-1',
+    title: 'Bring Nepal back to Life',
+    summary: 'Stand With Nepal is a humanitarian awareness and relief campaign created to support communities affected by disaster and help them move from immediate relief toward recovery and rebuilding.',
+    coverImage: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&q=80&w=800',
+    createdAt: '2026-09-21T20:53:00.778Z',
+    updatedAt: '2026-09-21T20:53:30.778Z',
+    tags: ['BEINGTOGETHER', 'HUMANITY'],
+    volunteerName: 'Harsh Yadav',
+    volunteerCode: 'BRF-VOL-HY2026',
+    status: 'published'
+  },
+  {
+    _id: '698739ca184ba23407c49746',
+    slug: 'a-day-of-inspiration-with-special-children',
+    title: 'A Day of Inspiration with Special Children',
+    summary: 'A heartwarming initiative dedicated to spending meaningful moments and empowering children with special needs.',
+    coverImage: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
+    createdAt: '2026-02-07T13:10:34.861Z',
+    updatedAt: '2026-02-07T13:10:34.864Z',
+    tags: ['Education', 'Community'],
+    status: 'published'
+  },
+  {
+    _id: '6989abb3a2d81737b7fd70c0',
+    slug: 'educational-support-study-material-distribution-drive',
+    title: 'Educational Support & Study Material Distribution Drive',
+    summary: 'Empowering underprivileged students by providing essential study kits, books, and educational supplies.',
+    coverImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=800',
+    createdAt: '2026-02-09T09:41:07.636Z',
+    updatedAt: '2026-02-09T09:46:14.795Z',
+    tags: ['Education', 'Relief'],
+    status: 'published'
+  }
+];
+
 const BlogPostPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -39,6 +77,7 @@ const BlogPostPage = () => {
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -66,14 +105,19 @@ const BlogPostPage = () => {
         }
       } catch (error) {
         console.error('Failed to fetch post', error);
-        toast.error('Article not found or pending admin approval.');
-        navigate('/blog');
+        // Fallback check against known default posts if matches slug or ID
+        const fallback = defaultPostsFallback.find(p => p.slug === slug || p._id === slug);
+        if (fallback) {
+          setPost(fallback);
+        } else {
+          setFetchError(true);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchPost();
-  }, [slug, navigate]);
+  }, [slug]);
 
   const handleToggleCampaignStatus = async (targetCampaign) => {
     if (!targetCampaign || !targetCampaign._id) return;
@@ -135,13 +179,35 @@ const BlogPostPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center pt-20 sm:pt-24 pb-16">
+        <SEO 
+          title="Loading Story" 
+          canonical={`https://www.blackrosefoundation.org.in/blog/${slug}`} 
+        />
         <div className="text-xs font-semibold text-zinc-400 animate-pulse">Loading article...</div>
       </div>
     );
   }
 
-  if (!post) return null;
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
+        <SEO 
+          title="Article Not Found" 
+          canonical={`https://www.blackrosefoundation.org.in/blog/${slug}`} 
+        />
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">Article Not Found</h2>
+        <p className="text-sm text-zinc-500 mb-6">The article you are looking for does not exist or may be pending admin approval.</p>
+        <Link 
+          to="/blog"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-bold hover:scale-105 transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to All Articles</span>
+        </Link>
+      </div>
+    );
+  }
 
   // Resolve linked volunteer (populated or fallback to post metadata)
   const volunteer = post.volunteerId || (post.volunteerCode ? {
@@ -161,10 +227,15 @@ const BlogPostPage = () => {
   const articleSchema = post ? {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.blackrosefoundation.org.in/blog/${post.slug || slug}`
+    },
     "headline": post.title,
     "description": post.summary || post.title,
     "image": post.coverImage || "https://www.blackrosefoundation.org.in/blackrose_logo.png",
     "datePublished": post.createdAt,
+    "dateModified": post.updatedAt || post.createdAt,
     "author": {
       "@type": "Person",
       "name": post.volunteerName || post.author || "Blackrose Foundation Team"
@@ -176,10 +247,6 @@ const BlogPostPage = () => {
         "@type": "ImageObject",
         "url": "https://www.blackrosefoundation.org.in/blackrose_logo.png"
       }
-    },
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `https://www.blackrosefoundation.org.in/blog/${post.slug || slug}`
     }
   } : null;
 
@@ -188,6 +255,7 @@ const BlogPostPage = () => {
       <SEO 
         title={post.title} 
         description={post.summary || `Read ${post.title} on Blackrose Foundation.`} 
+        canonical={`https://www.blackrosefoundation.org.in/blog/${post.slug || slug}`}
         ogImage={post.coverImage} 
         ogType="article" 
         jsonLd={articleSchema} 

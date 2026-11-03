@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { CLOUDINARY_LOGO_URL } from '../utils/constants';
 import localLogo from '../assets/logo.webp';
@@ -119,11 +119,9 @@ const Navigation = ({
                 </button>
               );
             })}
-            <button
-              onClick={() => {
-                navigate('/campaigns');
-                setIsMenuOpen(false);
-              }}
+            <Link
+              to="/campaigns"
+              onClick={() => setIsMenuOpen(false)}
               className={`text-sm font-medium transition-colors cursor-pointer relative py-1 ${
                 location.pathname.startsWith('/campaigns')
                   ? 'text-zinc-900 dark:text-white font-semibold' 
@@ -134,12 +132,10 @@ const Navigation = ({
               {location.pathname.startsWith('/campaigns') && (
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-zinc-900 dark:bg-white rounded-full"></span>
               )}
-            </button>
-            <button
-              onClick={() => {
-                navigate('/blog');
-                setIsMenuOpen(false);
-              }}
+            </Link>
+            <Link
+              to="/blog"
+              onClick={() => setIsMenuOpen(false)}
               className={`text-sm font-medium transition-colors cursor-pointer relative py-1 ${
                 isBlogActive
                   ? 'text-zinc-900 dark:text-white font-semibold' 
@@ -150,7 +146,7 @@ const Navigation = ({
               {isBlogActive && (
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-zinc-900 dark:bg-white rounded-full"></span>
               )}
-            </button>
+            </Link>
           </div>
 
           {/* Right Action Items */}
@@ -249,24 +245,20 @@ const Navigation = ({
                   {item.label}
                 </button>
               ))}
-              <button
-                onClick={() => {
-                  navigate('/campaigns');
-                  setIsMenuOpen(false);
-                }}
-                className="text-left text-sm py-2 px-3 rounded-lg font-medium text-zinc-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
+              <Link
+                to="/campaigns"
+                onClick={() => setIsMenuOpen(false)}
+                className="block text-left text-sm py-2 px-3 rounded-lg font-medium text-zinc-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
               >
                 Campaigns
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/blog');
-                  setIsMenuOpen(false);
-                }}
-                className="text-left text-sm py-2 px-3 rounded-lg font-medium text-zinc-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
+              </Link>
+              <Link
+                to="/blog"
+                onClick={() => setIsMenuOpen(false)}
+                className="block text-left text-sm py-2 px-3 rounded-lg font-medium text-zinc-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
               >
                 Blog
-              </button>
+              </Link>
             </div>
 
             {/* Mobile Auth Buttons */}

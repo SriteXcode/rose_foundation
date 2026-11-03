@@ -81,6 +81,8 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/volunteers', require('./routes/volunteerRoutes'));
 app.use('/api/blog', require('./routes/blogRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/', require('./routes/sitemapRoutes'));
 
 const { cacheMiddleware } = require('./middleware/cacheMiddleware');
 

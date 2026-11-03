@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -15,32 +15,32 @@ import { getOptimizedImageUrl } from '../utils/imageUtils';
 const defaultPosts = [
   {
     _id: 'default-nepal',
-    slug: 'bring-nepal-back-to-life',
+    slug: 'bring-nepal-back-to-life-1',
     title: 'Bring Nepal back to Life',
     summary: 'Stand With Nepal is a humanitarian awareness and relief campaign created to support communities affected by disaster and help them move from immediate relief toward recovery and rebuilding.',
     coverImage: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date('2026-09-22T10:00:00.000Z').toISOString(),
+    createdAt: '2026-09-21T20:53:00.778Z',
     tags: ['BEINGTOGETHER', 'HUMANITY'],
     volunteerName: 'Harsh Yadav',
     volunteerCode: 'BRF-VOL-HY2026'
   },
   {
-    _id: 'default-1',
-    slug: 'empowering-youth-kanpur',
-    title: 'Empowering Youth Through Education & Vocational Training',
-    summary: 'Discover how our skill-building programs are creating sustainable livelihood opportunities for young adults in Kanpur.',
-    coverImage: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date().toISOString(),
+    _id: 'default-special-children',
+    slug: 'a-day-of-inspiration-with-special-children',
+    title: 'A Day of Inspiration with Special Children',
+    summary: 'A heartwarming initiative dedicated to spending meaningful moments and empowering children with special needs.',
+    coverImage: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
+    createdAt: '2026-02-07T13:10:34.861Z',
     tags: ['Education', 'Community']
   },
   {
-    _id: 'default-2',
-    slug: 'community-relief-drive-2026',
-    title: 'Winter Relief Drive: Reaching 500+ Families in Need',
-    summary: 'A detailed recap of our winter relief drive bringing warmth, essential supplies, and healthcare support to vulnerable households.',
-    coverImage: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    tags: ['Relief', 'Outreach']
+    _id: 'default-educational-support',
+    slug: 'educational-support-study-material-distribution-drive',
+    title: 'Educational Support & Study Material Distribution Drive',
+    summary: 'Empowering underprivileged students by providing essential study kits, books, and educational supplies.',
+    coverImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=800',
+    createdAt: '2026-02-09T09:41:07.636Z',
+    tags: ['Education', 'Relief']
   }
 ];
 
@@ -183,13 +183,13 @@ const RecentBlogsCarousel = () => {
 
           {/* Carousel Controls & View All Button */}
           <div className="flex items-center gap-3 self-start md:self-end">
-            <button
-              onClick={() => navigate('/blog')}
+            <Link
+              to="/blog"
               className="text-xs font-bold text-zinc-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 inline-flex items-center gap-1 transition-colors cursor-pointer mr-2"
             >
               <span>View All Articles</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </Link>
 
             <div className="flex items-center gap-1.5">
               <button
@@ -245,7 +245,10 @@ const RecentBlogsCarousel = () => {
                     className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer group flex flex-col h-full hover:-translate-y-1"
                   >
                     {/* Image Box */}
-                    <div className="aspect-[16/9] max-h-[190px] overflow-hidden bg-gray-100 dark:bg-zinc-800 relative">
+                    <Link
+                      to={`/blog/${post.slug || post._id}`}
+                      className="aspect-[16/9] max-h-[190px] overflow-hidden bg-gray-100 dark:bg-zinc-800 relative block"
+                    >
                       <img 
                         src={cover} 
                         alt={post.title} 
@@ -263,7 +266,7 @@ const RecentBlogsCarousel = () => {
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Content Body */}
                     <div className="p-5 flex flex-col flex-1 text-left">
@@ -273,7 +276,9 @@ const RecentBlogsCarousel = () => {
                       </div>
 
                       <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
-                        {post.title}
+                        <Link to={`/blog/${post.slug || post._id}`} className="hover:underline">
+                          {post.title}
+                        </Link>
                       </h3>
 
                       <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-4 flex-1 leading-relaxed">
@@ -282,17 +287,14 @@ const RecentBlogsCarousel = () => {
 
                       {/* Card Footer Actions */}
                       <div className="pt-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 mt-auto">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCardClick(post);
-                          }}
+                        <Link
+                          to={`/blog/${post.slug || post._id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="text-xs font-extrabold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 cursor-pointer"
                         >
                           <span>Read Story</span>
                           <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        </Link>
 
                         <button
                           type="button"

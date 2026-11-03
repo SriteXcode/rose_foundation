@@ -19,16 +19,19 @@ const transporter = nodemailer.createTransport({
 /**
  * Send Email with template
  * @param {string} to - Recipient email
- * @param {object} template - { subject, html }
+ * @param {object} template - { subject, html, text, replyTo }
+ * @param {string} [replyTo] - Optional reply-to address
  */
-const sendEmail = async (to, template) => {
+const sendEmail = async (to, template, replyTo = null) => {
   try {
+    const finalReplyTo = replyTo || template.replyTo || undefined;
     const mailOptions = {
       from: `"Black Rose Foundation" <${process.env.EMAIL_USER}>`,
       to,
       subject: template.subject,
-      text: "Please view this email in HTML mode.",
+      text: template.text || "Please view this email in HTML mode.",
       html: template.html,
+      ...(finalReplyTo ? { replyTo: finalReplyTo } : {})
     };
 
     const info = await transporter.sendMail(mailOptions);

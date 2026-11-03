@@ -2,6 +2,8 @@ const BlogPost = require('../models/BlogPost');
 const Volunteer = require('../models/Volunteer');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const { generateSitemapXml } = require('../utils/sitemapGenerator');
 
 // Helper to create slug from title
 const createSlug = (title) => {
@@ -63,7 +65,11 @@ exports.getAllPosts = async (req, res) => {
 // Get single post by slug (Public for published; Author/Admin can preview pending/draft)
 exports.getPostBySlug = async (req, res) => {
   try {
-    const post = await BlogPost.findOne({ slug: req.params.slug })
+    const slugOrId = req.params.slug;
+    const isObjectId = mongoose.isValidObjectId(slugOrId);
+    const post = await BlogPost.findOne(
+      isObjectId ? { $or: [{ slug: slugOrId }, { _id: slugOrId }] } : { slug: slugOrId }
+    )
       .populate('volunteerId', 'name image designation role volunteerCode fundraiserCode upiId directPaymentQrImage totalRaised fundraiserGoal')
       .populate('campaign');
 
@@ -171,6 +177,10 @@ exports.createPost = async (req, res) => {
     const newPost = new BlogPost(postData);
     await newPost.save();
 
+    if (finalStatus === 'published') {
+      generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
+    }
+
     const successMessage = finalStatus === 'pending'
       ? 'Article submitted successfully! It will be visible on the blog once approved by an administrator.'
       : finalStatus === 'draft'
@@ -194,6 +204,8 @@ exports.updatePost = async (req, res) => {
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
+
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
 
     const isAdmin = req.user && req.user.role === 'admin';
     const isOwner = post.authorId && post.authorId.toString() === req.user.id.toString();
@@ -221,6 +233,7 @@ exports.updatePost = async (req, res) => {
 
     post.updatedAt = Date.now();
     await post.save();
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
 
     const msg = !isAdmin && post.status === 'pending'
       ? 'Article updated and resubmitted for admin approval.'
@@ -242,6 +255,8 @@ exports.deletePost = async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
 
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
+
     const isAdmin = req.user && req.user.role === 'admin';
     const isOwner = post.authorId && post.authorId.toString() === req.user.id.toString();
 
@@ -250,6 +265,7 @@ exports.deletePost = async (req, res) => {
     }
 
     await BlogPost.findByIdAndDelete(id);
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
     console.error('Delete Post Error:', error);
@@ -271,6 +287,8 @@ exports.approvePost = async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
 
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
+
     res.json({ message: 'Article approved and published live!', post });
   } catch (error) {
     console.error('Approve Post Error:', error);
@@ -291,6 +309,8 @@ exports.rejectPost = async (req, res) => {
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
     }
+
+    generateSitemapXml().catch(err => console.error('Auto sitemap update err:', err));
 
     res.json({ message: 'Article marked as rejected.', post });
   } catch (error) {

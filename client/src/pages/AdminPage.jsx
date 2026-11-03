@@ -43,8 +43,23 @@ import {
   Key,
   AlertTriangle,
   Eye,
-  EyeOff
+  EyeOff,
+  Inbox,
+  Reply,
+  Clock,
+  Calendar,
+  Check,
+  Bell,
+  BellRing,
+  BellOff
 } from 'lucide-react';
+import { 
+  isPushSupported, 
+  getPushSubscription, 
+  subscribeToPush, 
+  unsubscribeFromPush, 
+  sendTestPush 
+} from '../utils/pushNotifications';
 
 const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const navigate = useNavigate();
@@ -95,6 +110,17 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   const [donationsList, setDonationsList] = useState([]);
   const [donationSearchTerm, setDonationSearchTerm] = useState('');
 
+  // Contact Messages State
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messageSearchTerm, setMessageSearchTerm] = useState('');
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [messageStatusFilter, setMessageStatusFilter] = useState('all');
+  const [messagesPage, setMessagesPage] = useState(1);
+  const messagesPerPage = 10;
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
   const [newsletterForm, setNewsletterForm] = useState({ subject: '', message: '' });
   const [settingsForm, setSettingsForm] = useState({
     siteName: '',
@@ -129,6 +155,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
 
     if (activeTab === 'dashboard') {
       loadAdminData();
+      fetchMessages();
+    }
+    if (activeTab === 'messages') {
+      fetchMessages();
     }
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'projects') fetchWorks();
@@ -167,6 +197,106 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       if (loadAdminData) loadAdminData();
     } catch (error) {
       toast.error('Failed to delete donation record');
+    }
+  };
+
+  const fetchMessages = async () => {
+    setMessagesLoading(true);
+    try {
+      const response = await axiosInstance.get('/contact');
+      setMessages(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch contact messages', error);
+      toast.error('Failed to load contact messages');
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
+  const handleDeleteMessage = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) return;
+    try {
+      await axiosInstance.delete(`/contact/${id}`);
+      toast.success('Message deleted successfully');
+      setMessages(prev => prev.filter(m => m._id !== id));
+      if (selectedMessage && selectedMessage._id === id) {
+        setSelectedMessage(null);
+      }
+      if (loadAdminData) loadAdminData();
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
+  const handleUpdateMessageStatus = async (id, status) => {
+    try {
+      await axiosInstance.patch(`/contact/${id}/status`, { status });
+      setMessages(prev => prev.map(m => m._id === id ? { ...m, status } : m));
+      if (selectedMessage && selectedMessage._id === id) {
+        setSelectedMessage(prev => ({ ...prev, status }));
+      }
+      toast.success(`Message marked as ${status}`);
+    } catch (error) {
+      console.error('Failed to update message status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleOpenMessage = async (msg) => {
+    setSelectedMessage(msg);
+    if (!msg.status || msg.status === 'unread') {
+      try {
+        await axiosInstance.patch(`/contact/${msg._id}/status`, { status: 'read' });
+        setMessages(prev => prev.map(m => m._id === msg._id ? { ...m, status: 'read' } : m));
+        setSelectedMessage(prev => prev && prev._id === msg._id ? { ...prev, status: 'read' } : prev);
+      } catch (err) {
+        // Silently ignore status sync error
+      }
+    }
+  };
+
+  const unreadMessagesCount = messages.filter(m => !m.status || m.status === 'unread').length;
+
+  // Check initial Push Notification subscription
+  useEffect(() => {
+    if (isPushSupported()) {
+      getPushSubscription().then(sub => {
+        setIsPushSubscribed(Boolean(sub));
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleTogglePush = async () => {
+    setPushLoading(true);
+    try {
+      if (isPushSubscribed) {
+        await unsubscribeFromPush();
+        setIsPushSubscribed(false);
+        toast.success('Push notifications disabled on this browser.');
+      } else {
+        await subscribeToPush();
+        setIsPushSubscribed(true);
+        toast.success('Web push notifications enabled! You will now receive instant alerts on this device.');
+      }
+    } catch (err) {
+      console.error('Push notification toggle error:', err);
+      toast.error(err.message || 'Failed to toggle push notifications');
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setPushLoading(true);
+    try {
+      await sendTestPush();
+      toast.success('Test notification triggered! Check your notification center.');
+    } catch (err) {
+      console.error('Failed to send test push:', err);
+      toast.error('Failed to trigger test notification');
+    } finally {
+      setPushLoading(false);
     }
   };
 
@@ -921,6 +1051,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
   // Nav Items Definition
   const sidebarItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'messages', icon: MessageSquare, label: 'Messages' },
     { id: 'campaigns', icon: Sparkles, label: 'Campaign Popup' },
     { id: 'fundraisers', icon: HeartHandshake, label: 'Fundraisers' },
     { id: 'volunteers', icon: UserCheck, label: 'Volunteers' },
@@ -949,16 +1080,23 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
+        <div 
+          onClick={() => handleTabChange('messages')}
+          className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-all hover:scale-[1.01]"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Contact Messages</p>
+              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Contact Messages</p>
               <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white mt-1">{adminData.stats?.totalContacts || 0}</h3>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
               <MessageSquare className="w-5 h-5" />
             </div>
           </div>
+          <p className="text-[11px] text-zinc-400 mt-2 font-medium flex items-center gap-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <span>View all messages</span>
+            <span>&rarr;</span>
+          </p>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs relative overflow-hidden group">
@@ -1019,19 +1157,38 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         {/* Recent Messages */}
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-bold text-zinc-900 dark:text-white">Recent Messages</h3>
-            <span className="text-xs text-zinc-400 font-medium">Inquiries</span>
+            <div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white">Recent Messages</h3>
+              <p className="text-[11px] text-zinc-400">Click any message to read enlarged</p>
+            </div>
+            <button 
+              onClick={() => handleTabChange('messages')}
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>View all ({adminData.stats?.totalContacts || 0})</span>
+              <span>&rarr;</span>
+            </button>
           </div>
           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
             {adminData.contacts?.length > 0 ? (
               adminData.contacts.map((message) => (
-                <div key={message._id} className="bg-gray-50 dark:bg-zinc-800/60 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center">
-                  <div className="flex-1 pr-3">
-                    <p className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-white">{message.name}</p>
+                <div 
+                  key={message._id} 
+                  onClick={() => handleOpenMessage(message)}
+                  className="bg-gray-50 hover:bg-gray-100/80 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 p-3.5 rounded-xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center cursor-pointer transition-all hover:scale-[1.01] hover:shadow-xs group"
+                >
+                  <div className="flex-1 pr-3 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{message.name}</p>
+                      {(!message.status || message.status === 'unread') && (
+                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" title="Unread"></span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-xs">{message.message}</p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 flex items-center gap-2">
                     <span className="text-[10px] text-zinc-400">{new Date(message.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">&rarr;</span>
                   </div>
                 </div>
               ))
@@ -1043,6 +1200,528 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       </div>
     </div>
   );
+
+  const renderMessageModal = () => {
+    if (!selectedMessage) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
+        onClick={() => setSelectedMessage(null)}
+      >
+        <div 
+          className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+                {selectedMessage.name?.charAt(0)?.toUpperCase() || 'M'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-extrabold text-zinc-900 dark:text-white">
+                    {selectedMessage.name}
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    selectedMessage.status === 'replied'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                      : selectedMessage.status === 'read'
+                      ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                  }`}>
+                    {selectedMessage.status || 'read'}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{new Date(selectedMessage.createdAt).toLocaleString(undefined, {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedMessage(null)}
+              className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Sender Email Bar */}
+          <div className="mt-4 p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <Mail className="w-4 h-4 text-zinc-400 shrink-0" />
+              <span className="text-zinc-500 dark:text-zinc-400 shrink-0">Email:</span>
+              <a
+                href={`mailto:${selectedMessage.email}`}
+                className="font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate"
+              >
+                {selectedMessage.email}
+              </a>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(selectedMessage.email);
+                toast.success('Email copied to clipboard');
+              }}
+              className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 text-[11px] font-medium shrink-0 cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </button>
+          </div>
+
+          {/* Enlarged Message Body */}
+          <div className="flex-1 overflow-y-auto my-4 pr-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Full Message Content</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedMessage.message);
+                  toast.success('Message text copied to clipboard');
+                }}
+                className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy Message</span>
+              </button>
+            </div>
+            <div className="bg-gray-50/80 dark:bg-zinc-800/40 rounded-2xl p-5 sm:p-6 border border-gray-200/80 dark:border-zinc-700/60">
+              <p className="text-sm sm:text-base text-zinc-800 dark:text-zinc-100 leading-relaxed whitespace-pre-wrap break-words select-text font-normal">
+                {selectedMessage.message}
+              </p>
+            </div>
+          </div>
+
+          {/* Status Toggle & Action Footer */}
+          <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+            {/* Status Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-500 font-medium">Status:</span>
+              <select
+                value={selectedMessage.status || 'read'}
+                onChange={(e) => handleUpdateMessageStatus(selectedMessage._id, e.target.value)}
+                className="text-xs font-semibold bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-zinc-800 dark:text-zinc-200 cursor-pointer focus:outline-none"
+              >
+                <option value="unread">Mark as Unread</option>
+                <option value="read">Mark as Read</option>
+                <option value="replied">Mark as Replied</option>
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDeleteMessage(selectedMessage._id)}
+                className="px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+
+              <a
+                href={`mailto:${selectedMessage.email}?subject=Regarding your inquiry to Black Rose Foundation&body=Dear ${encodeURIComponent(selectedMessage.name)},%0D%0A%0D%0AThank you for reaching out to Black Rose Foundation.%0D%0A%0D%0A`}
+                onClick={() => handleUpdateMessageStatus(selectedMessage._id, 'replied')}
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Reply className="w-3.5 h-3.5" />
+                <span>Reply via Email</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMessages = () => {
+    const filteredMessages = messages.filter(m => {
+      // Status filter
+      if (messageStatusFilter === 'unread' && m.status !== 'unread' && m.status) return false;
+      if (messageStatusFilter === 'read' && m.status !== 'read') return false;
+      if (messageStatusFilter === 'replied' && m.status !== 'replied') return false;
+
+      // Search term filter
+      if (!messageSearchTerm.trim()) return true;
+      const term = messageSearchTerm.toLowerCase();
+      return (
+        m.name?.toLowerCase().includes(term) ||
+        m.email?.toLowerCase().includes(term) ||
+        m.message?.toLowerCase().includes(term)
+      );
+    });
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filteredMessages.length / messagesPerPage));
+    const currentPage = Math.min(messagesPage, totalPages);
+    const paginatedMessages = filteredMessages.slice(
+      (currentPage - 1) * messagesPerPage,
+      currentPage * messagesPerPage
+    );
+
+    const unreadCount = messages.filter(m => !m.status || m.status === 'unread').length;
+    const repliedCount = messages.filter(m => m.status === 'replied').length;
+    const readCount = messages.filter(m => m.status === 'read').length;
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span>Contact Messages</span>
+              <span className="text-xs bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2.5 py-0.5 rounded-full font-bold">
+                {messages.length}
+              </span>
+            </h3>
+            <p className="text-xs text-zinc-500">Read, review, and reply to inquiries submitted via the website contact form</p>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+            {/* Web Push Notification Toggle */}
+            {isPushSupported() && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleTogglePush}
+                  disabled={pushLoading}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                    isPushSubscribed
+                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700'
+                  }`}
+                  title={isPushSubscribed ? 'Web push notifications are active on this browser' : 'Click to enable web push notifications'}
+                >
+                  {isPushSubscribed ? (
+                    <>
+                      <BellRing className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                      <span>Push Active</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Enable Push Alert</span>
+                    </>
+                  )}
+                </button>
+
+                {isPushSubscribed && (
+                  <button
+                    type="button"
+                    onClick={handleSendTestPush}
+                    disabled={pushLoading}
+                    className="px-2.5 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl text-xs font-medium transition-all cursor-pointer"
+                    title="Send a test notification to this device"
+                  >
+                    Test
+                  </button>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={() => { fetchMessages(); if (loadAdminData) loadAdminData(); }}
+              disabled={messagesLoading}
+              className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Refresh messages"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${messagesLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Active Notification Channels Banner */}
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-zinc-900 dark:to-zinc-800 border border-blue-100 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-zinc-900 dark:text-white">Admin Notification Channels</p>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                New contact inquiries trigger an immediate <strong>Admin Email Alert</strong> and <strong>Web Push Alerts</strong> on active devices.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+              <Check className="w-3 h-3" /> Email Alert
+            </span>
+            {isPushSubscribed ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-300 dark:border-blue-800">
+                <BellRing className="w-3 h-3" /> Web Push Active
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 bg-gray-100 dark:bg-zinc-800 px-2.5 py-0.5 rounded-full">
+                <Bell className="w-3 h-3" /> Push Standby
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Quick KPI stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div 
+            onClick={() => { setMessageStatusFilter('all'); setMessagesPage(1); }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              messageStatusFilter === 'all'
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-xs'
+                : 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border-gray-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold uppercase tracking-wider opacity-75">All Inquiries</span>
+              <Inbox className="w-4 h-4 opacity-75" />
+            </div>
+            <p className="text-2xl font-extrabold mt-1">{messages.length}</p>
+          </div>
+
+          <div 
+            onClick={() => { setMessageStatusFilter('unread'); setMessagesPage(1); }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              messageStatusFilter === 'unread'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                : 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border-gray-200/80 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-800'
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <span className={`text-xs font-semibold uppercase tracking-wider ${messageStatusFilter === 'unread' ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'}`}>Unread</span>
+              <span className={`w-2 h-2 rounded-full ${messageStatusFilter === 'unread' ? 'bg-white' : 'bg-blue-600'}`}></span>
+            </div>
+            <p className="text-2xl font-extrabold mt-1">{unreadCount}</p>
+          </div>
+
+          <div 
+            onClick={() => { setMessageStatusFilter('replied'); setMessagesPage(1); }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              messageStatusFilter === 'replied'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border-gray-200/80 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-800'
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <span className={`text-xs font-semibold uppercase tracking-wider ${messageStatusFilter === 'replied' ? 'text-emerald-100' : 'text-emerald-600 dark:text-emerald-400'}`}>Replied</span>
+              <Check className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-extrabold mt-1">{repliedCount}</p>
+          </div>
+        </div>
+
+        {/* Filters & Search */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+          {/* Status Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {[
+              { id: 'all', label: `All (${messages.length})` },
+              { id: 'unread', label: `Unread (${unreadCount})` },
+              { id: 'read', label: `Read (${readCount})` },
+              { id: 'replied', label: `Replied (${repliedCount})` },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setMessageStatusFilter(tab.id); setMessagesPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  messageStatusFilter === tab.id
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                    : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-gray-200/80 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by name, email, text..."
+              value={messageSearchTerm}
+              onChange={(e) => { setMessageSearchTerm(e.target.value); setMessagesPage(1); }}
+              className="w-full bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-full pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white shadow-2xs"
+            />
+            {messageSearchTerm && (
+              <button 
+                onClick={() => setMessageSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Messages List Container */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+          {messagesLoading ? (
+            <div className="p-12 text-center text-zinc-400 space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-zinc-400" />
+              <p className="text-xs">Loading contact messages...</p>
+            </div>
+          ) : paginatedMessages.length > 0 ? (
+            <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+              {paginatedMessages.map((msg) => {
+                const isUnread = !msg.status || msg.status === 'unread';
+                const isReplied = msg.status === 'replied';
+
+                return (
+                  <div
+                    key={msg._id}
+                    onClick={() => handleOpenMessage(msg)}
+                    className={`p-4 sm:p-5 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group ${
+                      isUnread 
+                        ? 'bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/70 dark:hover:bg-blue-950/30' 
+                        : 'hover:bg-gray-50/70 dark:hover:bg-zinc-800/40'
+                    }`}
+                  >
+                    {/* Left: Avatar & Sender Info */}
+                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 shadow-xs ${
+                        isReplied
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : isUnread
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      }`}>
+                        {msg.name?.charAt(0)?.toUpperCase() || 'M'}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {msg.name}
+                          </h4>
+
+                          {isUnread && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900 uppercase tracking-wider">
+                              Unread
+                            </span>
+                          )}
+
+                          {isReplied && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 uppercase tracking-wider">
+                              Replied
+                            </span>
+                          )}
+
+                          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 ml-auto sm:ml-0 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(msg.createdAt).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mb-1.5">
+                          <Mail className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{msg.email}</span>
+                        </p>
+
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
+                          {msg.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleOpenMessage(msg)}
+                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-xl text-xs font-semibold flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Read</span>
+                      </button>
+
+                      <a
+                        href={`mailto:${msg.email}?subject=Regarding your message to Black Rose Foundation`}
+                        onClick={() => handleUpdateMessageStatus(msg._id, 'replied')}
+                        className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer"
+                        title="Reply via Email"
+                      >
+                        <Reply className="w-4 h-4" />
+                      </a>
+
+                      <button
+                        onClick={() => handleDeleteMessage(msg._id)}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
+                        title="Delete Message"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto mb-3">
+                <Inbox className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-900 dark:text-white">No messages found</h4>
+              <p className="text-xs text-zinc-500 mt-1">
+                {messageSearchTerm || messageStatusFilter !== 'all'
+                  ? 'No messages match your search or filter criteria.'
+                  : 'No contact messages have been received yet.'}
+              </p>
+              {(messageSearchTerm || messageStatusFilter !== 'all') && (
+                <button
+                  onClick={() => { setMessageSearchTerm(''); setMessageStatusFilter('all'); }}
+                  className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-6 py-3.5 border-t border-gray-100 dark:border-zinc-800/80 flex items-center justify-between gap-4 text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">
+                Page <span className="font-bold text-zinc-900 dark:text-white">{currentPage}</span> of <span className="font-bold text-zinc-900 dark:text-white">{totalPages}</span> ({filteredMessages.length} total messages)
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage <= 1}
+                  onClick={() => setMessagesPage(p => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setMessagesPage(p => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 font-semibold text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderUsers = () => {
     const filteredUsersList = users.filter(u => 
@@ -2116,6 +2795,79 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-6">
+        {/* Real-time Notifications & Alerts Card */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+                <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>Inquiry Notification Channels</span>
+              </h4>
+              <p className="text-[11px] text-zinc-500">Configure how you receive alerts when supporters send messages</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4 pt-1">
+            {/* Email Alert Channel */}
+            <div className="p-4 rounded-xl border border-gray-200/80 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-emerald-600" />
+                  <span>Admin Email Alert</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  Active
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Inquiries are automatically emailed to admin with full message text and 1-click reply.
+              </p>
+            </div>
+
+            {/* Web Push Channel */}
+            <div className="p-4 rounded-xl border border-gray-200/80 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-800/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-1.5">
+                  <BellRing className="w-4 h-4 text-blue-600" />
+                  <span>Web Push Notifications</span>
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  isPushSubscribed 
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
+                    : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                }`}>
+                  {isPushSubscribed ? 'Subscribed' : 'Not Subscribed'}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Receive browser popup notifications on this device even when the website is closed.
+              </p>
+              {isPushSupported() && (
+                <div className="pt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTogglePush}
+                    disabled={pushLoading}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg text-xs font-semibold cursor-pointer"
+                  >
+                    {isPushSubscribed ? 'Disable on this device' : 'Enable on this device'}
+                  </button>
+                  {isPushSubscribed && (
+                    <button
+                      type="button"
+                      onClick={handleSendTestPush}
+                      disabled={pushLoading}
+                      className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold cursor-pointer"
+                    >
+                      Test Alert
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-4">
           <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-gray-100 dark:border-zinc-800 pb-2">General Details</h4>
           <div>
@@ -2275,6 +3027,15 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                     {blogCounts.pending}
                   </span>
                 )}
+                {item.id === 'messages' && (unreadMessagesCount > 0 || messages.length > 0 || (adminData.stats?.totalContacts || 0) > 0) && (
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs ${
+                    unreadMessagesCount > 0
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
+                  }`}>
+                    {unreadMessagesCount > 0 ? unreadMessagesCount : (messages.length || adminData.stats?.totalContacts || 0)}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2283,6 +3044,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
           {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'messages' && renderMessages()}
           {activeTab === 'campaigns' && renderCampaigns()}
           {activeTab === 'fundraisers' && renderFundraisers()}
           {activeTab === 'volunteers' && renderVolunteers()}
@@ -2296,6 +3058,9 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       </div>
 
       {/* --- Modals --- */}
+      {/* Enlarged Message Detail Modal */}
+      {selectedMessage && renderMessageModal()}
+
       {/* Blog Modal */}
       {showBlogModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
