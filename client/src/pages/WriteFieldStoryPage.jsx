@@ -38,7 +38,9 @@ import {
   Type,
   SlidersHorizontal,
   Trash2,
-  Check
+  Check,
+  Code2,
+  FileCode
 } from 'lucide-react';
 
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="%23e4e4e7"/><path fill="%23a1a1aa" d="M64 28a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM32 98c0-17.7 14.3-30 32-30s32 12.3 32 30v6H32v-6z"/></svg>`;
@@ -195,6 +197,17 @@ const WriteFieldStoryPage = () => {
   const [viewMode, setViewMode] = useState('split');
   const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
+
+  // Editor Mode: 'visual' (Quill Rich Text) | 'html_tailwind' (Raw HTML & Tailwind CSS Code Mode)
+  const [editorMode, setEditorMode] = useState('visual');
+
+  const insertTailwindSnippet = (snippetHtml) => {
+    setStory(prev => ({
+      ...prev,
+      content: (prev.content || '') + '\n' + snippetHtml + '\n'
+    }));
+    toast.success('Tailwind component snippet inserted!');
+  };
 
   // In-Content Image Insertion & Sizing State
   const [showImageModal, setShowImageModal] = useState(false);
@@ -1005,8 +1018,8 @@ const WriteFieldStoryPage = () => {
                 dangerouslySetInnerHTML={{
                   __html: cleanContent(
                     DOMPurify.sanitize(story.content || '<p class="text-zinc-400 italic">Story body is empty. Type in the editor to see live updates...</p>', {
-                      ADD_TAGS: ['figure', 'figcaption', 'img', 'div', 'h3', 'h4', 'p', 'span'],
-                      ADD_ATTR: ['class', 'src', 'alt', 'target', 'href', 'style', 'width', 'height', 'data-width', 'data-placement']
+                      ADD_TAGS: ['figure', 'figcaption', 'img', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'section', 'article', 'header', 'footer', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'button', 'svg', 'path', 'style'],
+                      ADD_ATTR: ['class', 'src', 'alt', 'target', 'href', 'style', 'width', 'height', 'data-width', 'data-placement', 'id']
                     })
                   )
                 }}
@@ -1270,40 +1283,71 @@ const WriteFieldStoryPage = () => {
                   />
                 </div>
 
+                {/* Editor Mode Selector: Visual Rich Text vs HTML & Tailwind CSS Code Mode */}
+                <div className="flex items-center justify-between gap-2 mb-4 bg-gray-100 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-gray-200 dark:border-zinc-700/80">
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('visual')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      editorMode === 'visual'
+                        ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Visual Rich Text Editor</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('html_tailwind')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      editorMode === 'html_tailwind'
+                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-amber-500" />
+                    <span>HTML & Tailwind CSS Mode</span>
+                  </button>
+                </div>
+
                 {/* Rich Story Content + Easy In-Content Photo Inserter */}
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                      Story Body Content *
+                      Story Body Content * {editorMode === 'html_tailwind' ? '(HTML & Tailwind Mode)' : ''}
                     </label>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Quick Button: Insert In-Content Photo with Caption */}
-                      <button
-                        type="button"
-                        onClick={handleOpenInsertModal}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-xs font-bold cursor-pointer transition-all shadow-2xs"
-                        title="Insert single photo with custom size, caption, and placement"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
-                        <span>+ Insert Photo & Sizing</span>
-                      </button>
+                    {editorMode === 'visual' && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Quick Button: Insert In-Content Photo with Caption */}
+                        <button
+                          type="button"
+                          onClick={handleOpenInsertModal}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-xs font-bold cursor-pointer transition-all shadow-2xs"
+                          title="Insert single photo with custom size, caption, and placement"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
+                          <span>+ Insert Photo & Sizing</span>
+                        </button>
 
-                      {/* Quick Button: Multi-Column Builder */}
-                      <button
-                        type="button"
-                        onClick={() => setShowColumnModal(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 text-xs font-bold cursor-pointer transition-all shadow-2xs"
-                        title="Insert multi-column text and photo section"
-                      >
-                        <Columns2 className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>+ Multi-Column Section</span>
-                      </button>
-                    </div>
+                        {/* Quick Button: Multi-Column Builder */}
+                        <button
+                          type="button"
+                          onClick={() => setShowColumnModal(true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 text-xs font-bold cursor-pointer transition-all shadow-2xs"
+                          title="Insert multi-column text and photo section"
+                        >
+                          <Columns2 className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>+ Multi-Column Section</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Quick Sizing Bar for Selected Photo in Editor */}
-                  {selectedEditorImage && (
+                  {editorMode === 'visual' && selectedEditorImage && (
                     <div className="image-quick-control-bar mb-3 p-3 bg-zinc-900 text-white dark:bg-zinc-800 border border-zinc-700 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
                       <div className="flex items-center gap-2.5">
                         <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
@@ -1430,22 +1474,121 @@ const WriteFieldStoryPage = () => {
                     </div>
                   )}
 
-                  <div 
-                    className="rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700"
-                    onClick={handleEditorContainerClick}
-                    onDoubleClick={handleEditorContainerDblClick}
-                  >
-                    <ReactQuill
-                      ref={quillRef}
-                      theme="snow"
-                      value={story.content}
-                      onChange={(content) => setStory({ ...story, content })}
-                      modules={quillModules}
-                      useSemanticHTML={false}
-                      placeholder="Write your inspiring on-the-ground volunteer journey..."
-                      className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white min-h-[320px]"
-                    />
-                  </div>
+                  {editorMode === 'html_tailwind' ? (
+                    <div className="space-y-3">
+                      {/* Quick Insert Toolbar for Tailwind Components */}
+                      <div className="bg-zinc-900 dark:bg-zinc-950 p-3 rounded-2xl border border-zinc-800 text-white space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Tailwind UI Quick Snippets:</span>
+                          </span>
+                          <span className="text-[10px] text-zinc-400">Click to insert Tailwind component HTML</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => insertTailwindSnippet(
+                              `<div class="bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 p-6 rounded-2xl shadow-md my-6 text-left">\n  <span class="text-[10px] uppercase font-extrabold tracking-wider bg-zinc-950 text-white px-2.5 py-0.5 rounded-full">Grassroots Drive</span>\n  <h2 class="text-2xl font-extrabold mt-2 mb-1">Winter Blanket & Shelter Drive</h2>\n  <p class="text-xs sm:text-sm text-zinc-900 leading-relaxed font-medium">Reaching over 500 vulnerable families across northern communities this winter.</p>\n</div>`
+                            )}
+                            className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-300 text-[11px] font-semibold border border-zinc-700 cursor-pointer transition-colors"
+                          >
+                            + Hero Banner
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertTailwindSnippet(
+                              `<div class="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 p-4 rounded-r-2xl my-6 text-amber-900 dark:text-amber-200 text-xs sm:text-sm leading-relaxed">\n  <strong class="font-bold block mb-1">Impact Update:</strong>\n  Over ₹2,50,000 has been deployed directly to purchase thermal blankets, warm meals, and medical kits.\n</div>`
+                            )}
+                            className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-emerald-300 text-[11px] font-semibold border border-zinc-700 cursor-pointer transition-colors"
+                          >
+                            + Callout Box
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertTailwindSnippet(
+                              `<div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">\n  <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm">\n    <h3 class="text-base font-bold text-zinc-900 dark:text-white mb-2">Phase 1: Relief Kits</h3>\n    <p class="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">Direct distribution of winter supplies by field leads.</p>\n  </div>\n  <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm">\n    <h3 class="text-base font-bold text-zinc-900 dark:text-white mb-2">Phase 2: Health Camps</h3>\n    <p class="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">Free health checkups and essential winter medicines.</p>\n  </div>\n</div>`
+                            )}
+                            className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-blue-300 text-[11px] font-semibold border border-zinc-700 cursor-pointer transition-colors"
+                          >
+                            + 2-Column Grid
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertTailwindSnippet(
+                              `<blockquote class="border-l-4 border-amber-400 pl-4 my-6 italic text-zinc-700 dark:text-zinc-300 text-sm sm:text-base font-medium">\n  "Together, a small act of kindness brings warmth and dignity to those who need it most."\n</blockquote>`
+                            )}
+                            className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-purple-300 text-[11px] font-semibold border border-zinc-700 cursor-pointer transition-colors"
+                          >
+                            + Quote Block
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertTailwindSnippet(
+                              `<div class="my-6 text-center">\n  <a href="#donate" class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 px-6 py-3 rounded-full text-xs font-extrabold shadow-md transition-all">\n    <span>Support This Cause Directly</span>\n  </a>\n</div>`
+                            )}
+                            className="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-rose-300 text-[11px] font-semibold border border-zinc-700 cursor-pointer transition-colors"
+                          >
+                            + Tailwind Button
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Raw HTML Code Textarea */}
+                      <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-inner">
+                        <div className="bg-zinc-900 px-4 py-2 flex items-center justify-between border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
+                          <span className="flex items-center gap-2 text-amber-400 font-bold">
+                            <FileCode className="w-3.5 h-3.5" /> HTML & Tailwind CSS Source Editor
+                          </span>
+                          <span>{(story.content || '').length} characters</span>
+                        </div>
+                        <textarea
+                          rows={16}
+                          value={story.content}
+                          onChange={(e) => setStory({ ...story, content: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Tab') {
+                              e.preventDefault();
+                              const start = e.target.selectionStart;
+                              const end = e.target.selectionEnd;
+                              const val = e.target.value;
+                              setStory(prev => ({
+                                ...prev,
+                                content: val.substring(0, start) + '  ' + val.substring(end)
+                              }));
+                              setTimeout(() => {
+                                e.target.selectionStart = e.target.selectionEnd = start + 2;
+                              }, 0);
+                            }
+                          }}
+                          placeholder="Type or paste custom HTML with Tailwind CSS classes (e.g. <div class='p-4 bg-amber-500 text-white rounded-xl font-bold'>...</div>)..."
+                          className="w-full bg-zinc-950 text-emerald-400 font-mono text-xs p-4 focus:outline-none focus:ring-1 focus:ring-amber-500 leading-relaxed border-none resize-y"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      className="rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700"
+                      onClick={handleEditorContainerClick}
+                      onDoubleClick={handleEditorContainerDblClick}
+                    >
+                      <ReactQuill
+                        ref={quillRef}
+                        theme="snow"
+                        value={story.content}
+                        onChange={(content) => setStory({ ...story, content })}
+                        modules={quillModules}
+                        useSemanticHTML={false}
+                        placeholder="Write your inspiring on-the-ground volunteer journey..."
+                        className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white min-h-[320px]"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Donation Card Toggle */}

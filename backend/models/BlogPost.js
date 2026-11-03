@@ -79,6 +79,17 @@ const BlogPostSchema = new mongoose.Schema({
   }
 });
 
+// Virtual populate for linked Campaign
+BlogPostSchema.virtual('campaign', {
+  ref: 'Campaign',
+  localField: '_id',
+  foreignField: 'relatedBlogPost',
+  justOne: true
+});
+
+BlogPostSchema.set('toObject', { virtuals: true });
+BlogPostSchema.set('toJSON', { virtuals: true });
+
 // Middleware to update 'updatedAt' on save
 BlogPostSchema.pre('save', function(next) {
   this.updatedAt = Date.now();

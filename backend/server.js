@@ -23,23 +23,36 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 //   methods: "GET,POST,PUT,DELETE,PATCH,HEAD",
 //   credentials: true,
 // }));
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : [
-      "https://www.blackrosefoundation.org.in",
-      "https://blackrosefoundation.org.in",
-      "http://localhost:5173",
-      "http://localhost:4173",
-      "https://rose-foundation.onrender.com",
-    ];
+const defaultOrigins = [
+  "https://www.blackrosefoundation.org.in",
+  "https://blackrosefoundation.org.in",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://rose-foundation.onrender.com",
+];
+
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+
+    // Allow localhost or 127.0.0.1 on any port in development
+    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
-    return callback(new Error("CORS not allowed"));
+
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      return callback(null, true);
+    }
+
+    // Safely reject disallowed origins without throwing express server error
+    return callback(null, false);
   },
   credentials: true,
   methods: "GET,POST,PUT,DELETE,PATCH,HEAD",
@@ -68,6 +81,8 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/volunteers', require('./routes/volunteerRoutes'));
 app.use('/api/blog', require('./routes/blogRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/', require('./routes/sitemapRoutes'));
 
 const { cacheMiddleware } = require('./middleware/cacheMiddleware');
 
