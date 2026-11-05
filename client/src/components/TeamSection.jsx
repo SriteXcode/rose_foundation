@@ -316,21 +316,17 @@ const TeamSection = ({ limit = 10 }) => {
             </div>
 
             {/* Qualification */}
-            {(selectedMember.qualification || 'M.A. Social Work') && (
-              <div className="flex items-center justify-center gap-1 mt-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
-                <GraduationCap className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                <span className="truncate">{selectedMember.qualification || 'M.A. Social Work'}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-center gap-1 mt-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+              <GraduationCap className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span className="truncate">{selectedMember.qualification || 'M.A. Social Work'}</span>
+            </div>
 
             {/* Bio (Max 20 Words) */}
-            {(selectedMember.bio || 'Dedicated team member passionate about community development.') && (
-              <div className="mt-2.5 bg-gray-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-zinc-800 text-left">
-                <p className="text-[10px] text-zinc-600 dark:text-zinc-300 leading-normal font-normal">
-                  {truncateBio(selectedMember.bio || 'Dedicated team member passionate about community development.', 20)}
-                </p>
-              </div>
-            )}
+            <div className="mt-2.5 bg-gray-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-zinc-800 text-left">
+              <p className="text-[10px] text-zinc-600 dark:text-zinc-300 leading-normal font-normal">
+                {truncateBio(selectedMember.bio || 'Dedicated team member passionate about community development.', 20)}
+              </p>
+            </div>
 
             {/* Social Media Links */}
             <div className="flex items-center justify-center gap-2 mt-3 pt-2.5 border-t border-gray-100 dark:border-zinc-800">

@@ -124,7 +124,9 @@ export const triggerUpiPayment = ({
       const rawQuery = `pa=${encodeURIComponent(cleanUpi)}&pn=${encodeURIComponent(cleanName)}&cu=INR${amount && parseFloat(amount) > 0 ? `&am=${parseFloat(amount).toFixed(2)}` : ''}&tn=${encodeURIComponent(note || 'Donation to ' + cleanName)}`;
       try {
         window.location.href = `upi://pay?${rawQuery}`;
-      } catch {}
+      } catch {
+        // Fallback ignored
+      }
     }, 800);
   }
 

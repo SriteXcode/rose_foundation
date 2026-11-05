@@ -19,15 +19,12 @@ import PostDonationModal from './modals/PostDonationModal';
 import { useFoundationSettings } from '../hooks/useFoundationSettings';
 import { buildUpiUrl } from '../utils/upiUtils';
 
-const DonateStickyButton = ({ scrollToSection }) => {
+const DonateStickyButton = () => {
   const { upiId: OFFICIAL_UPI_ID, upiPayeeName: PAYEE_NAME, qrCodeUrl: customQrCodeUrl } = useFoundationSettings();
   // mode: starts as 'expanded' (capsule) and collapses into 'collapsed' (smaller circle) after 5s of no interaction
   const [mode, setMode] = useState('expanded');
-  const [selectedAmount, setSelectedAmount] = useState('500');
-  const [customAmount, setCustomAmount] = useState('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
   const [donationSuccessData, setDonationSuccessData] = useState(null);
 
@@ -37,20 +34,7 @@ const DonateStickyButton = ({ scrollToSection }) => {
   const dragControls = useDragControls();
 
   const [dragConstraints, setDragConstraints] = useState({ left: -300, right: 16, top: -50, bottom: 500 });
-
-  const effectiveAmount = customAmount ? customAmount : selectedAmount;
-
-  // Detect mobile device on mount
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      setIsMobileDevice(mobileRegex.test(userAgent) || window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const effectiveAmount = '500';
 
   // Viewport bounds constraint to ensure button is NEVER hidden or lost off-screen
   useEffect(() => {
@@ -200,8 +184,6 @@ const DonateStickyButton = ({ scrollToSection }) => {
     if (isDraggingRef.current) return;
     setMode('card');
   };
-
-  const presetAmounts = ['200', '500', '1000', '2000'];
 
   return (
     <>

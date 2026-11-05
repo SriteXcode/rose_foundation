@@ -372,18 +372,6 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         upiPayeeName: data.upiPayeeName || 'Blackrose Foundation',
         qrCodeUrl: data.qrCodeUrl || ''
       });
-      if (data.activeCampaign) {
-        setCampaignForm({
-          title: data.activeCampaign.title || '',
-          subtitle: data.activeCampaign.subtitle || '',
-          description: data.activeCampaign.description || '',
-          imageUrl: data.activeCampaign.imageUrl || '',
-          targetAmount: data.activeCampaign.targetAmount || 100000,
-          currentAmount: data.activeCampaign.currentAmount || 0,
-          buttonText: data.activeCampaign.buttonText || 'Donate Now',
-          isActive: data.activeCampaign.isActive ?? true
-        });
-      }
     } catch (error) {
       console.error('Failed to fetch settings', error);
     }

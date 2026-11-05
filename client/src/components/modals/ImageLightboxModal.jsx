@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -59,20 +59,8 @@ const ImageLightboxModal = ({
   const [showDonationCard, setShowDonationCard] = useState(false);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
   const [donationSuccessData, setDonationSuccessData] = useState(null);
-  const [selectedAmount, setSelectedAmount] = useState('500');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
-
-  // Detect mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      setIsMobileDevice(mobileRegex.test(userAgent) || window.innerWidth < 768);
-    };
-    checkMobile();
-  }, []);
 
   // Sync index when initialIndex changes or modal opens
   useEffect(() => {
@@ -198,33 +186,11 @@ const ImageLightboxModal = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleOpenUpiApp = (e) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-
-    navigator.clipboard.writeText(OFFICIAL_UPI_ID);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-
-    const amt = parseFloat(selectedAmount);
-    const upiUrl = amt && amt > 0
-      ? `upi://pay?pa=${OFFICIAL_UPI_ID}&pn=${encodeURIComponent(PAYEE_NAME)}&am=${amt}&cu=INR&tn=${encodeURIComponent('Donation to ' + PAYEE_NAME)}&mode=02`
-      : `upi://pay?pa=${OFFICIAL_UPI_ID}&pn=${encodeURIComponent(PAYEE_NAME)}&cu=INR&tn=${encodeURIComponent('Donation to ' + PAYEE_NAME)}&mode=02`;
-
-    if (isMobileDevice) {
-      toast.success('Opening UPI App... (UPI ID copied)');
-      window.location.href = upiUrl;
-    } else {
-      toast.success(`UPI ID copied: ${OFFICIAL_UPI_ID}\nScan the QR code with your mobile UPI app.`);
-    }
-  };
-
   if (!isOpen || !items || items.length === 0) return null;
 
   const currentItem = items[currentIndex] || items[0];
   const hasMultiple = items.length > 1;
   const currentCause = currentItem.title || currentItem.category || 'Education & Social Relief';
-  const presetAmounts = ['200', '500', '1000', '2000'];
 
   return (
     <>
@@ -478,7 +444,7 @@ const ImageLightboxModal = ({
       <QuickOnlineDonationModal
         isOpen={showOnlineModal}
         onClose={() => setShowOnlineModal(false)}
-        initialAmount={selectedAmount}
+        initialAmount="500"
         initialCause={currentCause}
         onSuccess={(donationData) => {
           setDonationSuccessData(donationData);
