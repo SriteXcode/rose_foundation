@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const DEFAULT_TITLE = 'Blackrose Foundation | Empowering Communities & Driving Social Welfare';
-const DEFAULT_DESC = 'Blackrose Foundation is a dedicated non-profit organization (NGO) committed to education, healthcare, women empowerment, and sustainable community development across India.';
+const DEFAULT_TITLE = 'Blackrose Foundation | NGO in Kanpur, UP & India | Helping Hand for Social Welfare';
+const DEFAULT_DESC = 'Blackrose Foundation is a registered NGO in Kanpur, Uttar Pradesh (UP), India. A dedicated helping hand committed to child education, healthcare, women empowerment, poverty relief, and community welfare.';
+const DEFAULT_KEYWORDS = 'ngo, ngo in india, ngo in kanpur, ngo in up, ngo in uttar pradesh, helping hand, best ngo in kanpur, top ngo in up, charity in kanpur, donation ngo india, social welfare organization, child education ngo, women empowerment up, volunteer kanpur, non profit organization india, 80g ngo, blackrose foundation';
 const BASE_URL = 'https://www.blackrosefoundation.org.in';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/blackrose_logo.png`;
 
 export const SEO = ({
   title,
   description,
+  keywords,
   canonical,
   ogImage,
   ogType = 'website',
@@ -18,6 +20,7 @@ export const SEO = ({
   const currentUrl = canonical || `${BASE_URL}${location.pathname}`;
   const pageTitle = title ? `${title} | Blackrose Foundation` : DEFAULT_TITLE;
   const pageDesc = description || DEFAULT_DESC;
+  const pageKeywords = keywords || DEFAULT_KEYWORDS;
   const image = ogImage || DEFAULT_OG_IMAGE;
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export const SEO = ({
     // 2. Primary Meta Tags
     setMetaTag('meta[name="description"]', 'name', 'description', pageDesc);
     setMetaTag('meta[name="title"]', 'name', 'title', pageTitle);
+    setMetaTag('meta[name="keywords"]', 'name', 'keywords', pageKeywords);
     
     // 3. OpenGraph Tags
     setMetaTag('meta[property="og:title"]', 'property', 'og:title', pageTitle);
@@ -82,7 +86,7 @@ export const SEO = ({
         scriptTag.parentNode.removeChild(scriptTag);
       }
     };
-  }, [pageTitle, pageDesc, currentUrl, image, ogType, jsonLd]);
+  }, [pageTitle, pageDesc, pageKeywords, currentUrl, image, ogType, jsonLd]);
 
   return null;
 };

@@ -39,8 +39,9 @@ const HomePage = ({
   return (
     <>
       <SEO 
-        title="Empowering Communities & Driving Social Welfare" 
-        description="Blackrose Foundation is a dedicated non-profit organization (NGO) committed to education, healthcare, women empowerment, and sustainable community development across India." 
+        title="NGO in Kanpur, UP & India | Helping Hand for Social Welfare" 
+        description="Blackrose Foundation is a registered NGO in Kanpur, Uttar Pradesh (UP), India. A dedicated helping hand driving child education, healthcare, women empowerment, poverty relief, and community welfare." 
+        keywords="ngo, ngo in india, ngo in kanpur, ngo in up, ngo in uttar pradesh, helping hand, best ngo in kanpur, top ngo in up, charity in kanpur, donation ngo india, social welfare organization, child education ngo, women empowerment up, volunteer kanpur"
       />
       <HeroSection scrollToSection={scrollToSection} />
       <RecentBlogsCarousel />

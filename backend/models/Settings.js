@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const settingsSchema = new mongoose.Schema({
   siteName: { type: String, default: 'Black Rose Foundation' },
-  contactEmail: { type: String, default: 'info@blackrosefoundation.org.in' },
+  contactEmail: { type: String, default: 'blackrosefoundation111@gmail.com' },
   contactPhone: { type: String, default: '+91 9876543210' },
   address: { type: String, default: '123 Foundation Street, Lucknow, UP 226001' },
   socialLinks: {
@@ -13,6 +13,10 @@ const settingsSchema = new mongoose.Schema({
   },
   heroImagesDesktop: [{ type: String }],
   heroImagesMobile: [{ type: String }],
+  // UPI & Donation Configuration
+  upiId: { type: String, default: '251908200515@indus' },
+  upiPayeeName: { type: String, default: 'Blackrose Foundation' },
+  qrCodeUrl: { type: String, default: '' },
   activeCampaign: {
     title: { type: String, default: 'Emergency Relief & Empower Drive' },
     subtitle: { type: String, default: 'Urgent Campaign' },

@@ -71,7 +71,7 @@ const HeroSection = ({ scrollToSection }) => {
             
             {/* Pill Badge */}
             <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700/80 mb-4">
-              Nonprofit Foundation
+              Registered NGO • Kanpur, UP, India
             </div>
 
             {/* Main Headline */}
@@ -81,7 +81,7 @@ const HeroSection = ({ scrollToSection }) => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed max-w-xl">
-              We create a better tomorrow for everyone through education, relief and sustainable support programs that reach those who need it most.
+              As a dedicated helping hand across Kanpur, UP, and India, we empower communities through education, healthcare, relief, and sustainable social welfare programs.
             </p>
 
             {/* Action Buttons */}
@@ -132,7 +132,7 @@ const HeroSection = ({ scrollToSection }) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.8 }}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-center"
                 />
               </AnimatePresence>
 

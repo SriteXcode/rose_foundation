@@ -3,7 +3,7 @@ const PushSubscription = require('../models/PushSubscription');
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || 'BAiZJjKX6wSg0OeyHcvT2TswjFab_k4qvlz2f3JZItV9VlyZ2GbzTMh7jhuEvV3MAoTim7SMcYPxF6E8IidZRGA';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || 'nV9CgySpXRV3Y6jRndjw6jIMLB3IQqA3v2EwF_Wc3Eg';
-const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:ngo.blackrose@gmail.com';
+const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:blackrosefoundation111@gmail.com';
 
 try {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);

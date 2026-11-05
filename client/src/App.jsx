@@ -147,6 +147,9 @@ const AppContent = () => {
       const element = document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
+        if (sectionId === 'donate') {
+          window.dispatchEvent(new CustomEvent('highlightDonationSection'));
+        }
         clearInterval(interval);
       } else if (attempts >= maxAttempts) {
         clearInterval(interval);
@@ -168,6 +171,9 @@ const AppContent = () => {
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
     setIsMenuOpen(false);
+    if (sectionId === 'donate') {
+      window.dispatchEvent(new CustomEvent('highlightDonationSection'));
+    }
 
     if (location.pathname !== '/') {
       navigate('/', { state: { scrollTo: sectionId } });
@@ -286,6 +292,9 @@ const AppContent = () => {
 
       <Toaster position="top-center" />
 
+      {/* Always-on Top Draggable Donate Button */}
+      <DonateStickyButton scrollToSection={scrollToSection} />
+
       {/* Quick Action Floating Menu Toggle */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
         {isOpen && (
@@ -303,7 +312,7 @@ const AppContent = () => {
               </div>
               <span>Active Campaigns</span>
             </button>
-            <DonateStickyButton scrollToSection={scrollToSection} />
+
             <WhatsAppButton />
           </div>
         )}
