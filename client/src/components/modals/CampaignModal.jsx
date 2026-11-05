@@ -1,9 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, Sparkles, ArrowRight, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Sparkles, ArrowRight, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../../utils/imageUtils';
 import axiosInstance from '../../utils/api';
 
+// Helper to determine if a campaign is currently active, popup-enabled, and not expired
+const isCampaignValidForPopup = (camp) => {
+  if (!camp) return false;
+  // Status check: strictly must be 'active' (not 'completed' or 'disabled')
+  if (camp.status && camp.status !== 'active') return false;
+  // Popup display check: isPopup must not be explicitly false
+  if (camp.isPopup === false) return false;
+  // End date check: must not have passed
+  if (camp.endDate) {
+    const end = new Date(camp.endDate);
+    if (!isNaN(end.getTime())) {
+      // If date-only (midnight UTC), allow through the full calendar day
+      if (end.getUTCHours() === 0 && end.getUTCMinutes() === 0 && end.getUTCSeconds() === 0 && end.getUTCMilliseconds() === 0) {
+        end.setUTCHours(23, 59, 59, 999);
+      }
+      if (new Date() > end) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
 
 const CampaignModal = ({ scrollToSection }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,68 +34,57 @@ const CampaignModal = ({ scrollToSection }) => {
   const [isDismissed, setIsDismissed] = useState(false);
   const [campaignsList, setCampaignsList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const campaignsListRef = useRef([]);
 
   useEffect(() => {
+    let timer;
     const fetchActiveCampaigns = async () => {
       try {
-        let activeList = [];
-        try {
-          const response = await axiosInstance.get('/campaigns/active');
-          if (Array.isArray(response.data) && response.data.length > 0) {
-            activeList = response.data;
-          }
-        } catch (e) {
-          console.error('Failed to get active campaigns', e);
-        }
+        const response = await axiosInstance.get('/campaigns/active');
+        const rawList = Array.isArray(response.data) ? response.data : [];
+        // Strictly filter to ensure campaign is active and not expired
+        const validList = rawList.filter(isCampaignValidForPopup);
 
-        if (activeList.length === 0) {
-          try {
-            const allRes = await axiosInstance.get('/campaigns');
-            if (Array.isArray(allRes.data) && allRes.data.length > 0) {
-              activeList = allRes.data;
-            }
-          } catch (e) {
-            console.error('Failed to get all campaigns', e);
-          }
-        }
-
-        if (activeList.length > 0) {
-          setCampaignsList(activeList);
-          // Pick random starting campaign
-          const randomIdx = Math.floor(Math.random() * activeList.length);
+        if (validList.length > 0) {
+          setCampaignsList(validList);
+          campaignsListRef.current = validList;
+          const randomIdx = Math.floor(Math.random() * validList.length);
           setCurrentIndex(randomIdx);
-        } else {
-          // Fallback to settings
-          try {
-            const settingsRes = await axiosInstance.get('/settings');
-            if (settingsRes.data?.activeCampaign) {
-              setCampaignsList([{ ...settingsRes.data.activeCampaign }]);
-            }
-          } catch (e) {
-            console.error('Failed to get settings active campaign', e);
+
+          // Only open auto-popup if there are valid active campaigns and user hasn't seen it yet
+          const hasSeen = sessionStorage.getItem('hasSeenCampaignPopup');
+          if (!hasSeen) {
+            timer = setTimeout(() => {
+              setIsOpen(true);
+              sessionStorage.setItem('hasSeenCampaignPopup', 'true');
+            }, 3000);
           }
+        } else {
+          // No active campaigns - do not fall back to completed/past campaigns
+          setCampaignsList([]);
+          campaignsListRef.current = [];
+          setIsOpen(false);
         }
       } catch (error) {
         console.error('Failed to load active campaign', error);
+        setCampaignsList([]);
+        campaignsListRef.current = [];
+        setIsOpen(false);
       }
     };
+
     fetchActiveCampaigns();
 
-    const hasSeen = sessionStorage.getItem('hasSeenCampaignPopup');
-    let timer;
-
-    if (!hasSeen) {
-      timer = setTimeout(() => {
-        setIsOpen(true);
-        sessionStorage.setItem('hasSeenCampaignPopup', 'true');
-      }, 3000);
-    }
-
     const handleOpenModal = () => {
+      if (!campaignsListRef.current || campaignsListRef.current.length === 0) {
+        toast('No active campaigns running at the moment.');
+        return;
+      }
       setIsDismissed(false);
       setIsMinimized(false);
       setIsOpen(true);
     };
+
     window.addEventListener('openCampaignModal', handleOpenModal);
 
     return () => {
@@ -93,11 +105,18 @@ const CampaignModal = ({ scrollToSection }) => {
   }, [isOpen, campaignsList?.length]);
 
   const campaign = campaignsList?.[currentIndex];
+  const isCurrentCampaignValid = isCampaignValidForPopup(campaign);
 
   const handleClose = () => {
     setIsOpen(false);
     setIsMinimized(false);
     setIsDismissed(true);
+  };
+
+  const handleRemindLater = () => {
+    setIsOpen(false);
+    setIsMinimized(true);
+    setIsDismissed(false);
   };
 
   const handleOpen = () => {
@@ -137,7 +156,7 @@ const CampaignModal = ({ scrollToSection }) => {
     <>
       {/* Sticky Floating Campaign Button (User can hide/dismiss with ✕) */}
       <AnimatePresence>
-        {isMinimized && !isOpen && !isDismissed && campaign && (
+        {isMinimized && !isOpen && !isDismissed && isCurrentCampaignValid && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -179,7 +198,7 @@ const CampaignModal = ({ scrollToSection }) => {
 
       {/* Main Campaign Popup Modal with Carousel */}
       <AnimatePresence>
-        {isOpen && campaign && (
+        {isOpen && isCurrentCampaignValid && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Glassmorphic Backdrop */}
             <motion.div
@@ -267,7 +286,7 @@ const CampaignModal = ({ scrollToSection }) => {
               </div>
 
               {/* Modal Body */}
-              <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
+              <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
                   {campaign.description}
                 </p>
@@ -308,7 +327,7 @@ const CampaignModal = ({ scrollToSection }) => {
                   </button>
 
                   <button
-                    onClick={handleClose}
+                    onClick={handleRemindLater}
                     className="px-4 py-3 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border border-gray-200 dark:border-zinc-800"
                   >
                     Remind Later

@@ -59,7 +59,7 @@ const Footer = ({ scrollToSection, newsletter, setNewsletter, isLoading, setIsLo
               </span>
             </div>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6 max-w-sm">
-              Empowering communities to create a better tomorrow for everyone through education, relief and sustainable support programs.
+              A registered NGO in Kanpur, Uttar Pradesh (UP), India. A trusted helping hand dedicated to empowering communities through education, relief, healthcare, and sustainable support programs.
             </p>
             <div className="flex items-center space-x-3">
               {socialLinks.map((social) => (

@@ -128,7 +128,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     contactPhone: '',
     address: '',
     heroImagesDesktop: [],
-    heroImagesMobile: []
+    heroImagesMobile: [],
+    upiId: '',
+    upiPayeeName: '',
+    qrCodeUrl: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -364,7 +367,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
         contactPhone: data.contactPhone || '',
         address: data.address || '',
         heroImagesDesktop: data.heroImagesDesktop || [],
-        heroImagesMobile: data.heroImagesMobile || []
+        heroImagesMobile: data.heroImagesMobile || [],
+        upiId: data.upiId || '251908200515@indus',
+        upiPayeeName: data.upiPayeeName || 'Blackrose Foundation',
+        qrCodeUrl: data.qrCodeUrl || ''
       });
       if (data.activeCampaign) {
         setCampaignForm({
@@ -397,9 +403,10 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     setIsLoading(true);
     try {
       const payload = { ...editingCampaignItem };
-      if (!payload.startDate || payload.startDate === '') delete payload.startDate;
-      if (!payload.endDate || payload.endDate === '') delete payload.endDate;
+      if (!payload.startDate || payload.startDate === '') payload.startDate = null;
+      if (!payload.endDate || payload.endDate === '') payload.endDate = null;
       if (!payload.relatedBlogPost || payload.relatedBlogPost === '') payload.relatedBlogPost = null;
+      if (typeof payload.isPopup !== 'boolean') payload.isPopup = true;
 
       const url = editingCampaignItem?._id 
         ? `/campaigns/${editingCampaignItem._id}`
@@ -942,6 +949,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
     try {
       await axiosInstance.put('/settings', settingsForm);
       toast.success('Settings saved successfully!');
+      window.dispatchEvent(new CustomEvent('foundationSettingsUpdated'));
     } catch (error) {
       toast.error('Error saving settings');
     } finally {
@@ -2890,6 +2898,97 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
           </div>
         </div>
 
+        {/* UPI & Donation QR Settings */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+          <div className="border-b border-gray-100 dark:border-zinc-800 pb-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-amber-500" />
+              <span>UPI & Quick Donation QR Settings</span>
+            </h4>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              Configure the official UPI ID and donation QR code used across the Homepage, Sticky Donate button, and enlarged image popups.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                Official UPI ID (VPA)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 251908200515@indus"
+                value={settingsForm.upiId}
+                onChange={(e) => setSettingsForm({ ...settingsForm, upiId: e.target.value })}
+                className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <span className="text-[10px] text-zinc-400 mt-1 block">
+                Donors across all pages will pay to this address via PhonePe, GPay, Paytm, BHIM, etc.
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                UPI Payee Account Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Blackrose Foundation"
+                value={settingsForm.upiPayeeName}
+                onChange={(e) => setSettingsForm({ ...settingsForm, upiPayeeName: e.target.value })}
+                className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <span className="text-[10px] text-zinc-400 mt-1 block">
+                Registered entity name verified inside donors' banking apps
+              </span>
+            </div>
+          </div>
+
+          {/* Custom Bank QR Image Upload */}
+          <div className="pt-2 border-t border-gray-100 dark:border-zinc-800">
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+              Custom Bank QR Code Image (Optional)
+            </label>
+            <p className="text-[11px] text-zinc-500 mb-3">
+              Upload your official bank standee QR image, or leave empty to automatically generate dynamic QR codes based on your UPI ID.
+            </p>
+
+            {settingsForm.qrCodeUrl ? (
+              <div className="flex items-center gap-4 p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700">
+                <img
+                  src={settingsForm.qrCodeUrl}
+                  alt="Custom Uploaded UPI QR"
+                  className="w-24 h-24 object-contain rounded-lg border border-gray-200 dark:border-zinc-600 bg-white"
+                />
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block">
+                    ✓ Custom Bank QR Active
+                  </span>
+                  <p className="text-[10px] text-zinc-400">
+                    This custom QR image is shown on the Homepage and in quick payment cards.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsForm({ ...settingsForm, qrCodeUrl: '' })}
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer"
+                  >
+                    Remove & Use Dynamic Auto-Generated QR
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-gray-200/80 dark:border-zinc-800 rounded-xl p-3 bg-gray-50 dark:bg-zinc-800/50">
+                <ImageUpload
+                  onUpload={(url) => setSettingsForm(prev => ({
+                    ...prev,
+                    qrCodeUrl: url
+                  }))}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Hero Image Management */}
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200/80 dark:border-zinc-800 shadow-xs space-y-6">
           <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-gray-100 dark:border-zinc-800 pb-2">Hero Carousel Images</h4>
@@ -4074,7 +4173,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
       {/* Campaign Manager Modal */}
       {showCampaignModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <h3 className="text-base font-bold mb-4 text-zinc-900 dark:text-white">{editingCampaignItem?._id ? 'Edit Campaign' : 'New Campaign'}</h3>
             <form onSubmit={handleCampaignSubmit} className="space-y-3">
               <input type="text" placeholder="Campaign Title" value={editingCampaignItem?.title || ''} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, title: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white" required />
@@ -4084,6 +4183,7 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                 <select value={editingCampaignItem?.status || 'active'} onChange={(e) => setEditingCampaignItem({...editingCampaignItem, status: e.target.value})} className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white">
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
+                  <option value="disabled">Disabled</option>
                 </select>
               </div>
 
@@ -4125,6 +4225,20 @@ const AdminPage = ({ user, adminData, loadAdminData, authLoading }) => {
                     <option key={post._id} value={post._id}>{post.title}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Show in website popup toggle */}
+              <div className="flex items-center gap-2 py-1">
+                <input 
+                  type="checkbox" 
+                  id="adminCampaignIsPopup"
+                  checked={editingCampaignItem?.isPopup !== false} 
+                  onChange={(e) => setEditingCampaignItem({...editingCampaignItem, isPopup: e.target.checked})} 
+                  className="w-4 h-4 rounded text-zinc-900 dark:text-white border-gray-300 dark:border-zinc-700 focus:ring-zinc-900 cursor-pointer"
+                />
+                <label htmlFor="adminCampaignIsPopup" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
+                  Show as Popup on Website
+                </label>
               </div>
 
               <div>

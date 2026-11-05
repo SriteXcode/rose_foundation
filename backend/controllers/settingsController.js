@@ -24,7 +24,10 @@ exports.updateSettings = async (req, res) => {
       address, 
       socialLinks, 
       heroImagesDesktop, 
-      heroImagesMobile 
+      heroImagesMobile,
+      upiId,
+      upiPayeeName,
+      qrCodeUrl
     } = req.body;
     
     let settings = await Settings.findOne();
@@ -47,6 +50,18 @@ exports.updateSettings = async (req, res) => {
 
     if (heroImagesMobile) {
       settings.heroImagesMobile = heroImagesMobile;
+    }
+
+    if (typeof upiId !== 'undefined') {
+      settings.upiId = upiId.trim();
+    }
+
+    if (typeof upiPayeeName !== 'undefined') {
+      settings.upiPayeeName = upiPayeeName.trim();
+    }
+
+    if (typeof qrCodeUrl !== 'undefined') {
+      settings.qrCodeUrl = qrCodeUrl;
     }
 
     if (req.body.activeCampaign) {

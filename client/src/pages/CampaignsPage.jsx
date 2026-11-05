@@ -7,6 +7,17 @@ import Footer from '../components/Footer';
 import { CardSkeleton } from '../components/SkeletonLoader';
 import SEO from '../components/SEO';
 
+// Helper to check if campaign has passed its end date
+const isCampaignExpired = (c) => {
+  if (!c || !c.endDate) return false;
+  const end = new Date(c.endDate);
+  if (isNaN(end.getTime())) return false;
+  if (end.getUTCHours() === 0 && end.getUTCMinutes() === 0 && end.getUTCSeconds() === 0 && end.getUTCMilliseconds() === 0) {
+    end.setUTCHours(23, 59, 59, 999);
+  }
+  return new Date() > end;
+};
+
 const CampaignsPage = ({ scrollToSection }) => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
@@ -40,9 +51,14 @@ const CampaignsPage = ({ scrollToSection }) => {
 
   useEffect(() => {
     let result = campaigns;
-    if (activeFilter !== 'All') {
+    if (activeFilter === 'Active') {
+      result = result.filter(c => c.status === 'active' && !isCampaignExpired(c));
+    } else if (activeFilter === 'Completed') {
+      result = result.filter(c => c.status === 'completed' || isCampaignExpired(c));
+    } else if (activeFilter !== 'All') {
       result = result.filter(c => c.status === activeFilter.toLowerCase());
     }
+
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter(c => 
@@ -128,7 +144,8 @@ const CampaignsPage = ({ scrollToSection }) => {
               const current = camp.currentAmount || 0;
               const percentage = Math.min(100, Math.round((current / target) * 100));
               const coverImg = getOptimizedImageUrl(camp.imageUrl || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800', { width: 600, height: 400 });
-              const isCompleted = camp.status === 'completed' || percentage >= 100;
+              const expired = isCampaignExpired(camp);
+              const isCompleted = camp.status === 'completed' || percentage >= 100 || expired;
 
               return (
                 <div 
@@ -149,7 +166,7 @@ const CampaignsPage = ({ scrollToSection }) => {
                         <span>{camp.subtitle || 'Initiative'}</span>
                       </div>
                       <div className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md ${isCompleted ? 'bg-emerald-600/90' : 'bg-zinc-900/90'}`}>
-                        {isCompleted ? 'Completed' : 'Active'}
+                        {isCompleted ? (expired ? 'Ended' : 'Completed') : 'Active'}
                       </div>
                     </div>
 
@@ -212,7 +229,7 @@ const CampaignsPage = ({ scrollToSection }) => {
                       }`}
                     >
                       <Heart className="w-3.5 h-3.5" />
-                      <span>{isCompleted ? 'Goal Achieved' : (camp.buttonText || 'Donate Now')}</span>
+                      <span>{isCompleted ? (expired ? 'Campaign Ended' : 'Goal Achieved') : (camp.buttonText || 'Donate Now')}</span>
                     </button>
                   </div>
                 </div>

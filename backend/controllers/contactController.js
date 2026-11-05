@@ -15,7 +15,7 @@ exports.submitContact = async (req, res) => {
     await contact.save();
 
     // 1. Send Admin Email Notification (non-blocking for fast UI response)
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'ngo.blackrose@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'blackrosefoundation111@gmail.com';
     sendEmail(adminEmail, emailTemplates.adminContactNotification(name, email, message))
       .catch(err => console.error('⚠️ Admin notification email error:', err.message));
 

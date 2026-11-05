@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { GallerySkeleton } from './SkeletonLoader';
+import ImageLightboxModal from './modals/ImageLightboxModal';
 
 const GallerySection = ({ limit = 6 }) => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -57,7 +58,7 @@ const GallerySection = ({ limit = 6 }) => {
         {loading ? (
           <GallerySkeleton count={limit} />
         ) : displayItems.length > 0 ? (
-          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
+          <div className="columns-2 sm:columns-3 md:columns-4 gap-4">
             {displayItems.map((item, index) => {
               const rawUrl = item.imageUrl;
               const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
@@ -65,16 +66,16 @@ const GallerySection = ({ limit = 6 }) => {
               return (
                 <div
                   key={`${item._id || index}-${index}`}
-                  onClick={() => setSelectedImage(item)}
-                  className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all transform scale-[0.80] hover:scale-[0.85] origin-center"
+                  onClick={() => setLightboxIndex(index)}
+                  className="break-inside-avoid mb-4 bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-300"
                 >
                   <img 
                     src={optimizedUrl} 
                     alt={item.title || 'Gallery Moment'} 
                     loading="lazy" 
-                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
+                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500 block" 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3 sm:p-4">
                     <span className="text-white font-semibold text-xs">
                       {item.title || 'Rose Foundation'}
                     </span>
@@ -103,26 +104,13 @@ const GallerySection = ({ limit = 6 }) => {
 
       </div>
 
-      {/* Lightbox Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={() => setSelectedImage(null)}>
-          <button 
-            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 rounded-full bg-white/10 transition-colors z-[70] cursor-pointer"
-            onClick={() => setSelectedImage(null)}
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-              <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full h-full object-contain" />
-            </div>
-            <div className="p-6 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">{selectedImage.title || 'Gallery Image'}</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{selectedImage.category || 'Rose Foundation'}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Seamless Infinite Loop Lightbox Modal */}
+      <ImageLightboxModal
+        items={displayItems}
+        initialIndex={lightboxIndex ?? 0}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+      />
     </section>
   );
 };

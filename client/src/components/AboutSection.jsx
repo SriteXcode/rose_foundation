@@ -67,7 +67,7 @@ const AboutSection = () => {
                   src={currentImage} 
                   alt="Volunteers helping communities" 
                   loading="lazy" 
-                  className={`w-full h-full object-cover transform hover:scale-105 transition-all duration-700 ${
+                  className={`w-full h-full object-cover object-center transform hover:scale-105 transition-all duration-700 ${
                     isFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                   }`} 
                 />
@@ -99,7 +99,7 @@ const AboutSection = () => {
             </h2>
 
             <p className="text-zinc-600 dark:text-zinc-400 text-base sm:text-lg leading-relaxed mb-3">
-              Blackrose Foundation is a community-driven nonprofit dedicated to uplifting underprivileged families. We believe every person deserves access to education, healthcare and opportunity regardless of their circumstances.
+              Blackrose Foundation is a community-driven NGO in Kanpur, Uttar Pradesh (UP), serving as a trusted helping hand dedicated to uplifting underprivileged children and families across India. We believe every person deserves access to quality education, healthcare, and equal opportunity regardless of their circumstances.
             </p>
 
             <p className="text-zinc-600 dark:text-zinc-400 text-base leading-relaxed mb-6">

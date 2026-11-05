@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/api';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
-import { Search, X, Filter } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { GallerySkeleton } from '../components/SkeletonLoader';
 import SEO from '../components/SEO';
+import ImageLightboxModal from '../components/modals/ImageLightboxModal';
 
 const GalleryPage = () => {
   const navigate = useNavigate();
   const [galleryItems, setGalleryItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -62,6 +63,7 @@ const GalleryPage = () => {
       <SEO 
         title="Field Gallery & Media Coverage" 
         description="Browse photos, event highlights, and ground coverage of Blackrose Foundation's social drives across India." 
+        keywords="ngo, ngo in india, ngo in kanpur, ngo in up, helping hand, gallery, blackrose foundation photos, charity drives kanpur"
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
@@ -121,7 +123,7 @@ const GalleryPage = () => {
         ) : (
           /* Masonry Layout across all screen sizes */
           displayItems.length > 0 ? (
-            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-4 gap-3 space-y-3">
+            <div className="columns-2 sm:columns-3 md:columns-4 gap-4">
               {displayItems.map((item, index) => {
                 const rawUrl = item.imageUrl;
                 const optimizedUrl = getOptimizedImageUrl(rawUrl, { width: 600 });
@@ -129,16 +131,16 @@ const GalleryPage = () => {
                 return (
                   <div 
                     key={`${item._id || index}-${index}`} 
-                    onClick={() => setSelectedImage(item)}
-                    className="break-inside-avoid bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all transform scale-[0.80] hover:scale-[0.85] origin-center"
+                    onClick={() => setLightboxIndex(index)}
+                    className="break-inside-avoid mb-4 bg-gray-100 dark:bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer group relative border border-gray-200/70 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-300"
                   >
                     <img 
                       src={optimizedUrl} 
                       alt={item.title || 'Gallery Moment'} 
                       loading="lazy" 
-                      className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500 block rounded-2xl" 
+                      className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500 block" 
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 sm:p-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 sm:p-4">
                       <span className="text-white font-bold text-xs">
                         {item.title || 'Rose Foundation'}
                       </span>
@@ -160,54 +162,13 @@ const GalleryPage = () => {
         )}
       </div>
 
-      {/* Lightbox Modal */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" 
-          onClick={() => setSelectedImage(null)}
-        >
-          <button 
-            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 rounded-full bg-white/10 transition-colors z-[70] cursor-pointer"
-            onClick={() => setSelectedImage(null)}
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          <div 
-            className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] text-left" 
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden min-h-[300px]">
-              <img 
-                src={selectedImage.imageUrl} 
-                alt={selectedImage.title} 
-                className="w-full h-full max-h-[70vh] object-contain" 
-              />
-            </div>
-            
-            <div className="p-6 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800">
-              <h3 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white mb-1">
-                {selectedImage.title || 'Gallery Moment'}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">
-                  {selectedImage.category || 'Rose Foundation'}
-                </span>
-                {selectedImage.project && (
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal">
-                    • Project: {selectedImage.project.title}
-                  </span>
-                )}
-              </div>
-              {selectedImage.description && (
-                <p className="mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  {selectedImage.description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Seamless Infinite Loop Lightbox Modal */}
+      <ImageLightboxModal
+        items={displayItems}
+        initialIndex={lightboxIndex ?? 0}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+      />
     </div>
   );
 };

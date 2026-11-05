@@ -95,7 +95,7 @@ app.get('/api/organization', cacheMiddleware(86400000), (req, res) => { // 24 ho
     foundedYear: 2020,
     headquarters: 'Lucknow, Uttar Pradesh, India',
     website: 'www.blackrosefoundation.org.in',
-    email: 'info@blackrosefoundation.org.in',
+    email: 'blackrosefoundation111@gmail.com',
     phone: '+91 9876543210',
     address: '123 Foundation Street, Lucknow, UP 226001',
     bankDetails: {

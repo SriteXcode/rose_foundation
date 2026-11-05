@@ -28,11 +28,11 @@ export const CardSkeleton = ({ count = 4, columns = "grid-cols-2 sm:grid-cols-3 
 // YouTube-style Masonry / Grid Gallery Skeleton
 export const GallerySkeleton = ({ count = 8 }) => {
   return (
-    <div className="columns-2 sm:columns-3 md:columns-4 gap-3 space-y-3 w-full">
+    <div className="columns-2 sm:columns-3 md:columns-4 gap-4 w-full">
       {Array.from({ length: count }).map((_, i) => (
         <div 
           key={i} 
-          className={`break-inside-avoid bg-gray-200 dark:bg-zinc-800 rounded-2xl overflow-hidden relative border border-gray-200 dark:border-zinc-800 ${
+          className={`break-inside-avoid mb-4 bg-gray-200 dark:bg-zinc-800 rounded-2xl overflow-hidden relative border border-gray-200 dark:border-zinc-800 ${
             i % 3 === 0 ? 'h-48' : i % 3 === 1 ? 'h-64' : 'h-56'
           }`}
         >
