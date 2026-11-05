@@ -90,7 +90,7 @@ const HeroSection = ({ scrollToSection }) => {
                 onClick={() => setShowJoinModal(true)}
                 className="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 text-white px-6 py-3 rounded-full text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto group"
               >
-                <span>Get Involved</span>
+                <span>Join Us</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
