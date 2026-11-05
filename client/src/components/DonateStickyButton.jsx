@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { 
   Heart, 
@@ -21,8 +21,8 @@ import { buildUpiUrl } from '../utils/upiUtils';
 
 const DonateStickyButton = ({ scrollToSection }) => {
   const { upiId: OFFICIAL_UPI_ID, upiPayeeName: PAYEE_NAME, qrCodeUrl: customQrCodeUrl } = useFoundationSettings();
-  // mode: 'collapsed' (small circle) | 'expanded' (pill) | 'card' (quick pay & QR modal card)
-  const [mode, setMode] = useState('collapsed');
+  // mode: starts as 'expanded' (capsule) and collapses into 'collapsed' (smaller circle) after 5s of no interaction
+  const [mode, setMode] = useState('expanded');
   const [selectedAmount, setSelectedAmount] = useState('500');
   const [customAmount, setCustomAmount] = useState('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
@@ -33,7 +33,10 @@ const DonateStickyButton = ({ scrollToSection }) => {
 
   const isDraggingRef = useRef(false);
   const containerRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
   const dragControls = useDragControls();
+
+  const [dragConstraints, setDragConstraints] = useState({ left: -300, right: 16, top: -50, bottom: 500 });
 
   const effectiveAmount = customAmount ? customAmount : selectedAmount;
 
@@ -48,6 +51,54 @@ const DonateStickyButton = ({ scrollToSection }) => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Viewport bounds constraint to ensure button is NEVER hidden or lost off-screen
+  useEffect(() => {
+    const updateConstraints = () => {
+      if (typeof window !== 'undefined') {
+        setDragConstraints({
+          left: -window.innerWidth + 90,
+          right: 16,
+          top: -50,
+          bottom: window.innerHeight - 130
+        });
+      }
+    };
+    updateConstraints();
+    window.addEventListener('resize', updateConstraints);
+    return () => window.removeEventListener('resize', updateConstraints);
+  }, []);
+
+  // Auto-collapse capsule into smaller circular version after 5 seconds of no interaction
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    // Only run 5-second countdown when in 'expanded' (capsule) mode
+    if (mode === 'expanded') {
+      inactivityTimerRef.current = setTimeout(() => {
+        // Do not collapse if currently dragging or online modal is active
+        if (!isDraggingRef.current && !showOnlineModal) {
+          setMode('collapsed');
+        }
+      }, 5000);
+    }
+  }, [mode, showOnlineModal]);
+
+  useEffect(() => {
+    if (mode === 'expanded') {
+      resetInactivityTimer();
+    } else {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    }
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [mode, resetInactivityTimer]);
 
   // Collapse card/pill when clicking outside the container
   useEffect(() => {
@@ -157,15 +208,23 @@ const DonateStickyButton = ({ scrollToSection }) => {
       <motion.div
         ref={containerRef}
         drag
+        dragConstraints={dragConstraints}
         dragControls={dragControls}
         dragListener={mode !== 'card'} // In card mode, dedicated top handle drags so inner buttons respond instantly
         dragMomentum={false}
         dragElastic={0.06}
-        onDragStart={handleDragStart}
+        onDragStart={() => {
+          handleDragStart();
+          resetInactivityTimer();
+        }}
         onDragEnd={handleDragEnd}
-        initial={{ opacity: 0, y: -20, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        onMouseEnter={resetInactivityTimer}
+        onMouseMove={resetInactivityTimer}
+        onTouchStart={resetInactivityTimer}
+        onTouchMove={resetInactivityTimer}
+        initial={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2 }}
         className="fixed top-20 right-4 sm:top-24 sm:right-6 z-50 select-none"
       >
         <AnimatePresence mode="wait">
@@ -173,9 +232,9 @@ const DonateStickyButton = ({ scrollToSection }) => {
           {mode === 'collapsed' && (
             <motion.div
               key="collapsed"
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 1 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
+              exit={{ scale: 0.85, opacity: 1 }}
               transition={{ duration: 0.2 }}
               onClick={handleCollapsedClick}
               role="button"
@@ -183,13 +242,12 @@ const DonateStickyButton = ({ scrollToSection }) => {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCollapsedClick(e); }}
               aria-label="Donate Now - Drag anywhere or click to expand"
               title="Donate Now (Click to expand / Drag anywhere)"
-              className="group relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-rose-600 via-pink-600 to-amber-500 shadow-[0_6px_22px_rgba(244,63,94,0.45)] hover:shadow-[0_8px_28px_rgba(244,63,94,0.65)] border border-white/40 cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-all touch-none"
+              className="group relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-rose-600 via-pink-600 to-amber-500 shadow-[0_6px_22px_rgba(244,63,94,0.45)] hover:shadow-[0_8px_28px_rgba(244,63,94,0.65)] border border-white/40 cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-transform touch-none"
             >
-              <Heart className="w-5 h-5 fill-white text-white animate-pulse" />
+              <Heart className="w-5 h-5 fill-white text-white" />
 
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-400 border-2 border-white dark:border-zinc-900"></span>
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 border border-white dark:border-zinc-900 shadow-sm"></span>
               </span>
 
               <div className="absolute -left-1 bottom-0 p-0.5 rounded-full bg-black/40 text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -198,13 +256,13 @@ const DonateStickyButton = ({ scrollToSection }) => {
             </motion.div>
           )}
 
-          {/* ================= STATE 2: EXPANDED (PILL BUTTON) ================= */}
+          {/* ================= STATE 2: EXPANDED (CAPSULE / PILL BUTTON) ================= */}
           {mode === 'expanded' && (
             <motion.div
               key="expanded"
-              initial={{ scale: 0.85, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 1 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.85, opacity: 0 }}
+              exit={{ scale: 0.85, opacity: 1 }}
               transition={{ duration: 0.2 }}
               onClick={handleExpandedClick}
               role="button"
@@ -219,7 +277,7 @@ const DonateStickyButton = ({ scrollToSection }) => {
               </div>
 
               <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <Heart className="w-3.5 h-3.5 fill-white text-white animate-pulse" />
+                <Heart className="w-3.5 h-3.5 fill-white text-white" />
               </div>
 
               <span className="text-xs sm:text-sm font-extrabold tracking-wide uppercase whitespace-nowrap">

@@ -461,7 +461,7 @@ const ImageLightboxModal = ({
               onClick={() => setShowDonationCard(prev => !prev)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
             >
-              <Heart className="w-3.5 h-3.5 fill-white animate-pulse" />
+              <Heart className="w-3.5 h-3.5 fill-white" />
               <span>Support Our Cause</span>
             </button>
           </div>
